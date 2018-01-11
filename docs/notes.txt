@@ -1,0 +1,106 @@
+## RSF analysis notes and reading
+
+### Goals for the the next two weeks
+
+a. Read up on the RSF literature and identify potential methodological approaches that could be useful
+b. Read up on RSF data on pig populations
+c. Familiarize myself with data that is currently available
+
+Methodological approaches for RSF analysis
+-------------------------------------------
+
+## Methodological questions
+
+1. Do the approaches provide different results when looking at the RSF for pigs? 
+
+2. Will incorporating random effects of individuals improve predictive estimates?
+	- Others have included random effects (Northrup)
+
+3. The real key 
+
+3. Using this big data set to validate and PREDICT RSF functions on left out pigs.  Playing with model validation of RSF functions.
+
+## Some potentially interesting approaches
+
+1. Hooten et al. 2014, Statistical Methodology
+	- Uses a Continuous time Correlated random walk model for animal movement model animal movement and then conditions on this movement model when estimating the RSF function. 
+	- Good for GPS data collected on short intervals. 
+	- Can impute over missing time intervals.
+2. Nielsen and Sawyer, 2013, Ecology and Evolution
+	- This approach seems very straightforward.  Using negative binomial regression to estimate the resource selection function when there are multiple movement points. 
+	- Again, this is useful for GPS data where there are many points from the same individual.
+3. Hanks et al. 2011 Plos One
+	- A velocity-based approach for movement.  The approach relies on modeling how an animal moves over a resource gradient.  To they move to gradients and what is their speed when they hit a certain gradient.
+	- I like this approach because it seems be reflecting animal movement a bit better than simply location data.
+	- Also this approach makes it easy to impute over unequal time intervals/missing values.
+4. Northrup et al. 2016, Ecological Applications
+	- Uses the Hooten implementation.  Pretty cool approach I think.
+5. Wilson et al. 2018 and Hooten et al. 2015
+	- Again, using the CTCRW but also layering in a Markov model with umps between grids that depend on resource and covariates. Can include directional covariates as well as locations based depending on the scale of the data.  I like this approach because the covariates are DIRECTLY affecting the animal movement.  Not just ad-hocly being used to to infer the weighted distribution (not saying this is bad and might be necessary depending on the scale of interest!).  But this approach is very appealing for telemetry data.
+
+Notes
+-------------
+1. While a Bayesian approach seems like it would be for this type of analysis (random effects, imputation, etc), the size of the data might preclude a bayesian analysis. At the same time, given the size of the data, some assumption can potentially be made about the distributions that various coefficients are going to follow (i.e. MVN).
+	- Update. This might not be a problem! 
+
+2. Man, there is a lot of material on resource selection functions!  
+
+3. Northrup et al. 2016 suggests ommited the first week of GPS data to account for potential effects of capture behavior.
+
+4. KEY CHALLENGE: Identifying the availability sample.  Hooten et al. 2014 and Northrup et al. 2016 provide what I think is the least ad-hoc approach so far: Use a dynamic model (CTCRW) to predict for each "used" point where general radius where an animal could go next.  This defines the availability sample FOR each data point.  I like this better than trying to find the availability sample around the hull of points.  
+
+5. THOUGHT: I don't see what advantage this would provide over the CTCRW model, but it might be possible to think about using a Gaussian process regression to help define the availability sample for each observed point.  They would be a bit more flexible...I think that would be the main advantage, but probably way slower to fit.
+
+6. "Impossible movement criteria": Bjornerass et al. 2010.  Useful to eliminate outlying GPS data.
+
+7. Minimum convex polygons:  A method for measuring "home range" and available space. 
+
+8. Boyce et al. 2002:  Provides a cross validation approach for testing the efficacy of RSFs.
+
+9. Where to get habitat layers?
+	- Natural Earth
+	- USDA cropland data
+
+10. Interesting thought:  There are models that do and do not account for spatial autocorrelation in the animal data.  A few of the papers make a big deal about accounting for autcorrelation, and I tend to agree.  However, if we simulate animal movement with resource selection incorporated (need to think about how to do this...definitely not straightforward) and then ignore the autocorrelation when calculating the RSF, what happens to our resource selection functions? 
+	- This could be quite a cool simulation study
+
+11. Revisit your idea of using Gaussian process regression to account for spatial and temporal autocorrelation (or at least temporal autocorrelation), to allow for the implementation of simple cross scale models.
+
+
+Potential covariates
+--------------------
+
+1. Pig density
+2. Distance to roads
+3. Distance to crops
+4. Climate?  Though Ryan Brook said this might not be as important as we initially thought.
+
+
+TODOS
+-----
+
+1. Identify the questions that we want to ask using RSFs?  Or, really, the questions that we want to ask in general (perhaps shouldn't be dictated by RSFs).
+	- I think the primary question should be about the RSF and how the RSF varies across inidividuals, populations, time, and space.
+	- Methdologically, I think it makes a lot of sense to use the approach of Hooten to define AV
+
+2. Explore the CTCRW approach by Johnson for some of the pig data.  Pull in some environmental covariates and potentially try to do some fitting?
+
+3.  COOL APPROACH:  Individual, population, and metapopulation level!  Think about a random effect of population as well as individual. We should have the data for that. It would be nice in this case to have similar covariates across populations....but we might also have different ones and that could be important too.
+
+4. Also, think about temporal/spatial scale analysis. Similar to what we see in a couple of the analyses that I have read about. 
+
+
+
+Notes for meeting with Ryan
+---------------------------
+
+1. 
+
+
+
+
+
+
+
+
+

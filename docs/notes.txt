@@ -70,10 +70,12 @@ Notes
 Potential covariates
 --------------------
 
-1. Pig density
-2. Distance to roads
-3. Distance to crops
-4. Climate?  Though Ryan Brook said this might not be as important as we initially thought.
+1. Pig density (location covariate)
+2. Distance to roads (directional covariates)
+3. Distance to crops (directional covariate and location covariates)
+4. Distance to water (directional covariate)
+5. Forest cover (location covariate)
+6. Climate?  Though Ryan Brook said this might not be as important as we initially thought.
 
 
 TODOS

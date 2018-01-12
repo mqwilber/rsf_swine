@@ -1,0 +1,146 @@
+---
+title: "Exploratory data analysis for pig data"
+output: html_notebook
+---
+
+Exploratory analysis for GPS collar data of ferral swine
+
+```{r}
+# Load in the pig data
+library(data.table)
+dt = fread("../data/formatted/full_pig_data.csv")
+```
+
+How many missing lat longs do we have?
+
+```{r}
+ind = is.na(dt$latitude) | is.na(dt$longitude)
+sum(ind)
+dt_trun = dt[!ind, ]
+dim(dt_trun)
+```
+
+```{r}
+# Make a unique pigID
+dt_trun[, pigID:=paste(collarID, study, sep="")]
+```
+
+What are the number of fixes per pig?
+
+```{r}
+numfixes = table(dt_trun$pigID)
+numfixes = numfixes[order(numfixes)]
+head(numfixes)
+```
+
+What are the different ranges of fix times?
+
+```{r}
+tail(unique(dt_trun$lmt_date))
+```
+
+Ug, dates are not in the same format. Strip all white spcae out of the dates
+
+```{r}
+lmt_date = tstrsplit(dt_trun$lmt_date, " ")[[1]]
+dt_trun$lmt_date_strp = lmt_date
+```
+
+Look at dates for Michigan and SREL_Jim
+
+```{r}
+head(lmt_date[dt_trun$study == "srel_jim"])
+```
+
+Look at the time measures
+
+```{r}
+head(unique(dt_trun$lmt_time))
+```
+
+Combine date and time into one vector
+
+```{r}
+datetime = as.character(paste(dt_trun$lmt_date_strp, dt_trun$lmt_time))
+
+# studies michigan and srel_jim don't have ant seconds on the datetimes..add 00
+for(study in c("michigan", "srel_jim")){
+  datetime[dt_trun$study == study] = paste(datetime[dt_trun$study == study], ":00", sep="")
+}
+
+dt_trun$datetime = as.POSIXct(strptime(datetime, format="%m/%d/%y %H:%M:%S", tz="GMT"))
+```
+
+```{r}
+dt_trun$lmt_date[dt_trun$study == "judas_pig"]
+```
+
+Get the maximum time length at which fixings were taken for each individual pig
+
+```{r}
+fixinfo = dt_trun[, list(study=unique(study),
+                         deltat = max(datetime) - min(datetime), 
+                         numfixes=length(datetime)), by=list(pigID)]
+fixinfo
+```
+
+Any pigs nan?  Which pigs?
+
+```{r}
+nanpigs = fixinfo[is.na(fixinfo$deltat), "pigID"]
+nanpigs
+```
+
+Let's look at a distribution of collaring times
+
+```{r}
+library(ggplot2)
+ggplot(fixinfo, aes(x=as.numeric(deltat))) + geom_histogram()
+```
+
+Something seems a little wierd with the huge fix time
+
+```{r}
+fixinfo[which.max(fixinfo$deltat), ]
+```
+  
+Let's look at deltat by study
+
+```{r}
+ggplot(fixinfo, aes(x=as.numeric(deltat))) + geom_histogram() + facet_wrap(~study)
+```
+
+Some summary stats by study
+
+```{r}
+# Order the GPS colors by pig and time 
+dt_trun = dt_trun[order(pigID, datetime)]
+diffs = dt_trun[, list(deltat=mean(diff(datetime))), by=list(pigID)]
+
+ggplot(diffs, aes(x=deltat / (60 * 24))) + geom_histogram()
+```
+
+Some pigs have a huge about of time between their GPS readings...
+
+What I want to look at is for all pigs, which pigs have a sequences of at least 10 where each fix is less than 1hr different
+from the previous fix?
+
+```{r}
+runs = function(x, ctime=60, clength=10){
+  deltat = diff(x)
+  inds = deltat < ctime # String of booleans
+  
+  # Count runs
+  run_vect = rle(inds)
+  res = any((run_vect$values == TRUE) & (run_vect$lengths >= clength))
+  return(res)
+  
+}
+
+long_pigs = dt_trun[, list(longdat=runs(datetime), study=unique(study)), by=pigID]
+print(sum(long_pigs$longdat))
+print(nrow(long_pigs))
+table(long_pigs$study[long_pigs$longdat])
+```
+
+212 pigs have at least 10 fixes in a row that are within 1 hr of each other. 

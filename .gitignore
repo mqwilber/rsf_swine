@@ -1,1 +1,6 @@
 crawl_examples/
+data/archival/*csv
+data/archival/*xlsx
+data/formatted/*csv
+code/.Rhistory
+code/.Rdata

@@ -64,7 +64,7 @@ Notes
 10. Interesting thought:  There are models that do and do not account for spatial autocorrelation in the animal data.  A few of the papers make a big deal about accounting for autcorrelation, and I tend to agree.  However, if we simulate animal movement with resource selection incorporated (need to think about how to do this...definitely not straightforward) and then ignore the autocorrelation when calculating the RSF, what happens to our resource selection functions? 
 	- This could be quite a cool simulation study
 
-11. Revisit your idea of using Gaussian process regression to account for spatial and temporal autocorrelation (or at least temporal autocorrelation), to allow for the implementation of simple cross scale models.
+11. Revisit your idea of using Gaussian process regression to account for spatial and temporal autocorrelation (or at least temporal autocorrelation), to allow for the implementation of simple cross scale models.  See Hefley et al. 2017 or discussion of using basis functions to control for spatial autocorrelation.  This could be helpful to decorrelate observed time series.
 
 
 Potential covariates
@@ -74,15 +74,15 @@ Potential covariates
 2. Distance to roads (directional covariates)
 3. Distance to crops (directional covariate and location covariates)
 4. Distance to water (directional covariate)
-5. Forest cover (location covariate)
-6. Climate?  Though Ryan Brook said this might not be as important as we initially thought.
+5. Forest cover (location covariate) [Lewis et al. 2017 suggest that forest cover is important. References there in.]
+6. Climate?  Though Ryan Brook said this might not be as important as we initially thought.  Most studies still include it though.
 
 
 TODOS
 -----
 
 1. Identify the questions that we want to ask using RSFs?  Or, really, the questions that we want to ask in general (perhaps shouldn't be dictated by RSFs).
-	- I think the primary question should be about the RSF and how the RSF varies across inidividuals, populations, time, and space.
+	- I think the primary question should be about the RSF and how the RSF varies across individuals, populations, time, and space.
 	- Methdologically, I think it makes a lot of sense to use the approach of Hooten to define AV
 
 2. Explore the CTCRW approach by Johnson for some of the pig data.  Pull in some environmental covariates and potentially try to do some fitting?
@@ -92,12 +92,26 @@ TODOS
 4. Also, think about temporal/spatial scale analysis. Similar to what we see in a couple of the analyses that I have read about. 
 
 
+Questions
+---------
 
-Notes for meeting with Ryan
----------------------------
+(Trying to gear them to be useful for management)
 
-1. 
+Seems like we have a pretty good handle on what drives pig density/presence at large scales.  But at the scale of an individual, how do pigs select resources? How do pigs move on a landscape?
 
+This could be useful for 
+
+A) Given an introduction by a human, predicting the most likely path a pig will take and likely established home ranges given introduction at a point.
+
+B) Establishing how pig movement differs between endemic and invading populations? Can movement patterns describe WHY they are moving northward 12 km per year?  
+
+
+CHALLENGES
+----------
+
+1. Pigs show strongly daily movement patterns (i.e. they sleep probably, lol).  Need to account for these patterns if I am going to try to use a continuous time model.
+
+2. If I want to compare pig movement across habitats 
 
 
 

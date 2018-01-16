@@ -1,0 +1,31 @@
+## Meeting with Shannon Kay on 1/15/2018
+
+Open challenges with serology model
+----
+
+1. Capturing the endemic dynamics.  Current model wasn't doing a good job capturing the peaks in the endemic infections.
+	- Suggestions:  Sample the data longitudinally.
+2. Pig data:  See the Sun et al. paper in the the docs folder.  Some concerns about the quality of this data for applying it to the serology model.
+	- Contact Carrie Pederson about the field portion of the pig data.
+3. Some assumptions that could be tested
+	- Assuming independence in the anitbody function over time
+	- Correlation structure in the antibody curve
+	- Differing variance across the curve
+	- The seropositive cutoff is not being inferred from the data.  Trying setting this as a random variable.
+	- TSI as a continuous variable
+	- Using both titer data and antibody data
+
+Other datasets
+----
+
+1. Rabbit dataset for endemic dynamics (Toni Peacock)
+2. Rabies dataset (Amy (not amy davis))
+3. Avian influenza with Susan Shriner
+
+Helpful contacts/resources
+-----
+1. Fran Buderman (post-doc at CSU)
+2. Mevin Hooten (pretty busy guy, prof. at CSU)
+3. Ander Wilson (Bayesian stats prof at CSU)
+4. Jenifer Hoeding (Stats prof at CSU)
+5. Hank Ephraim might have a stats package for fitting continuous time models

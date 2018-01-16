@@ -3,7 +3,7 @@ title: "Exploratory data analysis for pig data"
 output: html_notebook
 ---
 
-Exploratory analysis for GPS collar data of ferral swine
+# Basic data cleaning
 
 ```{r}
 # Load in the pig data
@@ -11,7 +11,7 @@ library(data.table)
 dt = fread("../data/formatted/full_pig_data.csv")
 ```
 
-How many missing lat longs do we have?
+Check for and remove missing lat-long values
 
 ```{r}
 ind = is.na(dt$latitude) | is.na(dt$longitude)
@@ -19,43 +19,18 @@ sum(ind)
 dt_trun = dt[!ind, ]
 dim(dt_trun)
 ```
+Pigs between studies can have the same collar number so let's make unique pig collars.
 
 ```{r}
 # Make a unique pigID
 dt_trun[, pigID:=paste(collarID, study, sep="")]
 ```
 
-What are the number of fixes per pig?
-
-```{r}
-numfixes = table(dt_trun$pigID)
-numfixes = numfixes[order(numfixes)]
-head(numfixes)
-```
-
-What are the different ranges of fix times?
-
-```{r}
-tail(unique(dt_trun$lmt_date))
-```
-
-Ug, dates are not in the same format. Strip all white spcae out of the dates
+Dates are not in the same format. Strip all white spcae out of the dates
 
 ```{r}
 lmt_date = tstrsplit(dt_trun$lmt_date, " ")[[1]]
 dt_trun$lmt_date_strp = lmt_date
-```
-
-Look at dates for Michigan and SREL_Jim
-
-```{r}
-head(lmt_date[dt_trun$study == "srel_jim"])
-```
-
-Look at the time measures
-
-```{r}
-head(unique(dt_trun$lmt_time))
 ```
 
 Combine date and time into one vector
@@ -71,34 +46,52 @@ for(study in c("michigan", "srel_jim")){
 dt_trun$datetime = as.POSIXct(strptime(datetime, format="%m/%d/%y %H:%M:%S", tz="GMT"))
 ```
 
-```{r}
-dt_trun$lmt_date[dt_trun$study == "judas_pig"]
-```
+## Some exploratory data analysis
 
 Get the maximum time length at which fixings were taken for each individual pig
 
 ```{r}
 fixinfo = dt_trun[, list(study=unique(study),
                          deltat = max(datetime) - min(datetime), 
-                         numfixes=length(datetime)), by=list(pigID)]
+                         numfixes=length(datetime),
+                         start=min(datetime),
+                         end=max(datetime)), by=list(pigID)]
 fixinfo
 ```
 
-Any pigs nan?  Which pigs?
+Any pigs nan?
 
 ```{r}
 nanpigs = fixinfo[is.na(fixinfo$deltat), "pigID"]
 nanpigs
 ```
 
+All pigs have the correct datetime specifications.
+
+Order by fix times.  
+
+```{r}
+fixinfo[order(deltat, decreasing = T)]
+```
+
+Large variation in how long pigs were collared for. 
+
+```{r}
+fixinfo[, fixrate:= numfixes / as.numeric(deltat)]
+fixinfo[, timeperfix:= (as.numeric(deltat) / numfixes)*24*60]
+fixinfo[order(timeperfix, decreasing = F), ]
+```
+
+---
+
 Let's look at a distribution of collaring times
 
 ```{r}
 library(ggplot2)
-ggplot(fixinfo, aes(x=as.numeric(deltat))) + geom_histogram()
+ggplot(fixinfo, aes(x=as.numeric(log10(as.numeric(deltat))))) + geom_histogram() + xlab("log10(days)")
 ```
 
-Something seems a little wierd with the huge fix time
+Something seems a little wierd with the huge fix time!   Will have to check if this pig is an outlier or perhaps the collar just gave a reading when it wasn't on the pig.
 
 ```{r}
 fixinfo[which.max(fixinfo$deltat), ]
@@ -110,6 +103,28 @@ Let's look at deltat by study
 ggplot(fixinfo, aes(x=as.numeric(deltat))) + geom_histogram() + facet_wrap(~study)
 ```
 
+
+For each pig by study, let's look at how long they were tagged for
+
+```{r}
+studies = unique(fixinfo$study)
+
+plots = list()
+for(i in 1:length(studies)){
+  
+  plots[[i]] = ggplot(data=fixinfo[study==studies[i]], aes(pigID)) + geom_linerange(aes(ymin=start, ymax=end)) + 
+    facet_wrap(~study, scales = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8))
+}
+```
+
+```{r}
+for(i in 1:length(plots)){
+  print(plots[[i]])
+}
+```
+
+There is some overlap in the times that pig were tagged within sutdies.  Not yet sure between studies though. Ideally, if our question is how pig movement changes across studies
+
 Some summary stats by study
 
 ```{r}
@@ -117,16 +132,34 @@ Some summary stats by study
 dt_trun = dt_trun[order(pigID, datetime)]
 diffs = dt_trun[, list(deltat=mean(diff(datetime))), by=list(pigID)]
 
-ggplot(diffs, aes(x=deltat / (60 * 24))) + geom_histogram()
+ggplot(diffs, aes(x=deltat / (60 * 24))) + geom_histogram() + xlab("Days")
 ```
 
 Some pigs have a huge about of time between their GPS readings...
 
-What I want to look at is for all pigs, which pigs have a sequences of at least 10 where each fix is less than 1hr different
+---
+
+## Determing which sequences will be useful for movement analysis
+
+Which pigs have a sequences of at least 10 where each fix is less than 1hr different
 from the previous fix?
 
 ```{r}
 runs = function(x, ctime=60, clength=10){
+  # Given a vector of time differneces X
+  # determine if the vector has a run of 
+  # clength or greater of diffs < ctime (in minutes). 
+  # Parameters
+  # ----------
+  # x : difference vector of times
+  # ctime : Diffs must be less than this time
+  # clength : Length of a run
+  
+  # Notes
+  # -----
+  # This will help identify potential trajectories to use for the movement study
+  # Returns TRUE or FALSE
+  
   deltat = diff(x)
   inds = deltat < ctime # String of booleans
   
@@ -144,3 +177,69 @@ table(long_pigs$study[long_pigs$longdat])
 ```
 
 212 pigs have at least 10 fixes in a row that are within 1 hr of each other. 
+
+Let's just focus on these pigs for now. 
+
+```{r}
+# Subset data to only include pigs that have the right length of data
+keys = long_pigs$pigID[long_pigs$longdat]
+
+# Should be a cleaner and faster way to do this...perhaps with match
+inds = rep(FALSE, nrow(dt_trun))
+for(key in keys){
+  inds = inds | (dt_trun$pigID == key)
+}
+
+# Remove the pigs that 
+movedt = dt_trun[inds]
+```
+
+
+```{r}
+table(movedt$study)
+```
+
+
+## Plot pig movement trajectories for each study
+
+```{r}
+library(ggmap)
+
+# All the pig data
+us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite")
+ggmap(map) + geom_point(data=dt_trun, aes(x=longitude, y=latitude))
+```
+
+```{r}
+# Pig data that will probably be useful for movement models
+us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite")
+ggmap(map) + geom_point(data=movedt, aes(x=longitude, y=latitude))
+```
+
+
+Look at a plot of pig movement in Texas.
+
+```{r}
+library(dplyr)
+txcamp = movedt[pigID == "20125txcamp"]
+map = get_googlemap(center=c(lon=-98.53675, lat=29.74411), zoom=14, maptype="hybrid") %>% ggmap()
+map = map + geom_path(data=txcamp, aes(x=longitude, y=latitude), size=0.5)
+map
+```
+
+```{r}
+# Single pig diff
+pigdiff = diff(txcamp$datetime)
+
+inds = pigdiff < 100 # String of booleans
+  
+  # Count runs
+run_vect = rle(inds)
+run_vect
+```
+
+```{r}
+write.csv(movedt, "../data/formatted/pig_trajectories.csv")
+```

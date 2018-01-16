@@ -55,13 +55,15 @@ Simulate the random walk
 # First two are location and velocity in one direction, second two are
 # location and velocity in another direction. 2D vector
 start_locvel = c(20, 0, 20, 0)
-beta = 0.8
+beta = 15
 sigma_proc = 3
+sigma_obs = 0
 delta = 1 # Time step
-steps = 100
+steps = 1000
 
-all_locs = array(NA, dim=c(4, steps + 1))
-all_locs[, 1] = start_locvel
+true_locs = array(NA, dim=c(4, steps + 1))
+true_locs[, 1] = start_locvel
+obs_locs = array(NA, dim=c(2, steps + 1))
 
 # These are for one dimension
 Tmat = get_T(beta, delta)
@@ -72,16 +74,17 @@ eta_mean = rep(0, 4) # location and velocity process error
 zeromat = matrix(0, nrow=2, ncol=2)
 Zvect = array(c(1, 0), dim=c(2, 1))
 
-# Build the 4 dimensional vectors
+# Build the 4 dimensional vectors and matrices...why?  Because we are moving independently in two dimenions with location
+# and velocity.
 Tfull = rbind(cbind(Tmat, zeromat), cbind(zeromat, Tmat)) 
 Qfull = rbind(cbind(Qmat, zeromat), cbind(zeromat, Qmat))
-Zfull = rbind(Zvect, Zvect)
-
+Zfull = rbind(c(Zvect, 0, 0), c(0, 0, Zvect))
 
 for(i in 2:(steps + 1)){
   
-  alpha_next = Tfull %*% all_locs[, i - 1] + MASS::mvrnorm(1, eta_mean, Qfull)
-  all_locs[, i] = alpha_next 
+  alpha_next = Tfull %*% true_locs[, i - 1] + MASS::mvrnorm(1, eta_mean, Qfull)
+  true_locs[, i] = alpha_next 
+  obs_locs[, i] = Zfull %*% alpha_next + t(t(MASS::mvrnorm(1, c(0, 0), diag(rep(sigma_obs^2, 2))))) 
 
 }
 
@@ -89,15 +92,17 @@ for(i in 2:(steps + 1)){
 
 ```{r}
 # Plot locations
-locs = all_locs[c(1, 3), ]
+locs = true_locs[c(1, 3), ]
 plot(locs[1, ], locs[2, ])
 lines(locs[1, ], locs[2, ])
+
+points(obs_locs[1, ], obs_locs[2, ], col="red")
 ```
 
 ```{r}
 # Format the data for fitting with crawl
-sim_dat = data.frame(t(locs))
-sim_dat$time = 1:(steps + 1)
+sim_dat = data.frame(t(obs_locs[, 2:ncol(obs_locs)]))
+sim_dat$time = 1:(steps)
 colnames(sim_dat) = c("x", "y", "time")
 sim_dat
 ```
@@ -110,7 +115,7 @@ library(crawl)
 # P is the initial correlation matrix
 initial = list(a=c(20, 0, 20, 0), 
                P=diag(c(10000^2,5400^2,10000^2,5400^2)))
-fit_sim = crwMLE(mov.mod=~1, data=sim_dat, Time.name="time", coord=c('x', 'y'), initial.state = initial, drift=FALSE)
+fit_sim = crwMLE(mov.mod=~1, err.model=list(x=~1), data=sim_dat, Time.name="time", coord=c('x', 'y'), initial.state = initial, drift=FALSE)
 
 ```
 
@@ -118,8 +123,67 @@ fit_sim = crwMLE(mov.mod=~1, data=sim_dat, Time.name="time", coord=c('x', 'y'), 
 fit_sim
 ```
 
+Try fitting the model with STAN
+
+
+```{r}
+library(rstan)
+tl = t(true_locs)
+deltas = rep(1, nrow(tl) - 1)
+
+standata = list(N=nrow(tl), 
+                obs_vals=tl,
+                deltas=deltas)
+saveRDS(standata, "temp_stan.rds")
+stanfit = stan("stan_files/ctcrw_nobserr.stan", chains=3, data=standata, warmup=1000, iter=2000, cores=3)
+```
+
+```{r}
+library(rethinking)
+precis(stanfit)
+```
+
+Works great.  What if we have perfect observations of the locations but didn't observe the velocities? 
+
+```{r}
+
+just_loc = t(true_locs[c(1, 3), ])
+standata2 = list(N = nrow(just_loc),
+                 obs_vals=just_loc,
+                 deltas=rep(1, nrow(just_loc) - 1))
+
+fitstan2 = stan("stan_files/ctcrw_unobsvel.stan", data=standata2, warmup = 3000, iter=10000, cores=3, chains=3)
+
+```
+
+```{r}
+precis(fitstan2)
+traceplot(fitstan2, "beta")
+```
+
+This works in the sense that we get back the correct beta and sigma.  But man, it is a bit slow. 
+
+Ok, let's scale this up to the last challenge (which is just not going to work well if the previous version struggled.).  We have imperfect locations and unobserved velocities.
+
+```{r}
+
+sobs = t(obs_locs)
+sobs[1, ] = c(20, 20)
+standata3 = list(N=nrow(sobs),
+                 obs_vals = sobs,
+                 deltas = rep(1, nrow(sobs) - 1))
+fitstan3 = stan("stan_files/ctcrw.stan", data=standata3, chains=3, cores=3, warmup=2000, iter=5000)
+
+```
+
+```{r}
+precis(fitstan3)
+```
+
+LOL!  AWFUL mixing.  And the traceplots show this too.  Interestingly, the means are pretty good.  We actually were able to recover. No way this is feasible for large datasets. 
+
 ```{r,message=FALSE}
-predTime = seq(1, 21, len=21)
+predTime = seq(1, 21, len=100)
 
 library(crawl)
 predObj <- crawl::crwPredict(object.crwFit=fit_sim, 
@@ -135,66 +199,90 @@ Now, view the predicted movement path
 crwPredictPlot(predObj, "map")
 ```
 
-Now, for any given observed point
 
 ## Empirical data analysis
 
-**Goal**:  For each data point in the movement trajectory, be able to draw a use and availability distribution.
+**Goal**:  Fit the crawl model to some actual pig data.  Figure out how pigs move differently during the day. 
 
 **0. Load in the data**
 
 ```{r}
-dat = read.csv("~/Desktop/Data_for_Mark/GPS_data/DataforRSFstudy/RSFData_MI/GPS_Collar36635_033116.CSV")
-colnames(dat)
+library(data.table)
+dat = fread("../data/formatted/pig_trajectories.csv")
+dat$datetime = as.POSIXct(strptime(dat$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
 ```
-
-1. Convert time stamp to POSIX
 
 ```{r}
-times = as.character(dat$Date...Time..GMT.)
-temp_time = strptime(times,format='%m/%d/%Y %H:%M:%S')
-pos_times = as.POSIXct(temp_time, tz="GMT")
-dat$Time = pos_times
+library(ggplot2)
+# Extract a single pigs trajectory
+pig1 = dat[pigID == "20145txcamp"][1:1000]
+ggplot(data=pig1) + geom_path(aes(x=longitude, y=latitude))
 ```
 
-Also, I want to subset to just look at year 2015 and month 10
+Look at distance a pig traveled
 
 ```{r}
-trun_dat = dat[(lubridate::month(dat$Time) == 10) & (lubridate::year(dat$Time) == 2015), ]
+library(geosphere)
+
+get_distance_vect = function(longlat){
+  # Calculate tghe distance that a pig traveled
+  
+  longs = longlat$longitude
+  lats = longlat$latitude
+  
+  # Match distance vectors
+  v1 = cbind(longs[-length(longs)], lats[-length(lats)])
+  v2 = cbind(longs[-1], lats[-1])
+  
+  tuples = lapply(1:nrow(v1), function(i) list(v1[i, ], v2[i, ]))
+  distvect = lapply(tuples, function(x) distm(x=x[[1]], y=x[[2]], fun=distHaversine))
+  # 
+  return(distvect)
+}
+
+pigdists = get_distance_vect(pig1[, c("longitude", "latitude")])
+pigtimes = diff(pig1$datetime)
+plot(cumsum(as.numeric(pigtimes)) / (60 * 24), cumsum(pigdists), type="l", xlab="Days")
 ```
 
-2. Project lat and long
 
 ```{r}
-# Just include the necessary columns for the movement model
-short_dat = trun_dat[c("Time", "Longitude", "Latitude")]
-short_dat = short_dat[complete.cases(short_dat), ]
+plot(pig1$datetime[1:(nrow(pig1) - 1)], pigdists, type="l")
 ```
 
+Individual pigs show both seasonal movement variation and diurnal patterns.  Seems to be consistently reduced activity
+during certain times of the day.  This is going to cause problems for the CTCRW model and we might need to induce some state shifting.
+
+
+2. Project lat and long to the appropriate NAD measure
 
 ```{r}
 library(sp)
 library(rgdal)
-coordinates(short_dat) <- ~Longitude+Latitude
-proj4string(short_dat) <- CRS("+proj=longlat")
+coordinates(pig1) <- ~longitude+latitude
+proj4string(pig1) <- CRS("+proj=longlat")
 
 # This is projecting lat long to NAD83 in the appropriate rectangle that is centered on Michigan
-short_dat <- spTransform(short_dat, CRS("+init=epsg:3078"))
+pig1 <- spTransform(pig1, CRS("+init=epsg:3081"))
 ```
 
 Plot the projection to see what the data actuall look like
 
 ```{r}
-plot(short_dat@coords[, 2], short_dat@coords[, 1])
-print(nrow(short_dat))
+plot(pig1@coords[, 2], pig1@coords[, 1])
+lines(pig1@coords[, 2], pig1@coords[, 1])
+#print(nrow(short_dat))
 ```
 
 3. Set the initial conditions
 
 ```{r}
-initial = list(a=c(coordinates(short_dat)[1,1],0,
-                   coordinates(short_dat)[1,2],0),
-               P=diag(c(10000^2,54000^2,10000^2,5400^2)))
+library(crawl)
+# Set the initial conditions for the location and movement vector. Location is at the starting location. Velocities start
+# at 0.  P is the initial correlation matrix
+initial = list(a=c(coordinates(pig1)[1,1],0,
+                   coordinates(pig1)[1,2],0),
+               P=diag(c(10000^2,5400^2,10000^2,5400^2)))
 
 # Prior
 ln.prior = function(theta){-abs(theta[4]-3)/0.5}
@@ -202,20 +290,42 @@ ln.prior = function(theta){-abs(theta[4]-3)/0.5}
 
 ```{r}
 displayPar(mov.model=~1,
-           data=short_dat)
+           data=pig1)
 ```
 
 ```{r}
 set.seed(123)
 fit1 <- crwMLE(mov.model=~1,
-               data=short_dat, 
-               Time.name="Time",
+               data=pig1, 
+               Time.name="datetime",
                initial.state=initial,
-               prior=ln.prior,
                control=list(maxit=30, trace=0,REPORT=1),
                initialSANN=list(maxit=200, trace=0, REPORT=1))
 ```
 
 ```{r}
 fit1
+```
+
+
+```{r,message=FALSE}
+predTime = seq(min(pig1$datetime), max(pig1$datetime), len=100)
+
+predObj <- crawl::crwPredict(object.crwFit=fit1, 
+                      predTime, 
+                      speedEst=TRUE, 
+                      flat=TRUE)
+```
+
+
+Now, view the predicted movement path
+
+```{r,message=FALSE}
+crwPredictPlot(predObj, "map")
+```
+
+
+```{r}
+simobj = crwSimulator(fit1)
+samp = crwPostIS(simobj, fullPost=F)
 ```

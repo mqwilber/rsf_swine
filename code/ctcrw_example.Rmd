@@ -55,11 +55,11 @@ Simulate the random walk
 # First two are location and velocity in one direction, second two are
 # location and velocity in another direction. 2D vector
 start_locvel = c(20, 0, 20, 0)
-beta = 15
+beta = 1.4
 sigma_proc = 3
-sigma_obs = 0
-delta = 1 # Time step
-steps = 1000
+sigma_obs = 0.01
+delta = 0.2 # Time step
+steps = 100
 
 true_locs = array(NA, dim=c(4, steps + 1))
 true_locs[, 1] = start_locvel
@@ -82,6 +82,7 @@ Zfull = rbind(c(Zvect, 0, 0), c(0, 0, Zvect))
 
 for(i in 2:(steps + 1)){
   
+  # State space formulation
   alpha_next = Tfull %*% true_locs[, i - 1] + MASS::mvrnorm(1, eta_mean, Qfull)
   true_locs[, i] = alpha_next 
   obs_locs[, i] = Zfull %*% alpha_next + t(t(MASS::mvrnorm(1, c(0, 0), diag(rep(sigma_obs^2, 2))))) 
@@ -102,8 +103,9 @@ points(obs_locs[1, ], obs_locs[2, ], col="red")
 ```{r}
 # Format the data for fitting with crawl
 sim_dat = data.frame(t(obs_locs[, 2:ncol(obs_locs)]))
-sim_dat$time = 1:(steps)
+sim_dat$time = 1:(steps) * 0.2
 colnames(sim_dat) = c("x", "y", "time")
+sim_dat$ID = "sucks"
 sim_dat
 ```
 
@@ -114,8 +116,19 @@ library(crawl)
 # a is the initial value for the location vector
 # P is the initial correlation matrix
 initial = list(a=c(20, 0, 20, 0), 
-               P=diag(c(10000^2,5400^2,10000^2,5400^2)))
-fit_sim = crwMLE(mov.mod=~1, err.model=list(x=~1), data=sim_dat, Time.name="time", coord=c('x', 'y'), initial.state = initial, drift=FALSE)
+               P=diag(c(1000^2,5400^2,1000^2,5400^2)))
+
+constr = list(lower=c(-3, -3, -3), upper=c(4, 4, 4))
+fit_sim = crwMLE(mov.mod=~1, 
+                  err.model=list(x=~1),
+                  data=sim_dat, 
+                  Time.name="time", 
+                  coord=c('x', 'y'), 
+                  initial.state = initial, 
+                  constr=constr,
+                  drift=FALSE, 
+                  fixPar=rep(NA, 3),
+                  initialSANN=list(maxit=200, trace=1, REPORT=1))
 
 ```
 
@@ -123,8 +136,46 @@ fit_sim = crwMLE(mov.mod=~1, err.model=list(x=~1), data=sim_dat, Time.name="time
 fit_sim
 ```
 
-Try fitting the model with STAN
+Simulate data from the model
 
+```{r}
+
+predTime <- seq(min(sim_dat$time), max(sim_dat$time), by=1000)
+predObj <- crwPredict(object.crwFit=fit_sim, predTime,  flat=TRUE)
+head(predObj)
+crwPredictPlot(predObj, "map", asp=TRUE)
+
+##Create simulation object with 100 parameter draws
+set.seed(123)
+simObj <- crwSimulator(fit_sim, predTime, method="IS", parIS=100, scale=18/20)
+
+```
+
+```{r}
+# Look at the importance weights
+w <- simObj$thetaSampList[[1]][,1]
+hist(w*100, main='Importance Sampling Weights', sub='More weights near 1 is desirable')
+
+##Approximate number of independent samples
+round(100/(1+(sd(w)/mean(w))^2))
+```
+
+```{r}
+## Sample 20 tracks from posterior predictive distribution
+iter <- 20
+cols <- jet.colors(iter)
+
+plot(sim_dat$x, sim_dat$y)
+for(i in 1:iter){
+  
+  samp <- crwPostIS(simObj, fullPost = TRUE)
+  
+  lines(samp$alpha.sim[,'mu.x'], samp$alpha.sim[,'mu.y'],col=cols[i], type="l")
+  
+}
+```
+
+Try fitting the model with STAN.  Assume perfect data and no observation error.
 
 ```{r}
 library(rstan)
@@ -161,7 +212,7 @@ precis(fitstan2)
 traceplot(fitstan2, "beta")
 ```
 
-This works in the sense that we get back the correct beta and sigma.  But man, it is a bit slow. 
+This works in the sense that we get back the correct beta and sigma.  Pretty highly correlated chains though.
 
 Ok, let's scale this up to the last challenge (which is just not going to work well if the previous version struggled.).  We have imperfect locations and unobserved velocities.
 
@@ -215,7 +266,7 @@ dat$datetime = as.POSIXct(strptime(dat$datetime, format="%Y-%m-%d %H:%M:%S", tz=
 ```{r}
 library(ggplot2)
 # Extract a single pigs trajectory
-pig1 = dat[pigID == "20145txcamp"][1:1000]
+pig1 = dat[pigID == "20125txcamp"][1:100]
 ggplot(data=pig1) + geom_path(aes(x=longitude, y=latitude))
 ```
 
@@ -285,7 +336,7 @@ initial = list(a=c(coordinates(pig1)[1,1],0,
                P=diag(c(10000^2,5400^2,10000^2,5400^2)))
 
 # Prior
-ln.prior = function(theta){-abs(theta[4]-3)/0.5}
+# ln.prior = function(theta){-abs(theta[4]-3)/0.5}
 ```
 
 ```{r}
@@ -295,10 +346,13 @@ displayPar(mov.model=~1,
 
 ```{r}
 set.seed(123)
+constr = list(lower=c(-4, -4), upper=c(4, 4))
 fit1 <- crwMLE(mov.model=~1,
                data=pig1, 
                Time.name="datetime",
                initial.state=initial,
+               constr=constr,
+               fixPar = c(NA, NA),
                control=list(maxit=30, trace=0,REPORT=1),
                initialSANN=list(maxit=200, trace=0, REPORT=1))
 ```
@@ -309,7 +363,7 @@ fit1
 
 
 ```{r,message=FALSE}
-predTime = seq(min(pig1$datetime), max(pig1$datetime), len=100)
+predTime = seq(min(pig1$datetime), max(pig1$datetime), 200)
 
 predObj <- crawl::crwPredict(object.crwFit=fit1, 
                       predTime, 
@@ -326,6 +380,22 @@ crwPredictPlot(predObj, "map")
 
 
 ```{r}
-simobj = crwSimulator(fit1)
-samp = crwPostIS(simobj, fullPost=F)
+simobj = crwSimulator(fit1, predTime, method="IS", parIS=100, scale=18/20)
+
+# Look at the importance weights
+w <- simobj$thetaSampList[[1]][,1]
+hist(w*100, main='Importance Sampling Weights', sub='More weights near 1 is desirable')
+
+##Approximate number of independent samples
+round(100/(1+(sd(w)/mean(w))^2))
+
+
 ```
+
+
+```{r}
+samp = crwPostIS(simobj, fullPost=T)
+```
+
+
+Hmmmm...this is going to take some tuning.  Another option would be to focus on the discrete time approach to easily account for state switching and the influence of habitat covariates on behavior. In this case, we need even intervals, which is inherently accounted for in the continuous time setting.  However, this might not be that limiting.  

@@ -114,7 +114,56 @@ CHALLENGES
 2. If I want to compare pig movement across habitats 
 
 
+## Jan. 16, 2018
 
+So it seems like two potential approaches are emerging: continuous-time animal movement models
+
+Question: How do environmental covariates (i.e. resources) affect pig movement on the scale of the individual? How do these effects vary in a population? How do these effects vary across different populations? 
+
+From a management context: How can this help us predict where pigs are/will be?
+
+Broader ecological implications?: Broader ecological question that hasn't been addressed? 
+
+
+1. Discrete-time models: Generally are measuring step length and bearing/turning angle.
+	a. These are advantageous because they can model switches in states easily using a state-space approach.  This can account for resting, foraging, etc.  There is a also a lot of theory for them as well as a nice package to implement most of the fitting (moveHMM).
+	b. Problem: While they allow us to say how various covariates effect movement, the don't to as good of a job projecting a utilization distribution/resource selection function onto the landscape/.  Though Hooten (of course) provides a few different approach for doing this in discrete time.
+
+2. Continuous-time models: They are generally tracking velocity, which is inherently directional and can be integrated to give distance
+	- The advantage to this approach (which seems useful in our case) is that inference does not depend on scale as much.  Because this approach is in continuous time, we can implicitly account for different time steps. 
+	- So far, the most compelling approach that I have seen is the Hanks et al. UD approach:
+
+		a. Model the continuous path of the animal (using CTCRW or potentially the general framework provided Hooten and Johnson or Buderman).  Buderman might be useful because it will allow us to account for the messy data (unequal sampling points, etc.) a bit better and I think will allow for faster data fitting. Fitting this model allows us to impute a continuous time movement path.
+			- Approaches: Johnson et al. 2008 CTCRW, Hooten and Johnson 2016 general approach, Buderman et al. 2016 approach 
+
+		b. Step 2: Impute the continuous path to discrete points (such that the animal stays in a cell for a number of time steps).  Then use a Poisson GLM to fit a continuous-time, discrete state Markov model (see Hanks et al. 2015) to estimate how the transition rate from cell j -> i depends on both "location" and "directional" covariates.  The stationary distribution of this Markov chain could be examined to give a sense of the utilization distribution.
+
+	- Challenges: 
+
+	1. Pigs behavior changes over the course of the day.  They seem to forage and rest, forage and rest, etc.  These latent states are really easy to account for in the discrete time setting, but a bit more challenging to account for in the Continuous time setting.
+
+		a. Possible solutions: The Buderman approach might allow for us to account for these different movement regimes inherently.
+		b. Johnson et al. 2008 shows how covariate data can be used to allow the auto-correlation parameter to vary with time.  Though I don't think we have this equivalent covariate for the pig data.
+		c. McClintock et al. 2014: Might provide some insight in accounting for two states in the CTCRW by allowing Beta and Sigma to vary. 
+		d. Beta and sigma could be really useful as additional comparative parameters between individuals and populations, but they are strictly necessary if we can use an approach like Buderman to impute the continuous time path.  Buderman seems to amount to fitting two separate B-splines to the different location parameters (at a function of time) and then using this to impute the continuous path.  A pretty straightforward approach I think. Will just need to think about error distributions and basis function scales.  Can this actually account for different movement patterns on the same scale? I think so.  Just a different type of spline on the smaller scale. 
+
+	2. Covariates need to be comparable across pig populations
+		- Pig density, Forest Cover, Agg type, distance to water, distance to roads, others?
+
+	3. How does the length of the the time series between different bigs affect out ability to do joint inference?
+		- Will need to weight individual-based parameters by sample size, unless there is some way it will be computationally feasible to do it. 
+
+
+Moving forward:
+
+1. Fit some discrete time state-switching model with the moveHMM package. First, ignoring covariates.  And then including covariates.
+
+2. Extract 5 or so pigs from the texas data set.  Extract three covariates to go along with these pigs: 1. Cropland 2. Distance to water 3. Distance to road. Fit a discrete time HMM for the 5 pigs over the same time range to assess
+	1. Do they show a clear latent state of resting vs. foraging?
+	2. Do movement and/or turn angles depend on the environmental covariates?
+	3. Do these parameters look the same across individuals?
+
+Fit a continuous time model (I would say CTCRW, but FinAY that thing is finicky.) and apply the Hanks/Wilson methodology to estimate transition probabilities.
 
 
 

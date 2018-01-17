@@ -1,0 +1,46 @@
+---
+title: "Discrete-time movement models"
+output: html_notebook
+---
+
+## Fitting discrete-time movement models with the moveHMM pakcage
+
+Discrete-time package that allows us to do some nice things really, really easily.
+
+```{r}
+# Load in the pig data
+library(data.table)
+dt = fread("../data/formatted/full_pig_data_cleaned.csv")
+```
+
+Convert datetimes back to datetimes
+
+```{r}
+dt$datetime = as.POSIXct(strptime(dt$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
+```
+
+Subset to only include the Texas study
+
+```{r}
+txdt = dt[study == "txcamp"]
+table(txdt$pigID)
+length(unique(txdt$pigID))
+```
+
+There are 39 unique pigs in the texas dataset. Just for practice, let's focus on one. 
+
+```{r}
+library(ggplot2)
+pig1 = txdt[pigID == "20125txcamp"]
+deltas = diff(pig1$datetime)
+ggplot(data=NULL) + geom_histogram(aes(x=as.numeric(deltas)))
+```
+
+```{r}
+plot(pig1$datetime, pig1$longitude, type="l")
+plot(pig1$datetime, pig1$latitude, type="l")
+```
+
+```{r}
+
+```

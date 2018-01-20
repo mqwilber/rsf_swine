@@ -68,6 +68,9 @@ nanpigs
 
 All pigs have the correct datetime specifications.
 
+
+
+
 Order by fix times.  
 
 ```{r}
@@ -208,7 +211,7 @@ library(ggmap)
 # All the pig data
 us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
 map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite")
-ggmap(map) + geom_point(data=dt_trun, aes(x=longitude, y=latitude))
+ggmap(map) + geom_point(data=dt_trun, aes(x=longitude, y=latitude, color=study))
 ```
 
 ```{r}

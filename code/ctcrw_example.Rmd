@@ -55,11 +55,11 @@ Simulate the random walk
 # First two are location and velocity in one direction, second two are
 # location and velocity in another direction. 2D vector
 start_locvel = c(20, 0, 20, 0)
-beta = 1.4
-sigma_proc = 3
-sigma_obs = 0.01
+beta = 1 # Small beta implies more directional persistence
+sigma_proc = 0.2 # Overal variability in velocity
+sigma_obs = 0
 delta = 0.2 # Time step
-steps = 100
+steps = 10000
 
 true_locs = array(NA, dim=c(4, steps + 1))
 true_locs[, 1] = start_locvel
@@ -266,7 +266,7 @@ dat$datetime = as.POSIXct(strptime(dat$datetime, format="%Y-%m-%d %H:%M:%S", tz=
 ```{r}
 library(ggplot2)
 # Extract a single pigs trajectory
-pig1 = dat[pigID == "20125txcamp"][1:100]
+pig1 = dat[pigID == "20125txcamp"][1:400]
 ggplot(data=pig1) + geom_path(aes(x=longitude, y=latitude))
 ```
 
@@ -293,8 +293,73 @@ get_distance_vect = function(longlat){
 
 pigdists = get_distance_vect(pig1[, c("longitude", "latitude")])
 pigtimes = diff(pig1$datetime)
-plot(cumsum(as.numeric(pigtimes)) / (60 * 24), cumsum(pigdists), type="l", xlab="Days")
+
+days = cumsum(as.numeric(pigtimes)) / (60 * 24)
+cumdist = cumsum(pigdists)
+plot(days, cumdist, type="l", xlab="Days")
+
+spl = smooth.spline(days, cumdist)
+pred = predict(spl)
+lines(days, pred$y, col="red")
+
+
+obsdiff = diff(cumdist) / diff(days)
+plot(obsdiff, type="l")
+
+predD = predict(spl, deriv=1)$y
+lines(predict(spl, deriv=1)$y, type="l", col="red")
+
+fitk = kmeans(predD,centers = 2, nstart=200)
+clusts = fitk$cluster
+clusts[clusts == 1] = 15000
+clusts[clusts == 2] = 0
+points(clusts)
+
 ```
+```{r}
+
+calc_activity = function(time, cumdist, cluster=TRUE, nstart=20){
+  # Calculate the activity covariate that determine whether or not an animal is resting
+  #
+  # 0: unhindered movement, 1: stopped
+  
+  # Fit spline to the cumulative movement function
+  spl = smooth.spline(time, cumdist)
+  pred_deriv = predict(spl, deriv=1)$y # predict the derivative
+  #pred_deriv[pred_deriv < 0] = 0 # The cumulative distance plot can't have <0 derivative
+  
+  if(cluster){
+    # Use clusterinng algorithm to differentiate stationary and moving time periods
+    fitk = kmeans(pred_deriv, centers=2, nstart=20)
+    
+    # Identify the resting cluster
+    resting = which.min(fitk$centers) == fitk$cluster
+    
+    # Convert the these resting points to a 0 to 1 scale
+    restingActivity = 1 - pnorm(scale(pred_deriv[resting]))
+    
+    activity = rep(0, length(pred_deriv))
+    activity[resting] = restingActivity
+    
+  } else{
+    activity = 1 - pnorm(scale(pred_deriv))
+  }
+  
+  
+  return(c(0, activity))
+}
+
+activity = calc_activity(days, cumdist, cluster=T)
+pig1$activity = activity
+
+plot(cumdist, type="l")
+act = activity
+act[act == 0] = 10000
+points(act, col="red")
+
+
+```
+
 
 
 ```{r}
@@ -302,7 +367,7 @@ plot(pig1$datetime[1:(nrow(pig1) - 1)], pigdists, type="l")
 ```
 
 Individual pigs show both seasonal movement variation and diurnal patterns.  Seems to be consistently reduced activity
-during certain times of the day.  This is going to cause problems for the CTCRW model and we might need to induce some state shifting.
+during certain times of the day.  This is going to cause problems for the CTCRW model. Solution: Categorize this these times as not moving using some sort of clustering? 
 
 
 2. Project lat and long to the appropriate NAD measure
@@ -313,7 +378,7 @@ library(rgdal)
 coordinates(pig1) <- ~longitude+latitude
 proj4string(pig1) <- CRS("+proj=longlat")
 
-# This is projecting lat long to NAD83 in the appropriate rectangle that is centered on Michigan
+# This is projecting lat long to NAD83 in the appropriate rectangle that is centered on Texas! 
 pig1 <- spTransform(pig1, CRS("+init=epsg:3081"))
 ```
 
@@ -340,21 +405,33 @@ initial = list(a=c(coordinates(pig1)[1,1],0,
 ```
 
 ```{r}
-displayPar(mov.model=~1,
+fixPar = c(0.01, 0.01, NA, NA, 0)
+displayPar(mov.model=~1, 
+           err.model=list(x=~1, y=~1),
+           activity=~activity,
+           fixPar = fixPar,
            data=pig1)
+
+
+# Make sure they are ordered
+pig1 = pig1[order(pig1$datetime),]
 ```
 
 ```{r}
 set.seed(123)
-constr = list(lower=c(-4, -4), upper=c(4, 4))
+constr = list(lower=c(-10, -10), upper=c(10, 10))
 fit1 <- crwMLE(mov.model=~1,
+               err.model=list(x=~1, y=~1),
+               activity=~activity,
                data=pig1, 
                Time.name="datetime",
                initial.state=initial,
                constr=constr,
-               fixPar = c(NA, NA),
-               control=list(maxit=30, trace=0,REPORT=1),
-               initialSANN=list(maxit=200, trace=0, REPORT=1))
+               fixPar = fixPar,
+               theta=c(2, 2),
+               method="L-BFGS-B",
+               control=list(maxit=2000, trace=0,REPORT=1),
+               initialSANN=list(maxit=2500, temp=10, trace=1, REPORT=10))
 ```
 
 ```{r}
@@ -363,7 +440,7 @@ fit1
 
 
 ```{r,message=FALSE}
-predTime = seq(min(pig1$datetime), max(pig1$datetime), 200)
+predTime = seq(min(pig1$datetime), max(pig1$datetime), by="60 mins")
 
 predObj <- crawl::crwPredict(object.crwFit=fit1, 
                       predTime, 
@@ -394,8 +471,14 @@ round(100/(1+(sd(w)/mean(w))^2))
 
 
 ```{r}
-samp = crwPostIS(simobj, fullPost=T)
+plot(pig1@coords[, 1], pig1@coords[, 2], cex=1, col="black", pch=18)
+lines(pig1@coords[, 1], pig1@coords[, 2], cex=1, col="black")
+for(i in 1:3){
+  samp = crwPostIS(simobj, fullPost=F)
+  lines(samp$alpha.sim[, 'mu.x'], samp$alpha.sim[, 'mu.y'], col=colors()[i + 100])
+}
+points(pig1@coords[, 1], pig1@coords[, 2], cex=1, col="black", pch=18)
+lines(pig1@coords[, 1], pig1@coords[, 2], cex=1, col="black")
 ```
 
-
-Hmmmm...this is going to take some tuning.  Another option would be to focus on the discrete time approach to easily account for state switching and the influence of habitat covariates on behavior. In this case, we need even intervals, which is inherently accounted for in the continuous time setting.  However, this might not be that limiting.  
+Hey...this worked this time

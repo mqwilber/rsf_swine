@@ -1,0 +1,18 @@
+Notes on meeting with Ryan: 1-17-2018
+-------------------------------------
+
+Interesting questions for pig study
+
+1. How does the caloric-scape of the landscape (ie. location of crop sources of the relative caloric value of those crop sources) influence and interact with temperature to drive pig movement?
+	- Examples: Pigs in California make these big movements from home range to grape vineyard to forage. Each day the expend a lot of energy to move down to the vineyard and then return.  
+2. How does periodic resource scarcity affect pig movement and does it affect it consistently across pig populations?
+	- For each study system, we could label a time with "rich" resources and with "low" resources and compare how movement patterns change for each of these different sites.
+	- Masting trees are seasonal and can be predictive for pig movement potentially.
+
+
+Some other thoughts
+----
+
+1. Various people on this project have useful layers.  Ask around before building more layers or anything like that.
+
+2. Pig serology data: Sample for a number of different pathogens in pigs at a national scale. They don't have any laboratory serology data.  It is not clear to me what the QUESTION is with this serology model...inferring force of infection in the past from messy field data?

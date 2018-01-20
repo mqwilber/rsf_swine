@@ -165,6 +165,23 @@ Moving forward:
 
 Fit a continuous time model (I would say CTCRW, but FinAY that thing is finicky.) and apply the Hanks/Wilson methodology to estimate transition probabilities.
 
+## January 19
+
+Got the Hanks et al. model up and running using an interpolation approach to the continuous trajectory. There are a number of challenges that I see with this approach
+
+1.  Is the interpolated trajectory sufficient or should I use the CTCRW.  Obviously the CTCRW can account for uncertainty, but I don't see much difference in simply using the interpolated trajectory (at continuous time steps) for inference. 
+	- Man the CTCRW is not as useful as it is made out to be (in my opinion). When animals have distinct resting phases that are not directly measureable,
+	it really struggles.  I think interpolation is ok, recognizing that the uncertainty the parameters will not be exact when you don't have the imputation.
+
+2. The the movement of an individual animal depends on both resource (probably) AND a correlation with its previous direction and speed.  Does this model account for this?  Is it inherent in the trajectory? I.e. are we essentially conditioning on this autocorrelations when we compute the trajectory?
+	- NO! We can include the past movement vector as a covariate in the model. Hanks does this and I think this is a great idea.
+
+3. Use the generator matrix to simulate a movement trajectory.  Problem: this simulation assumes that resource is the ONLY thing driving movement. 
+
+4. Implement time varying movement
+
+**Challenge**
+
 
 
 

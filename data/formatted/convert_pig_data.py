@@ -7,8 +7,12 @@ import sys
 """
 Description
 -----------
-Python script converts, and formats all GPD data for the pig RSF study.
+Python script converts, and formats all GPs data for the pig RSF study.
 All the raw datasets are stored in ../archival and are converted in this script.
+
+Pig attribute data are converted to match the the format of the GPS data.
+
+Both converted files are saved in the formatted data folder
 
 """
 
@@ -27,7 +31,7 @@ tejon.columns = ['collarID', 'datetime', 'latitude',  'longitude', 'altitude',
 
 tejon.loc[:, "study"] = "tejon"
 
-cali.columns = [u'PigIDforms', u'collarID', u'UID', u'Date', u'Time', u'latitude',
+cali.columns = [u'collarID', u'PID', u'UID', u'Date', u'Time', u'latitude',
        u'longitude', u'Ecoregion', u'Ecoregion_code', u'Site', u'Site_Code',
        u'County', u'County_code', u'Sex', u'Sex_code', u'Age', u'Age_code',
        u'Sounder', u'ClusterID', u'GroupID', u'Year', u'Month', u'Week',
@@ -38,7 +42,7 @@ cali.columns = [u'PigIDforms', u'collarID', u'UID', u'Date', u'Time', u'latitude
        u'Near_urban', u'Near_shrub']
 
 cali.loc[:, 'datetime'] = cali.Date + " " + cali.Time
-cali.loc[:, "study"] = "caliLind"
+cali.loc[:, "study"] = "cali"
 cali.loc[:, 'dop'] = np.nan
 cali.loc[:, 'fixtype'] = np.nan
 
@@ -59,26 +63,18 @@ print("Done")
 
 print("Working on Judas pig data...")
 
-# Read and convert the Judas pig files because the current file has some issues
-judas_files = glob.glob("../archival/judas_pigs/GPS_Collar*.csv")
 
-# This file has some WONKY dates...drop it
-judas_files.remove("../archival/judas_pigs/GPS_Collar20129_20161018112203.csv")
-
-judas_dat = pd.concat([pd.read_csv(nm) for nm in judas_files])
-
-# Make columns a bit easier to read
-judas_dat.columns = [u'No', u'collarID', u'UTC_Date', u'UTC_Time', 
-	   u'lmt_date', u'lmt_time',
-       u'Origin', u'SCTS_Date', u'SCTS_Time', u'latitude',
-       u'longitude', u'Heightm', u'dop', u'fixtype', u'3D_Error',
-       u'Mort. Status', u'Activity', u'Main', u'Beacon', u'Temp',
-       u'Easting', u'Northing', u'AnimalID', u'GroupID']
-
+judas_dat = pd.read_csv("../archival/judas_pigs.csv")
+judas_dat.columns = [u'collarID', u'study', u'UTC_Date', u'UTC_Time', u'LMT_Date',
+       u'LMT_Time', u'x', u'y', u'z', u'latitude', u'longitude',
+       u'dop', u'fixtype', u'Height [m]', u'Temp', u'Easting',
+       u'Northing', u'Unnamed: 17', u'Unnamed: 18', u'Unnamed: 19',
+       u'Unnamed: 20', u'Unnamed: 21', u'Unnamed: 22', u'Unnamed: 23',
+       u'Unnamed: 24', u'Unnamed: 25', u'Unnamed: 26', u'Unnamed: 27']
 judas_dat.loc[:, "study"] = "judas_pig"
-judas_dat.loc[:, "datetime"] = pd.to_datetime(judas_dat.lmt_date + " " + judas_dat.lmt_time)
-judas_red = judas_dat[['collarID', 'study', 'latitude', 'longitude', 'dop', 'fixtype', 'datetime']]
-judas_red.loc[:, "pigID"] = judas_red.study + judas_red.collarID.astype("S21")
+judas_dat.loc[:, "datetime"] = pd.to_datetime(judas_dat.LMT_Date + " " + judas_dat.LMT_Time,
+                                      format="%m/%d/%y %H:%M:%S")
+judas_dat.loc[:, "pigID"] = judas_dat.study + pd.Series([str(cID).split("_")[-1] for cID in judas_dat.collarID])
 
 print("Done")
 
@@ -88,19 +84,20 @@ print("Done")
 
 print("Working on combined data...")
 
-file_names = glob.glob("../archival/*.csv")
-file_names.remove("../archival/california_lindsey_data.csv") # Not yet formatted
-file_names.remove("../archival/tejon_data.csv") # Not yet formatted
-file_names.remove("../archival/contact_study_all_pigs.csv") # Not yet formatted
-file_names.remove("../archival/srel_jim.csv")
+file_names = ["txcamp.csv", "florida.csv", "movepig.csv", "michigan.csv", 
+                    "srel_vacuum.csv", "kilgo.csv"]
 
-dfs = [pd.read_csv(fl) for fl in file_names]
+dfs = [pd.read_csv("../archival/" + fl) for fl in file_names]
 
 # Loop through each of the files
 for i, df in enumerate(dfs):
 
     study = os.path.split(file_names[i])[-1].split(".")[0]
-    df.loc[:, 'Study'] = study
+
+    if study == "kilgo":
+      df.loc[:, 'Study'] = "srs_" + study
+    else:
+      df.loc[:, 'Study'] = study
 
     df.columns = [u'collarID', u'study', u'utc_date', u'utc_time', 
        u'lmt_date', u'lmt_time', u'ecef_x_m', u'ecef_y_m', u'ecef_Z_m',
@@ -108,77 +105,28 @@ for i, df in enumerate(dfs):
     u'height_altitude', u'temp_C', u'easting', u'northing', u'easting1',
     u'northing1', u'habitat', u'sex']
 
-    df.loc[:, "pigID"] = df.study + df.collarID.astype("S21")
+    if study == "srel_vacuum":
+      df.loc[:, "pigID"] = [study + str(ID).strip("M").strip("F") for ID in df.collarID]
+    elif study == "movepig":
+
+      # Clean up ID to match attributes
+      df.loc[:, "collarID"] = df.collarID.str.replace("LA_Hart_", "LASt_")
+      df.loc[:, "collarID"] = [ID.strip("n").replace("n2", "") for ID in df.collarID]
+      df.loc[:, "pigID"] = df.study + df.collarID.astype("S21")
+    else:
+      df.loc[:, "pigID"] = df.study + df.collarID.astype("S21")
 
     print(study)
     if study == "michigan":
            df.loc[:, "lmt_time"] = df.lmt_time + ":00"
 
-    # # Convert datetime
-    # if study != "srel_jim":
-    #     df.loc[:, "datetime"] = pd.to_datetime(df.lmt_date + " " + df.lmt_time, 
-                                format="%m/%d/%y %H:%M:%S")
     df.loc[:, "datetime"] = pd.to_datetime(df.lmt_date + " " + df.lmt_time, 
-                                format="%d/%m/%y %H:%M:%S")
+                                format="%m/%d/%y %H:%M:%S")
 
 
 full_dat = pd.concat(dfs)
 
 print("Done")
-
-##############################################
-### Load and format the Hartley Hogs files ###
-##############################################
-
-# print("Working on the Hartley Hogs...")
-
-# hart = pd.read_csv("../archival/hartley_hogs.csv")
-# hart.columns = [u'objectid', u'collarID', u'year', u'datetime', u'latitude',
-#        u'longitude', u'temp_f', u'hour24', u'sex', u'distance']
-
-# hart.loc[:, "study"] = "hartley"
-# hart.loc[:, "pigID"] = hart.study + hart.collarID.astype("S21")
-# hart.loc[:, 'dop'] = np.nan
-# hart.loc[:, "fixtype"] = np.nan
-
-# print("Working on hartley datetime...")
-# hart.loc[:, "datetime"] = pd.to_datetime(hart.datetime)
-
-# print("Done")
-
-
-##########################################
-### Load and format the SREL Jim study ###
-##########################################
-
-# Each file needs to be loaded individually
-
-# print("Working on SREL files...")
-# srel_files = glob.glob("../archival/srel_jim/*.xlsx")
-# sreldfs = [pd.read_excel(sf, sheetname="cleaned") for sf in srel_files]
-
-# # 171M
-# for i, df in enumerate(sreldfs):
-
-#     cid = os.path.split(srel_files[i])[-1].split("_")[0]
-
-#     # Regex
-
-#     if cid in ["P208M", "P163F", "P164F", "P166M", "P167F", "P169F"]:
-
-#         df.columns = [u'fix_num', u'Unnamed: 1',  u'Unnamed: 2', u'datetime',
-#                       u'Unnamed: 4', u'Unnamed: 5', u'Unnamed: 6', u'Unnamed: 7', 
-#                       u'latitude', u'longitude',   u'altitude ', u'Time',
-#                       u'Temp ',  u'fixtype',  u'sats', u'dop']
-
-#         df.loc[:, 'collarID'] = os.path.split(srel_files[i])[-1].split("_")[0]
-#         df.loc[:, "study"] = "srel_jim"
-#         df.loc[:, "pigID"] = df.study + df.collarID
-
-#     elif cid in ["P156F", "P161M", "P168M", "P180M", "P194F", "P197F", ]:
-
-#     else cid in ["P172M", "P202M"]
-
 
 #########################################
 ### Load and format the contact study ###
@@ -197,12 +145,12 @@ contact.columns = [u'collarID', u'LocNum', u'Acquisition Time', u'Acquisition St
        u'Activity Count', u'Temperature', u'Predeployment Data', u'Error']
 
 contact.loc[:, "datetime"] = pd.to_datetime(contact['GPS Fix Time'], format="%Y.%m.%d %H:%M:%S")
-contact.loc[:, "study"] = "contact"
-contact.loc[:, "pigID"] = contact.study + contact.collarID
+contact.loc[:, "study"] = "srel_contact"
+contact.loc[:, "pigID"] = contact.study + "P" + contact.collarID.str.strip("M").str.strip("F")
 
 # Drop non-pig columns
-contact_red = contact[~((contact.pigID == "contacthard drive") | (contact.pigID == "contact**time") | 
-                     (contact.pigID == "contactdata on ") | (contact.pigID == "contacton original"))]
+contact_red = contact[~((contact.pigID == "srel_contactPhard drive") | (contact.pigID == "srel_contactP**time") | 
+                     (contact.pigID == "srel_contactPdata on ") | (contact.pigID == "srel_contactPon original"))]
 
 
 print("Done")
@@ -213,7 +161,7 @@ print("Done")
 
 cols = ['pigID', 'collarID', 'study', 'latitude', 'longitude', 'dop', 'fixtype', 'datetime']
 full_dat_trun = full_dat[cols]
-judas_red = judas_red[cols]
+judas_red = judas_dat[cols]
 tejon_red = tejon_red[cols]
 cali_red = cali_red[cols]
 contact_red = contact_red[cols]
@@ -221,8 +169,86 @@ contact_red = contact_red[cols]
 
 comb_dat = pd.concat([full_dat_trun, judas_red, tejon_red, cali_red, contact_red])
 
+# Drop all Null lats and longs
+comb_dat = comb_dat[~(comb_dat.longitude.isnull() | comb_dat.latitude.isnull())]
+
+# Drop non int lats and longs
+inds = []
+for i in comb_dat.latitude:
+  try:
+    np.float(i)
+    inds.append(True)
+  except Exception:
+    inds.append(False)
+
+comb_dat = comb_dat[inds]
+
 # Save the resulting pig data
 comb_dat.to_csv("full_pig_data.csv", index=False)
+
+### Link the attributes pigIDs and study IDs ###
+
+# TODO: Add in FLORIDA data
+attrib = pd.read_csv("../archival/all_pig_attributes.csv")
+attrib.replace({'Study' : {'SREL-Contact' : 'srel_contact', 
+                           'Judas' : 'judas_pig',
+                           'Camp Bullis' : 'txcamp',
+                           'SREL-vacuum' : 'srel_vacuum',
+                           'SRS' : 'srs_kilgo',
+                           'Michigan': 'michigan',
+                           'Movement': "movepig",
+                           'Tejon': 'tejon',
+                           'CA': 'cali'}}, inplace=True)
+
+attrib.columns = [u'collarID', u'sex', u'age_class', u'weight_lb', u'start_date',
+       u'end_date', u'study', u'notes']
+
+#comb_dat.groupby('study')['pigID'].unique()['cali']
+attrib.loc[:, "pigID"] = attrib.study + attrib.collarID
+
+# Clean up weights
+attrib.loc[:, "weight_lb"] = attrib.weight_lb.str.replace(".*\(estimated\)", "").str.strip("+").str.strip("-").str.replace(" ", "")
+attrib = attrib.replace('', np.nan, regex=True)
+attrib.loc[:, "weight_lb"] = attrib.weight_lb.astype(np.float)
+
+attrib.to_csv("pig_attributes.csv", index=False)
+
+# Check that all IDs match...all IDs are matching!
+gb = comb_dat.groupby('study') 
+
+for study in attrib.study.unique():
+  cvals = gb['pigID'].unique()[study]
+  atvals = attrib.loc[attrib.study == study, "pigID"]
+
+  print(study)
+  print(set(cvals) - set(atvals))
+
+  if study == "judas_pig":
+    print(set(cvals) - set(atvals))
+
+  if study == "movepig":
+
+    print(len(cvals))
+    print(len(atvals))
+
+    # Pigs with no attribute data
+    diff = set(cvals) - set(atvals)
+
+    # Attributes with no pig data
+    diff2 = set(atvals) - set(cvals)
+    print("Unique: {0}".format(len(set(atvals) - set(cvals)) + len(set(cvals) - set(atvals))))
+    print("Intersect: {0}".format(len(np.intersect1d(atvals, cvals))))
+
+
+comb_dat[comb_dat.study == "movepig"].pigID.value_counts().loc[diff]
+
+
+
+
+
+
+
+
 
 
 

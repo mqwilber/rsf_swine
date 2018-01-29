@@ -75,15 +75,17 @@ for(ID in redpigs){
 # Get the test pigs
 testpigsdt = pigdt[ind]
 dim(testpigsdt)
-unique(testpigsdt$pigID)
+pigIDs = unique(testpigsdt$pigID)
 sum(table(testpigsdt$pigID))
 ```
 
 ```{r}
-ind = (testpigsdt$pigID == testpigsdt$pigID[1])
-pig1 = testpigsdt[ind][1:3000, ]
+ind = (testpigsdt$pigID == pigIDs[3]) #(testpigsdt$pigID == testpigsdt$pigID[1])
+pig1 = testpigsdt[ind][1:500, ]
+pig1 = pig1[order(datetimef)]
 
 ```
+
 
 ## Step 2. Load in raster data
 
@@ -97,18 +99,41 @@ ymin = min(pig1$latitude)
 ymax = max(pig1$latitude)
 xmin = min(pig1$longitude)
 xmax = max(pig1$longitude)
+
+long1 = ggplot(data=pig1) + geom_line(aes(x=datetimef, y=longitude)) + theme_bw() + xlab("Time") + ylab("Longitude")
+ggsave("../results/longplot.jpg", long1, width=5, height=3)
+lat1 = ggplot(data=pig1) + geom_line(aes(x=datetimef, y=latitude)) + theme_bw() + xlab("Time") + ylab("Latitude")
+ggsave("../results/latplot.jpg", lat1, width=5, height=3)
+space = ggplot(data=pig1) + geom_path(aes(x=longitude, y=latitude)) + geom_point(aes(x=longitude, y=latitude)) + theme_bw() + xlab("Longitude") + ylab("Latitude")
+ggsave("../results/latlong.jpg", space, width=5, height=3)
+
 ```
 
 Load in a clip the cropscape raster file
 
 ```{r}
-rcval = raster("~/Downloads/CDL_2016_clip_20180118163303_1712778437/CDL_2016_clip_20180118163303_1712778437.tif")
+rcval = raster("../data/raster_data/CDL_2016_clip_20180118163303_1712778437/CDL_2016_clip_20180118163303_1712778437.tif")
+
+el = raster("~/Downloads/n30w099/imgn30w099_1.img")
 # Crop the raster with some arbitrary buffer
 buffer = 0.001
 rcval1 = crop(rcval, extent(xmin - buffer, xmax + buffer, ymin - buffer, ymax + buffer))
+
+# Project elevation raster 
+elproj = projectRaster(el, rcval1)
+elcrop = crop(elproj, extent(xmin - buffer, xmax + buffer, ymin - buffer, ymax + buffer))
 rcval1
+elcrop
+
+jpeg("../results/landcover.jpg")
 plot(rcval1)
-points(pig1$longitude, pig1$latitude, cex=0.1)
+points(pig1$longitude, pig1$latitude, cex=0.5)
+dev.off()
+
+jpeg("../results/elevation.jpg", width=500, height=500)
+plot(elcrop)
+points(pig1$longitude, pig1$latitude, cex=0.5)
+dev.off()
 ```
 
 ```{r}
@@ -130,8 +155,8 @@ values(developed) = (values(developed) == 121) |
                     (values(developed) == 131)
         
 
-values(forest)[values(rcval1) == 142] = 0 # Forest habitat
-values(forest)[values(rcval1) != 142] = 1 # Not forest
+values(forest)[values(rcval1) == 142] = 1 # Forest habitat
+values(forest)[values(rcval1) != 142] = 0 # Not forest
 
 values(water) = values(water) == 111
 values(crop) = values(crop) < 100
@@ -139,15 +164,16 @@ values(dummy) = 0
 
 ```
 
+
 ```{r}
 nms = c("developed", "forest", "crop", "water")
 loc.stack = stack(forest, dummy) #stack(developed, forest, crop, water)
 names(loc.stack) = c("forest_loc", "dummy_loc") #paste0(nms, "_loc")
-grad.stack = stack(forest, dummy) #stack(developed, forest, crop, water)
-names(grad.stack) = c("forest_grad", "dummy_grad") #paste0(nms, "_grad")
+grad.stack = stack(forest, dummy, elcrop) #stack(developed, forest, crop, water)
+names(grad.stack) = c("forest_grad", "dummy_grad", "elev_grad") #paste0(nms, "_grad")
 ```
 
-## Step 3: Fit a spline-based continuous time movement model.
+## Step 3: Fit a spline-based/interpolation-based continuous time movement model.
 
 ```{r}
 
@@ -156,20 +182,24 @@ pig1$latsc = scale(pig1$latitude)
 pig1$longsc = scale(pig1$longitude)
 
 # Fitting an arbitrarily spline model just for now
-fitlong = lm(longsc ~ bs(datetimef, df=100), data=pig1)
-fitlat = lm(latsc ~ bs(datetimef, df=100), data=pig1)
+# fitlong = lm(longsc ~ bs(datetimef, df=100), data=pig1)
+# fitlat = lm(latsc ~ bs(datetimef, df=100), data=pig1)
+
+fitlong = smooth.spline(as.numeric(pig1$datetimef), pig1$longsc) #lm(longsc ~ bs(datetimef, df=100), data=pig1)
+fitlat = smooth.spline(as.numeric(pig1$datetimef), pig1$latsc) # lm(latsc ~ bs(datetimef, df=100), data=pig1)
 
 iterpLong = approxfun(pig1$datetimef, pig1$longsc)
 iterpLat = approxfun(pig1$datetimef, pig1$latsc)
 
-plot(predict(fitlong), predict(fitlat), type="l")
-points(pig1$longsc, pig1$latsc, col='red', cex=0.1)
+ggplot(data=NULL) + geom_path(aes(x=predict(fitlong)$y, y=predict(fitlat)$y)) + geom_point(aes(x=pig1$longsc, y=pig1$latsc), color="red", size=0.5) + theme_bw() + 
+                xlab("Scaled long.") + ylab("Scaled lat.")
+ggsave("../results/movetraj.jpg", width=5, height=3)
 
 plot(pig1$datetimef, pig1$longsc, type="l")
-lines(pig1$datetimef, predict(fitlong), col="red")
+lines(pig1$datetimef, predict(fitlong)$y, col="red")
 
 plot(pig1$datetimef, pig1$latsc, type="l")
-lines(pig1$datetimef, predict(fitlat), col="red")
+lines(pig1$datetimef, predict(fitlat)$y, col="red")
 
 ```
 
@@ -182,8 +212,12 @@ predTime = seq(mintime, maxtime, by="15 mins")
 predlong =iterpLong(predTime)
 predlat = iterpLat(predTime)
 
+# For B-spline fit
 # predlong =  predict(fitlong, newdata=data.frame(datetimef=predTime))
 # predlat = predict(fitlat, newdata=data.frame(datetimef=predTime))
+
+# predlong =  predict(fitlong, as.numeric(predTime))$y
+# predlat = predict(fitlat, as.numeric(predTime))$y
 
 
 # Convert back to the natural scale
@@ -191,8 +225,11 @@ predlongT = predlong*sd(pig1$longitude) + mean(pig1$longitude)
 predlatT = predlat*sd(pig1$latitude) + mean(pig1$latitude)
 
 # Make sure the projected paths don't go off the landscape
+
+jpeg("../results/predmove.jpg")
 plot(rcval1)
 points(predlongT, predlatT, cex=0.1)
+dev.off()
 
 ```
 
@@ -221,56 +258,138 @@ Convert data so that we can use a glm to estimate resource parameters.
 ```{r}
 # Brilliant! Hanks encodes the CRW term for you which accounts for the autocorrelation in the random walk.
 glm_data = ctmc2glm(ctmc, loc.stack, grad.stack)
+
+# Extract the hour of the day to look for time varying covariates
+glm_data$hours = hour(as.POSIXct(glm_data$t, origin = '1970-01-01', tz = 'GMT'))
+glm_data$forest_loc_hours = glm_data$forest_loc * glm_data$hours
+glm_data$crw_hours = glm_data$crw * glm_data$hours
+
 ```
+
+
+Fit various GLMs for both time-varying and time-invariant resource effects.
 
 ```{r}
 # Don't include the gradient information as it is not useful as zeros and 1s
-fit = glm(z ~ forest_loc + crw,
+library(glmnet)
+df = 8
+
+fit = glm(z ~ forest_loc + crw + elev_grad,
               family="poisson", offset=log(tau), data=glm_data)
 
+# Build time-dependent design matrix
+bs_hours = bs(glm_data$hours, df=df) # B-spline basis for time effect
+bs_hours_forest_loc = glm_data$forest_loc * bs_hours
+bs_hours_crw = glm_data$crw * bs_hours
+bs_hours_elev_grad = glm_data$elev_grad * bs_hours
+X = cbind(1, bs_hours, bs_hours_forest_loc, bs_hours_crw, bs_hours_elev_grad)
+colnames(X) = c("Intercept", paste0("hour_", 1:df), paste0("hforest_", 1:df), paste0("hcrw_",  1:df),
+                 paste0("helevgrad_",  1:df))
+
+# fit_time1 and fit_time2 are the same, just showing how to build the basis design matrix
+fit_time1 = glm(z ~ bs(hours, df=df) + forest_loc:bs(hours, df=df) + elev_grad:bs(hours, df=df) + crw:bs(hours, df=df),
+              family="poisson", offset=log(tau), data=glm_data)
+
+fit_time2 = glm.fit(x=X, y=glm_data$z, family=poisson(link="log"), offset=log(glm_data$tau))
+
+fit_timecv = cv.glmnet(X, y=glm_data$z, family="poisson", offset=log(glm_data$tau), alpha=1)
+fit_cv = cv.glmnet(model.matrix(fit), y=glm_data$z, family="poisson", offset=log(glm_data$tau), alpha=1)
+
+
+#fit_time2 = gam(z ~ s(hours) + forest_loc:s(hours) + crw:s(hours), family="poisson", offset = log(tau), data=glm_data)
+
 ```
+
 
 ```{r}
 summary(fit)
 ```
 
+The effect of elevation gradient should be interpreted as the effect of the negative gradient.  In other words, pigs are more likely to go in the direction of the negative gradient of elevation (i.e. downhill).
+
 ```{r}
-summary(fit)
+plot(fit_timecv) # Cross-validation plot. Looking for lambda that minimizes deviance
+plot(fit_timecv$glmnet.fit, xvar='lambda') # Looking at the shrinkage of the coefficients
+best = which(fit_timecv$glmnet.fit$lambda == fit_timecv$lambda.min) # Find which lambda minimizes
+cv_betas = fit_timecv$glmnet.fit$beta[, 45] # Extract those coefficients
+cv_betas
+```
+
+```{r}
+library(car)
+Anova(fit_time1)
+```
+
+```{r}
+# Plot the basis effects
+mod_coefs = cv_betas #fit_time1$coefficients
+hour_betas = mod_coefs[2:9]
+forest_betas = mod_coefs[10:17]
+crw_betas = mod_coefs[18:25]
+elev_betas = mod_coefs[26:33]
+hrvals = bs_hours %*% t(t(hour_betas)) + mod_coefs[1]
+frvals = bs_hours %*% t(t(forest_betas))
+crwvals = bs_hours %*% t(t(crw_betas))
+elevvals = bs_hours %*% t(t(elev_betas))
+
+od = order(glm_data$hours)
+plot(glm_data$hours[od], hrvals[od], type="l", xlab="Hours", ylab="Hour effect")
+
+jpeg("../results/timeforest.jpg",  width=400, height=300)
+plot(glm_data$hours[od], frvals[od], type="l", xlab="Hours", ylab="Forest effect")
+dev.off()
+ggplot(data=NULL) + geom_line(aes(x=glm_data$hours[od], y=frvals[od])) + theme_bw() + xlab("Hour of day") + ylab("Forest effect")
+ggsave("../results/timeforest.jpg", width=5, height=3)
+plot(glm_data$hours[od], crwvals[od], type="l", xlab="Hours", ylab="CRW effect")
+plot(glm_data$hours[od], elevvals[od], type="l", xlab="Hours", ylab="Elev. effect")
 ```
 
 Evidence that pig moves slower through the forest habitat.  Consistent with
 what other models predict.
 
+Looking at the time-dependent parameters.  This shows that during the day, When pigs are in forest they tend to stay in forest relative
+to other habitats.  However, in ths evening or the morning, it doesn't really matter.  Consistent with pigs using forest and cover and bedding
+down.
+
 ## Step 4: Get the rate matrix 
 
 ```{r}
 
-loc.stack = stack(developed, forest, crop)
-grad.stack = stack(developed, forest, crop)
-names(loc.stack) = paste0(nms[-4], "_loc")
-names(grad.stack) = paste0(nms[-4], "_grad")
+# loc.stack = stack(developed, forest, crop)
+# grad.stack = stack(developed, forest, crop)
+# names(loc.stack) = paste0(nms[-4], "_loc")
+# names(grad.stack) = paste0(nms[-4], "_grad")
 
 # Note that this CTMC is not positive recurrent as all forest cells have the same probability and the animal can wonder freely between those
-# cells.  Pretty sure at least.  This would make sense why the the pi distribution looks so funky!
-R = tget(fit, loc.stack, grad.stack)
+# cells.  Pretty sure at least.  This would make sense why the stationary distribution looks so funky...there is none!
+R = getR(fit, loc.stack, grad.stack)
 
 ```
 
+Simulate pig movement on the landscape
 
 ```{r}
 ## Simulate movement of individual on the landscape
-start = 150 + 87*3#sample(1:nrow(R), 1)
-traj = sim_traj(R, fit, start, steps=5000)
+source("pigfxns.R")
+set.seed(20)
+start = (89 * 67)
+temp_fit = fit
+temp_fit$coefficients[4] = 100
+traj = sim_traj(R, fit, start, steps=1000)
 ```
+
+Look at a realization of the movement trajectory
 
 ```{r}
 trajRast = forest
 values(trajRast) = 0
 values(trajRast)[traj$positions] = 200
 path = rasterToPoints(trajRast, function(x) x == 200)
-plot(-1*forest + 1)
 
+jpeg("../results/sim2.jpg")
+plot(rcval1)
 points(path[, "x"], path[, "y"], pch=18, cex=0.4)
+dev.off()
 
 ```
 
@@ -301,7 +420,6 @@ plot(obs$x, obs$y, type="l")
 ```
 
 
-
 ```{r}
 longlat = obs[, c('x', 'y')]
 names(longlat) = c('longitude', 'latitude')
@@ -309,3 +427,177 @@ dist = get_distance_vect(longlat)
 
 plot(obs$time[-1] / (60 * 60 * 24), cumsum(dist), type="l", ylab="Cum. distance", xlab="Days")
 ```
+
+Look at the utilization distribution
+
+```{r}
+temp_fit = fit
+temp_fit$coefficients[4] = 20
+R = getR(fit, loc.stack, grad.stack)
+pi = get.UD(R)
+ud = rcval1
+values(ud) = pi
+
+jpeg("../results/pi.jpg", width=300, height=300)
+plot(log(ud))
+dev.off()
+```
+
+
+```{r}
+res = rast.grad(elcrop)
+plot(res$rast.grad.x)
+plot(elcrop)
+```
+This is the long-term utilization distribution based on elevation and forest
+
+
+Now let's also look at the short term invasion probability based on the matrix exponential. R is the infintesimal generator matrix row-wise
+
+```{r}
+Q = R
+diag(Q) = -1 * rowSums(R)
+
+# Probability distribution at time t = 200
+t = 200
+p = rep(0, length(pi))
+p[300] = 1
+
+Pt = expm(Q*t)
+
+```
+
+## Running an analysis on all pigs in Texas within a certain time frame
+
+
+```{r}
+library(parallel)
+source('pigfxns.R')
+
+parallel_pigs = function(pigID, allpigs, numpoints, method, buffer, timestep){
+  # Function for parallel processing pigIDs
+  #
+  # Parameters
+  # ----------
+  # pigID : vector of pigIDs
+  # allpigs : data.table with all pig data
+  # numpoints : the number of trajectory points for each pig
+  
+  print(paste("Working on pig", pigID))
+  ind = (allpigs$pigID == pigID)
+  pig = allpigs[ind][1:numpoints, ]
+  colnames(pig)[c(8, 9, 13)] = c("y", "x", "time")
+  
+  # TODO: adjust file path
+  rcval = raster("../data/raster_data/CDL_2016_clip_20180118163303_1712778437/CDL_2016_clip_20180118163303_1712778437.tif")
+  el = raster("~/Downloads/n30w099/imgn30w099_1.img")
+  
+  # Project elevation raster 
+  elproj = projectRaster(el, rcval)
+  elproj = crop(elproj, extent(rcval))
+  
+  forest = dummy = rcval
+
+  values(forest)[values(rcval) == 142] = 1 # Forest habitat
+  values(forest)[values(rcval) != 142] = 0 # Not forest
+  values(dummy) = 0 # Just use as a place holder
+  
+  loc.stack = stack(forest, dummy)
+  names(loc.stack) = c("forest_loc", "dummy_loc") #paste0(nms, "_loc")
+  grad.stack = stack(forest, dummy, elproj) #stack(developed, forest, crop, water)
+  names(grad.stack) = c("forest_grad", "dummy_grad", "elev_grad") #paste0(nms, "_grad")
+  
+  glmdat = fit_ctmcmodel(pig, loc.stack, grad.stack, method=method, buffer=buffer, timestep=timestep)
+  return(glmdat)
+  
+}
+```
+
+For all individuals, look at how the forest effect changes with time step. It should definitely decrease with increasing temporal scale...which it does.   At larger timescales, there shouldn't be much effect of forest. 
+
+```{r}
+timesteps = c("15 mins") #c("15 mins", "30 mins", "60 mins")
+forest_coefs = list()
+pigIDs = unique(pigdt$pigID)
+
+for(i in 1:length(timesteps)){
+
+  print(paste("Working on timestep:", timesteps[i]))
+  allglm = mclapply(pigIDs, parallel_pigs, pigdt, 300, "interp", 0.001, timesteps[i], mc.cores = 4)
+  glmdt = as.data.table(do.call(rbind, allglm))
+  fitall_glm = glm(z ~ forest_loc*ID + crw + elev_grad, family=poisson, offset = log(as.numeric(tau)), data=glmdt) #tau is interevent time
+  forest_coefs[[i]] = fitall_glm$coefficients
+  
+}
+```
+
+```{r}
+forest_coefs
+```
+
+```{r}
+vals = c(forest_coefs[[1]][2], forest_coefs[[1]][27:48] + forest_coefs[[1]][2])
+ggplot(data=NULL) + geom_boxplot(aes(y=vals, x="All pigs")) + theme_bw() + ylab("Forest Effect") + xlab("n = 23 pigs collared in March") + 
+    scale_y_continuous(breaks = round(seq(min(vals), max(vals), by = 0.5),1))
+ggsave("../results/bplot.jpg", width=3, height=4)
+
+```
+
+
+```{r}
+summary(fitall_glm)
+```
+
+Pretty robust to the time step that we are using.  Pigs move slower in forest and tend to stay there. Though, see below, this varies with time of day AND with pig.
+Moreover, pigs tend to continue to move in the 
+
+Let's look at the time-dependent effect of forest for the texas pigs.
+
+```{r}
+allglm = mclapply(pigIDs, parallel_pigs, testpigsdt, 300, "interp", 0.001, "15 mins", mc.cores = 4)
+
+```
+
+```{r}
+glmdt = as.data.table(do.call(rbind, allglm))
+
+glmdt$hours = hour(as.POSIXct(as.numeric(glmdt$t), origin = '1970-01-01', tz = 'GMT'))
+
+IDs = unique(glmdt$ID)
+res = list()
+for(i in 1:length(IDs)){
+  
+  # Time-dependent forest effects between individuals
+  df = 8
+  tfit = glm(z ~ bs(hours, df=df) + forest_loc:bs(hours, df=df) + crw:bs(hours, df=df),
+              family="poisson", offset=log(as.numeric(tau)), data=glmdt[glmdt$ID == IDs[i], ])
+  
+  bshours = bs(glmdt$hours, df=df)
+  predbasis = predict(bshours, newx=0:23)
+  forest_pred = predbasis %*% t(t(tfit$coefficients[10:17]))
+  res[[i]] = data.frame(pred=forest_pred, ID=IDs[i], hour=0:23)
+  
+}
+
+forest_pred = do.call(rbind, res)
+ggplot(forest_pred) + geom_line(aes(x=hour, y=pred, color=ID)) + theme_bw() + ylab("Forest effect") + xlab("Hour of day")
+
+```
+
+There is variation between individuals regarding the the time-dependent effect of forest.  In general, forest has a negative effect, such that individuals tend to stay in the forest once they are there.  However, some individuals don't show this effect as strongly.
+
+
+```{r}
+library(lme4)
+glmdt = as.data.table(do.call(rbind, allglm))
+fitall = glmer(z ~ forest_loc + crw + (1 | ID), family=poisson, offset = log(tau), data=glmdt) # tau is interevent time
+fitall_glm = glm(z ~ forest_loc + crw + ID, family=poisson, offset = log(tau), data=glmdt) #tau is interevent time
+```
+
+```{r}
+summary(fitall)
+summary(fitall_glm)
+anova(fitall_glm, update(fitall_glm, .~. - ID), test="Chisq")
+```
+
+

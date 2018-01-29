@@ -1,0 +1,42 @@
+Steps and directions for data management
+---
+
+**Goal**: Have comparable data across each different study site
+
+Ideally, I think we would like to have three datatables in our database
+
+1. The GPS datatable: Will contain all of the GPS tracking data 
+
+| pigID | CollarNumber | Study | LMT_time | LMT_date | lat | long | DOP |
+
+- All date and times should be in the same format
+- All locations should be lats and longs
+
+
+2. Pig attributes: Will contain attributes of each pig in the study
+
+| pigID | Study | weight | sex | other |
+
+3. Study site attributes: Will contain attributes of the specific study
+
+| Study | Extent | Duration | meanLat| meanLong | 
+
+
+These could be stored as separate csv's but ideally they would be SQLlite datatables, so we didn't always have to have all of the data in memory.
+
+---
+
+Once we have made this data, we can decide on raster layers.  Each row in the GPS datatable can then be associated with a raster value from the particular layer(s) that we are interested.  Some examples include
+
+1. Crop layers from CropScape
+2. Landscape cover data from USDA landcover data
+3. Temperature data at as close as possible to the location of each GPS collar.
+4. Distance to the nearest road
+5. Distance to the nearest water source
+6. Others
+
+Questions
+---
+
+1. What is going on with Kilgo? Points in the ocean.
+2. 

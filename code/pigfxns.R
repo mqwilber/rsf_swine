@@ -3,30 +3,96 @@
 library(ctmcmove)
 library(geosphere)
 
-get_distance_vect = function(longlat){
-  # Calculate distances between sequential longlat points 
+
+fit_ctmcmodel = function(pigdata, loc.stack, grad.stack, timestep="15 mins", 
+                                  method="interp", buffer=0.001){
+  # 
   #
   # Parameters
   # ----------
-  # longlat : data.frame with columns longitude and latitud3e
+  # pigdata : data.frame/data.table, columns time, x (longitude), y (longitude),
   #
-  # Returns
-  # -------
-  # : vector of distances
-  
-  longs = longlat$longitude
-  lats = longlat$latitude
-  
-  # Match distance vectors
-  v1 = cbind(longs[-length(longs)], lats[-length(lats)])
-  v2 = cbind(longs[-1], lats[-1])
-  
-  tuples = lapply(1:nrow(v1), function(i) list(v1[i, ], v2[i, ]))
-  distvect = lapply(tuples, function(x) distm(x=x[[1]], y=x[[2]], fun=distHaversine))
-  # 
-  return(distvect)
+  # rasterlist : list of raster layers that will be clipped
+
+  # Get the bounding box around observations and crop raster
+  ymin = min(pigdata$y)
+  ymax = max(pigdata$y)
+  xmin = min(pigdata$x)
+  xmax = max(pigdata$x)
+
+  # Crop raster for data
+  bbox = extent(xmin - buffer, xmax + buffer, ymin - buffer, ymax + buffer)
+  cloc.stack = stack(crop(loc.stack, bbox))
+  cgrad.stack = stack(crop(grad.stack, bbox))
+
+  # Interpolate between pigs points to account for temporal gaps
+  predPath = continuous_path(pigdata, timestep=timestep, method=method)
+
+  # Specify where animals can move on the landscape
+  # move_field = cras
+  # values(move_field) = 1
+  # trans = transition(move_field, prod, 4)
+  path = list(xy=predPath$xy, t=as.vector(predPath$time))
+
+  ctmc = path2ctmc(xy=path$xy, t=path$t, rast=cgrad.stack)
+
+  # Can be slow...
+  glm_data = ctmc2glm(ctmc, cloc.stack, cgrad.stack)
+  glm_data$ID = unique(pigdata$pigID)
+
+  # Extract the hour of the day to look for time varying covariates
+  # glm_data$hours = hour(as.POSIXct(glm_data$t, origin = '1970-01-01', tz = 'GMT'))
+  # glm_data$forest_loc_hours = glm_data$forest_loc * glm_data$hours
+  # glm_data$crw_hours = glm_data$crw * glm_data$hours
+
+  return(glm_data)
+
 }
 
+
+
+continuous_path = function(data, timestep, method){
+  # Get predictions for a continuous path from data
+
+  mintime = min(data$time)
+  maxtime = max(data$time)
+  predTime = seq(mintime, maxtime, by=timestep)
+
+  if(method == "interp"){
+
+    iterpX = approxfun(data$time, data$x) # e.g. Longitude
+    iterpY = approxfun(data$time, data$y) # e.g. Latitude
+
+    predX = iterpX(predTime)
+    predY = iterpY(predTime)
+
+  } else if(method == "smooth"){
+
+    # ysc = scale(data$y) # e.g. Latitude
+    # xsc = scale(data$x) # e.g. Longitude
+    fitX = smooth.spline(data$time, data$x)
+    fitY = smooth.spline(data$time, data$y)
+
+    predX = predict(fitX, as.numeric(predTime))$y
+    predY = predict(fitY, as.numeric(predTime))$y
+
+  } else if(method == "bspline"){
+
+    # TODO: Implement this one so that you return multiple simulated paths
+    # from the model based on the spline fit.
+    stop("Not yet implemented")
+
+  } else if(method == "fmm"){
+    stop('Not yet implemented')
+
+  } else{
+    stop(paste(method, "is not a known method.\nOptions are 'iterp', 'spline',
+      'crawl', 'fmm', and 'X'"))
+  }
+
+  predPath = cbind(predX, predY)
+  return(list(xy=predPath, time=predTime))
+}
 
 
 getR = function (object, stack.static, stack.grad, normalize.gradients = FALSE, 
@@ -150,8 +216,10 @@ set_direction_weights = function(past_direction, next_directions){
 
 
 sim_traj = function(R, fit, start, steps=100){
-  # Simulate the discrete time steps of animal movement based on the CTMC generator matrix R, 
-  # and the the GLM model.
+  # Simulate the discrete time steps of animal movement based on the CTMC 
+  # generator matrix R, and the the GLM model.  
+  # 
+  # At the moment, the model can't have time dependent covariates.
   #
   # Parameters
   # ----------
@@ -184,9 +252,7 @@ sim_traj = function(R, fit, start, steps=100){
   time = array(NA, dim=steps + 1)
   time[1] = 0
   
-  step_direction[i] = 1 # Start moving north
-  
-  step_direction[i] = 0
+  step_direction[1] = 1 # Start moving north
   positions[1] = start
   for(i in 2:(steps + 1)){
     
@@ -210,6 +276,33 @@ sim_traj = function(R, fit, start, steps=100){
   
   return(list(positions=positions, steps=step_direction, time=time))
   
+}
+
+###### Helper functions ##########
+
+
+get_distance_vect = function(longlat){
+  # Calculate distances between sequential longlat points 
+  #
+  # Parameters
+  # ----------
+  # longlat : data.frame with columns longitude and latitud3e
+  #
+  # Returns
+  # -------
+  # : vector of distances
+  
+  longs = longlat$longitude
+  lats = longlat$latitude
+  
+  # Match distance vectors
+  v1 = cbind(longs[-length(longs)], lats[-length(lats)])
+  v2 = cbind(longs[-1], lats[-1])
+  
+  tuples = lapply(1:nrow(v1), function(i) list(v1[i, ], v2[i, ]))
+  distvect = lapply(tuples, function(x) distm(x=x[[1]], y=x[[2]], fun=distHaversine))
+  # 
+  return(distvect)
 }
 
 

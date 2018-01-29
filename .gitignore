@@ -7,3 +7,4 @@ code/.Rhistory
 code/.Rdata
 code/*.csv
 data/raster_data
+results/*

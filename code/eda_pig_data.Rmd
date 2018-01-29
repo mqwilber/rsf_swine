@@ -11,64 +11,78 @@ library(data.table)
 dt = fread("../data/formatted/full_pig_data.csv")
 ```
 
-Check for and remove missing lat-long values
+Check for missing lat-long values.  Hopefully the data cleaning has dealt with these...
 
 ```{r}
 ind = is.na(dt$latitude) | is.na(dt$longitude)
 sum(ind)
-dt_trun = dt[!ind, ]
-dim(dt_trun)
-```
-Pigs between studies can have the same collar number so let's make unique pig collars.
-
-```{r}
-# Make a unique pigID
-dt_trun[, pigID:=paste(collarID, study, sep="")]
 ```
 
-Dates are not in the same format. Strip all white spcae out of the dates
+Recovert to datetime 
 
 ```{r}
-lmt_date = tstrsplit(dt_trun$lmt_date, " ")[[1]]
-dt_trun$lmt_date_strp = lmt_date
-```
-
-Combine date and time into one vector
-
-```{r}
-datetime = as.character(paste(dt_trun$lmt_date_strp, dt_trun$lmt_time))
-
-# studies michigan and srel_jim don't have ant seconds on the datetimes..add 00
-for(study in c("michigan", "srel_jim")){
-  datetime[dt_trun$study == study] = paste(datetime[dt_trun$study == study], ":00", sep="")
-}
-
-dt_trun$datetime = as.POSIXct(strptime(datetime, format="%m/%d/%y %H:%M:%S", tz="GMT"))
+dt$datetime = as.POSIXct(dt$datetime, tz="GMT")
 ```
 
 ## Some exploratory data analysis
 
+```{r}
+length(unique(dt$pigID))
+```
+
+```{r}
+dt[, list(numpigs=length(unique(pigID))), by="study"]
+```
+
+We have 480 pigs, the `movepig` study site has 219 of these pigs.
+
+Look at a plot of pigs in the USA
+
+```{r}
+library(ggmap)
+
+meandat = dt[, list(meanlat = mean(latitude), meanlong = mean(longitude)), by="study"]
+# All the pig data
+us <- c(left = -125, bottom = 23.75, right = -67, top = 54)
+map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite")
+plt = ggmap(map) + geom_point(data=dt[pigID != "canada679059BF21"], aes(x=longitude, y=latitude, color=study), size=0.5)
+plt
+ggsave("../results/datamap.jpg", width=8, height=5)
+```
+
+Something is up with Kilgo! We will need to figure that out.  The Canada data also looks a little suspect...this is because the collars are recording when they are not on the animal.
+
+```{r}
+plt_can = ggmap(map) + geom_point(data=dt[dt$study == "canada" & dt$pigID == "canada679059B", ], aes(x=longitude, y=latitude, color=pigID), size=0.5)
+plt_can
+ggsave("../results/679059B.jpg", width=8, height=5)
+```
+
+
+```{r}
+ggmap(map) + geom_point(data=dt[study == "tejon", ], aes(x=longitude, y=latitude))
+```
+
 Get the maximum time length at which fixings were taken for each individual pig
 
 ```{r}
-fixinfo = dt_trun[, list(study=unique(study),
+fixinfo = dt[, list(study=unique(study),
                          deltat = max(datetime) - min(datetime), 
                          numfixes=length(datetime),
                          start=min(datetime),
                          end=max(datetime)), by=list(pigID)]
-fixinfo
+ggplot(data=fixinfo) + geom_histogram(aes(x=deltat))
 ```
-
-Any pigs nan?
 
 ```{r}
-nanpigs = fixinfo[is.na(fixinfo$deltat), "pigID"]
-nanpigs
+fixinfo[which.max(deltat), ]
 ```
 
-All pigs have the correct datetime specifications.
+So the Kilgo data is genearlly just wonky. Ignore it for now
 
-
+```{r}
+ggplot(data=fixinfo[study != "srs_kilgo", ]) + geom_histogram(aes(x=deltat))
+```
 
 
 Order by fix times.  
@@ -83,31 +97,12 @@ Large variation in how long pigs were collared for.
 fixinfo[, fixrate:= numfixes / as.numeric(deltat)]
 fixinfo[, timeperfix:= (as.numeric(deltat) / numfixes)*24*60]
 fixinfo[order(timeperfix, decreasing = F), ]
+ggplot(data=fixinfo[study != "srs_kilgo"]) + geom_histogram(aes(x=timeperfix))
 ```
 
 ---
 
-Let's look at a distribution of collaring times
-
-```{r}
-library(ggplot2)
-ggplot(fixinfo, aes(x=as.numeric(log10(as.numeric(deltat))))) + geom_histogram() + xlab("log10(days)")
-```
-
-Something seems a little wierd with the huge fix time!   Will have to check if this pig is an outlier or perhaps the collar just gave a reading when it wasn't on the pig.
-
-```{r}
-fixinfo[which.max(fixinfo$deltat), ]
-```
-  
-Let's look at deltat by study
-
-```{r}
-ggplot(fixinfo, aes(x=as.numeric(deltat))) + geom_histogram() + facet_wrap(~study)
-```
-
-
-For each pig by study, let's look at how long they were tagged for
+Look at how collaring times vary across studies
 
 ```{r}
 studies = unique(fixinfo$study)
@@ -132,8 +127,8 @@ Some summary stats by study
 
 ```{r}
 # Order the GPS colors by pig and time 
-dt_trun = dt_trun[order(pigID, datetime)]
-diffs = dt_trun[, list(deltat=mean(diff(datetime))), by=list(pigID)]
+dt = dt[order(pigID, datetime)]
+diffs = dt[, list(deltat=mean(diff(datetime))), by=list(pigID)]
 
 ggplot(diffs, aes(x=deltat / (60 * 24))) + geom_histogram() + xlab("Days")
 ```
@@ -142,36 +137,13 @@ Some pigs have a huge about of time between their GPS readings...
 
 ---
 
-## Determing which sequences will be useful for movement analysis
+## Determining which sequences will be useful for movement analysis
 
 Which pigs have a sequences of at least 10 where each fix is less than 1hr different
 from the previous fix?
 
 ```{r}
-runs = function(x, ctime=60, clength=10){
-  # Given a vector of time differneces X
-  # determine if the vector has a run of 
-  # clength or greater of diffs < ctime (in minutes). 
-  # Parameters
-  # ----------
-  # x : difference vector of times
-  # ctime : Diffs must be less than this time
-  # clength : Length of a run
-  
-  # Notes
-  # -----
-  # This will help identify potential trajectories to use for the movement study
-  # Returns TRUE or FALSE
-  
-  deltat = diff(x)
-  inds = deltat < ctime # String of booleans
-  
-  # Count runs
-  run_vect = rle(inds)
-  res = any((run_vect$values == TRUE) & (run_vect$lengths >= clength))
-  return(res)
-  
-}
+source("pigfxns.R")
 
 long_pigs = dt_trun[, list(longdat=runs(datetime), study=unique(study)), by=pigID]
 print(sum(long_pigs$longdat))

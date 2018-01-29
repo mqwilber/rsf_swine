@@ -1,0 +1,89 @@
+---
+title: "Data Summary"
+output: html_notebook
+---
+
+Load in the formatted pig data and pig attribute data and explore them.
+
+```{r}
+library(data.table)
+dat = fread("~/Repos/rsf_swine/data/formatted/full_pig_data.csv")
+```
+
+## Summary statistics of data
+
+```{r}
+dim(dat)
+ncol(dat)
+nrow(dat)
+
+dat[ , list(numpigs=length(unique(pigID)), minlat=min(latitude),
+            maxlat=max(latitude), minlong=min(longitude), maxlong=max(longitude),
+            numfixes=length(pigID)),
+            by=study]
+```
+
+Load in the pig attribute data and let's look at how pig attributes vary across studies.
+
+```{r}
+attrib = fread("~/Repos/rsf_swine/data/formatted/pig_attributes.csv")
+head(attrib)
+
+# Change "female" to "F" and change "male" to "M"
+attrib$sex[attrib$sex == "female"] = "F"
+attrib$sex[attrib$sex == "male"] = "M"
+unique(attrib$sex)
+head(attrib)
+head(dat)
+```
+
+
+```{r}
+attrib[ , list(numfem=sum(sex == "F"), nummale=sum(sex == "M"), 
+               neither=sum(sex == "")), by=study]
+```
+
+Look at mean pig locations by study
+
+```{r}
+dat[, list(meanlat=mean(latitude), meanlong=mean(longitude)), by=list(study, pigID)]
+```
+
+```{r}
+
+setdiff(unique(dat$pigID), unique(attrib$pigID))
+
+newdat = merge(dat, attrib, key="pigID")
+head(newdat)
+
+newdat[, list(meanlat=mean(latitude), meanlong=mean(longitude)), by=list(study, sex)]
+```
+
+```{r}
+dat$datetime = as.POSIXct(dat$datetime, tz="GMT")
+```
+
+```{r}
+collarDur = dat[, list(deltat=max(datetime) - min(datetime), 
+                       maxdate=max(datetime), 
+                       mindate=min(datetime)), 
+                    by=list(study, pigID)]
+collarDur
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(data=collarDur) + geom_boxplot(aes(x=study, y=deltat)) + theme_bw() + 
+                xlab("Study") + ylab("Length of study in days") + 
+                theme(axis.text.x = element_text(angle = 90, hjust = 1))
+                
+```
+
+Compare the range of collar dates by pigs across studies
+
+```{r}
+ggplot(data=collarDur) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+          facet_wrap(~study, scales = 'free') + 
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=3))
+```

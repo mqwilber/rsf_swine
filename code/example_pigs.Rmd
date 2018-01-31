@@ -31,7 +31,7 @@ For a single pig in the Camp Bullis data set, implement the movement method prop
 
 ```{r}
 
-dt = fread("/Users/mqwilber/Repos/rsf_swine/data/formatted/full_pig_data_cleaned.csv")
+dt = fread("/Users/mqwilber/Repos/rsf_swine/data/formatted/full_pig_data.csv")
 
 # Extract texas pigs
 txpigs = dt[study == "txcamp"]
@@ -112,7 +112,7 @@ ggsave("../results/latlong.jpg", space, width=5, height=3)
 Load in a clip the cropscape raster file
 
 ```{r}
-rcval = raster("../data/raster_data/CDL_2016_clip_20180118163303_1712778437/CDL_2016_clip_20180118163303_1712778437.tif")
+rcval = raster("../data/covariate_data/CDL_2016_clip_20180118163303_1712778437/CDL_2016_clip_20180118163303_1712778437.tif")
 
 el = raster("~/Downloads/n30w099/imgn30w099_1.img")
 # Crop the raster with some arbitrary buffer

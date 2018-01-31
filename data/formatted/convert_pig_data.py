@@ -304,6 +304,9 @@ for i in comb_dat.latitude:
 
 comb_dat = comb_dat[inds]
 
+# Make sure all date times are formatted correctly
+comb_dat.loc[:, "datetime"] = pd.to_datetime(comb_dat.datetime)
+
 # Save the resulting pig data
 comb_dat.to_csv("full_pig_data.csv", index=False)
 
@@ -372,6 +375,21 @@ for study in comb_dat.study.unique():
   print(set(cvals) - set(atvals))
 
 
+##########################################
+### Make a summary file for each study ###
+##########################################
+
+study_sum = comb_dat.groupby("study").agg({'latitude' : {'min': np.min, 'max': np.max}, 
+                               'longitude' : {'min': np.min, 'max': np.max},
+                               'pigID': {'num_pigs': lambda x: len(np.unique(x)),
+                                         'num_fixes': len},
+                                'datetime': {'mindate': np.min, 
+                                             'maxdate': np.max}})
+
+study_sum.columns = ['_'.join(col).strip() for col in study_sum.columns.values]
+
+# Extract min max year for each study
 
 
+study_sum.to_csv("study_summary.csv")
 

@@ -30,18 +30,27 @@
 4. Contact Ryan about missing attribute data for 4 Canada pigs: set(['canada690089A', 'canada679060A', 'canada679070A', 'canada690091A'])
 5. Get the most recent data file from Sarah for storage. [Done]
 
+
+## Data notes as of 2-1-2018
+
+The raster files will all be pre-processed and will have the following format
+
 **Organizing raster data**
 
-raster/
-	mammal_diversity/
-		mammal_diversity_raster_canada.img
-		mammal_diversity_raster_txcamp.img
-
+covariate_data/
+	elevation/
+		txcamp/
+			txcamp_elevation.grd
+			txcamp_elevation.gri
+		judas_pig/
+			judas_pig_elevation.grd
+			judas_pig_elevation.gri
 
 	temperature/
-		temperature_raster2011_canada.img
-		temperature_raster2012_canada.img
+		txcamp/
+			txcamp_temperature_1_2016.grd # Where 1 is the month and 2016 is the year
+			txcamp_temperature_1_2016.gri
+			txcamp_temperature_2_2016.grd
+			txcamp_temperature_2_2016.gri
 
-	human_density/
-
-	...
+The pre-processing scripts will be stored in code/covariate_scripts/

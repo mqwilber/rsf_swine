@@ -6,7 +6,7 @@ library(plotKML)
 library(raster)
 
 ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat", 
-							lonname="lon", convertLon=TRUE){
+							lonname="lon", convertLon=TRUE, cellsize=0.5){
 	# Given a ncdf object, extract the values for a given attribute
 	# at particular times. 
 	#
@@ -26,6 +26,8 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 	# convertLon : bool
 	# 	If TRUE, assumes longitude is measured from 0 - 360 degrees and converts
 	#   to -180 to 180.
+	# cellsize : float
+	# 	When converting to a raster, specify in the cell size to use (e.g. in degrees)
 	#
 	# Notes
 	# -----
@@ -70,7 +72,7 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 							data=out_dat,
 		                    proj4string = CRS(paste("+proj=longlat +datum=WGS84", 
 		                    					"+ellps=WGS84 +towgs84=0,0,0")))
-		out_rast = vect2rast(pnt_dat, cell.size=.5)
+		out_rast = vect2rast(pnt_dat, cell.size=cellsize)
 		out_rast = raster(out_rast)
 		rasterlist[[i]] = crop(out_rast, extobj)
 	}

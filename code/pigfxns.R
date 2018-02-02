@@ -2,6 +2,9 @@
 
 library(ctmcmove)
 library(geosphere)
+library(raster)
+library(lubridate)
+library(fda)
 
 
 fit_ctmcmodel = function(pigdata, loc.stack, grad.stack, timestep="15 mins", 
@@ -36,7 +39,7 @@ fit_ctmcmodel = function(pigdata, loc.stack, grad.stack, timestep="15 mins",
 
   ctmc = path2ctmc(xy=path$xy, t=path$t, rast=cgrad.stack)
 
-  # Can be slow...
+  # Can be slow...need to be smart about which cells to consider.
   glm_data = ctmc2glm(ctmc, cloc.stack, cgrad.stack)
   glm_data$ID = unique(pigdata$pigID)
 
@@ -50,38 +53,68 @@ fit_ctmcmodel = function(pigdata, loc.stack, grad.stack, timestep="15 mins",
 }
 
 
-
-continuous_path = function(data, timestep, method){
+continuous_path = function(data, timestep, method, impute=1, df=NULL){
   # Get predictions for a continuous path from data
+  #
+  # Parameters
+  # ----------
+  # data : data.table/data.frame
+  #   Columns "x" (e.g. longitude), "y" (e.g. latitude), and "datetime"
+  # timestep : str
+  #   e.g. "15 mins"
+  # method: str
+  #   Specifies how to compute the continuous path.
+  #   Options are:
+  #     "interp": Linear interpolation along the path
+  #     "bspline_freq": Cubic B-spline without penalization in a frequentist 
+  #       framework.
+  #     "bspline_bayes": Cubic B-spline with penalization in a Bayesian framework.
+  #         Calls ctmcmove::mcmc.fmove
+  # impute : int
+  #   The number of continuous paths to impute. If "iterp == 1"
+  # df : int
+  #   Degrees of freedom of the B-spline
 
-  mintime = min(data$time)
-  maxtime = max(data$time)
+
+  mintime = min(data$datetime)
+  maxtime = max(data$datetime)
   predTime = seq(mintime, maxtime, by=timestep)
 
   if(method == "interp"){
 
-    iterpX = approxfun(data$time, data$x) # e.g. Longitude
-    iterpY = approxfun(data$time, data$y) # e.g. Latitude
+    iterpX = approxfun(data$datetime, data$x) # e.g. Longitude
+    iterpY = approxfun(data$datetime, data$y) # e.g. Latitude
 
     predX = iterpX(predTime)
     predY = iterpY(predTime)
 
-  } else if(method == "smooth"){
+    predPaths = list()
+    predPaths[[1]] = cbind(x=predX, y=predY)
 
-    # ysc = scale(data$y) # e.g. Latitude
-    # xsc = scale(data$x) # e.g. Longitude
-    fitX = smooth.spline(data$time, data$x)
-    fitY = smooth.spline(data$time, data$y)
+  } else if(method == "bspline_bayes"){
 
-    predX = predict(fitX, as.numeric(predTime))$y
-    predY = predict(fitY, as.numeric(predTime))$y
+    xy = as.matrix(data[, list(scale(x), scale(y))])
+    t = as.numeric(data$datetime)
+    t = t - mean(t)
 
-  } else if(method == "bspline"){
+    # Calculate bspline knots
+    bsp = bs(t, df=df)
+    knots = attributes(bsp)$knots
+    basisfxn = create.bspline.basis(c(min(t), max(t)), breaks=knots, norder=4)
+    tpred = as.numeric(predTime) - mean(t)
+
+    fit = mcmc.fmove(xy, t, basisfxn, tpred, QQ="CAR", n.mcmc=400, num.paths.save=impute)
+
+    predPaths = lapply(1:length(fit$pathlist), function(x) fit$pathlist[[x]]$xy)
+
+  } else if(method == "bspline_freq"){
 
     # TODO: Implement this one so that you return multiple simulated paths
     # from the model based on the spline fit.
-    stop("Not yet implemented")
+    bsp = bs(t, df=df)
+    knots = attributes(bsp)$knots
 
+    
   } else if(method == "fmm"){
     stop('Not yet implemented')
 
@@ -278,6 +311,80 @@ sim_traj = function(R, fit, start, steps=100){
   
 }
 
+
+process_covariates = function(locvars, studynm, extobj, 
+          mindate, maxdate, ext,
+          cov_path="/Users/mqwilber/Repos/rsf_swine/data/covariate_data",
+          timevar=c("temperature")){
+	# Compiles lists of rasters to be used as location and gradient covariates
+  # in analyses.
+  #
+  # Parameters
+  # ----------
+  # locvars : vector of strings
+  #   The variables to be used as locations covariates. They must have a matching
+  #   folder in cov_path.
+  # studynm : str
+  #   Name of the study under consideration
+  # extobj : Extent object fro raster package
+  #   Gives the extent to which to crop the rasters
+  # mindate : POSIXct object
+  #   Minimum date
+  # maxdate : POSIXct object
+  #   Maximum date
+  # cov_path : Path to the covariate
+  #   File path to where the covariate data is stored.
+  # timevar : vector of strings
+  #   Vector contains the covariates that are time varying.
+  # ext : str
+  #   To be appended to rasters. Either "loc" (location covariates) or "grad" 
+  #   (gradient covariates)
+  #
+  # Returns
+  # -------
+  # : list of rasters
+  #
+  # Notes
+  # -----
+  # TODO: While all the rasters are cropped in the same way, they are not projected 
+  # identically in this function.
+
+  baseras = 
+  loclist = list()
+
+  # Extract location covariates
+  for(i in 1:length(locvars)){
+
+    loccov = locvars[i]
+
+    if(loccov %in% timevar){ # If there is a time varying covariate
+
+      day(mindate) = 1 
+      day(maxdate) = 1
+      dates = seq(as.Date(mindate), as.Date(maxdate), by="month")
+      months = month(dates)
+      years = year(dates)
+
+      # Extract time-dependent rasters
+      for(j in 1:length(months)){
+
+        fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", loccov, "_", months[j], "_", years[j], ".grd", sep=""))
+        tras = raster(fp)
+        loclist[[paste(loccov, months[j], years[j], ext, sep="_")]] = crop(tras, extobj)
+      }
+
+    } else {
+      # Extract time-independent raster
+      tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", loccov, ".grd", sep="")))
+      loclist[[paste(loccov, ext, sep="_")]] = crop(tras, extobj)
+    }
+  }
+
+  return(loclist)
+
+  
+}
+
 ###### Helper functions ##########
 
 
@@ -286,7 +393,7 @@ get_distance_vect = function(longlat){
   #
   # Parameters
   # ----------
-  # longlat : data.frame with columns longitude and latitud3e
+  # longlat : data.frame with columns longitude and latitude
   #
   # Returns
   # -------
@@ -302,7 +409,7 @@ get_distance_vect = function(longlat){
   tuples = lapply(1:nrow(v1), function(i) list(v1[i, ], v2[i, ]))
   distvect = lapply(tuples, function(x) distm(x=x[[1]], y=x[[2]], fun=distHaversine))
   # 
-  return(distvect)
+  return(do.call(rbind, distvect))
 }
 
 
@@ -312,7 +419,7 @@ runs = function(x, ctime=60, clength=10, ctimemin=0){
   # clength or greater of diffs < ctime (in minutes). 
   # Parameters
   # ----------
-  # x : difference vector of times
+  # x : vector of datetimes
   # ctime : Diffs must be less than this time
   # clength : Length of a run
   
@@ -322,6 +429,7 @@ runs = function(x, ctime=60, clength=10, ctimemin=0){
   # Returns TRUE or FALSE
   
   deltat = diff(x)
+  units(deltat) = "mins"
   inds = (deltat < ctime) & (deltat > ctimemin) # String of booleans
   
   # Count runs

@@ -306,6 +306,8 @@ comb_dat = comb_dat[inds]
 
 # Make sure all date times are formatted correctly
 comb_dat.loc[:, "datetime"] = pd.to_datetime(comb_dat.datetime)
+comb_dat.loc[:, "longitude"] = comb_dat.longitude.astype(np.float)
+comb_dat.loc[:, "latitude"] = comb_dat.latitude.astype(np.float)
 
 # Save the resulting pig data
 comb_dat.to_csv("full_pig_data.csv", index=False)

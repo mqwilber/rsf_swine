@@ -112,28 +112,33 @@ ggsave("../results/latlong.jpg", space, width=5, height=3)
 Load in a clip the cropscape raster file
 
 ```{r}
-rcval = raster("../data/covariate_data/CDL_2016_clip_20180118163303_1712778437/CDL_2016_clip_20180118163303_1712778437.tif")
+rcval = raster("../data/covariate_data/croplayer/txcamp//CDL_2016_clip_20180118163303_1712778437.tif")
 
-el = raster("~/Downloads/n30w099/imgn30w099_1.img")
+el = raster("../data/covariate_data/elevation/txcamp/imgn30w099_1.img")
+temp = raster("../data/covariate_data/temperature/txcamp/txcamp_temperature_3_2016.grd")
 # Crop the raster with some arbitrary buffer
 buffer = 0.001
 rcval1 = crop(rcval, extent(xmin - buffer, xmax + buffer, ymin - buffer, ymax + buffer))
 
 # Project elevation raster 
 elproj = projectRaster(el, rcval1)
+ptemp = projectRaster(temp, rcval1, method="ngb")
+ptempcrop = crop(ptemp, extent(xmin - buffer, xmax + buffer, ymin - buffer, ymax + buffer))
 elcrop = crop(elproj, extent(xmin - buffer, xmax + buffer, ymin - buffer, ymax + buffer))
 rcval1
 elcrop
 
-jpeg("../results/landcover.jpg")
+# jpeg("../results/landcover.jpg")
 plot(rcval1)
 points(pig1$longitude, pig1$latitude, cex=0.5)
-dev.off()
+# dev.off()
 
-jpeg("../results/elevation.jpg", width=500, height=500)
+# jpeg("../results/elevation.jpg", width=500, height=500)
 plot(elcrop)
 points(pig1$longitude, pig1$latitude, cex=0.5)
-dev.off()
+# dev.off()
+
+plot(ptempcrop)
 ```
 
 ```{r}
@@ -182,24 +187,25 @@ pig1$latsc = scale(pig1$latitude)
 pig1$longsc = scale(pig1$longitude)
 
 # Fitting an arbitrarily spline model just for now
-# fitlong = lm(longsc ~ bs(datetimef, df=100), data=pig1)
-# fitlat = lm(latsc ~ bs(datetimef, df=100), data=pig1)
+df=200
+fitlong = lm(longsc ~ bs(datetimef, df=df), data=pig1)
+fitlat = lm(latsc ~ bs(datetimef, df=df), data=pig1)
 
-fitlong = smooth.spline(as.numeric(pig1$datetimef), pig1$longsc) #lm(longsc ~ bs(datetimef, df=100), data=pig1)
-fitlat = smooth.spline(as.numeric(pig1$datetimef), pig1$latsc) # lm(latsc ~ bs(datetimef, df=100), data=pig1)
+# fitlong = smooth.spline(as.numeric(pig1$datetimef), pig1$longsc) #lm(longsc ~ bs(datetimef, df=100), data=pig1)
+# fitlat = smooth.spline(as.numeric(pig1$datetimef), pig1$latsc) # lm(latsc ~ bs(datetimef, df=100), data=pig1)
 
 iterpLong = approxfun(pig1$datetimef, pig1$longsc)
 iterpLat = approxfun(pig1$datetimef, pig1$latsc)
 
-ggplot(data=NULL) + geom_path(aes(x=predict(fitlong)$y, y=predict(fitlat)$y)) + geom_point(aes(x=pig1$longsc, y=pig1$latsc), color="red", size=0.5) + theme_bw() + 
+ggplot(data=NULL) + geom_path(aes(x=predict(fitlong), y=predict(fitlat))) + geom_point(aes(x=pig1$longsc, y=pig1$latsc), color="red", size=0.5) + theme_bw() + 
                 xlab("Scaled long.") + ylab("Scaled lat.")
 ggsave("../results/movetraj.jpg", width=5, height=3)
 
 plot(pig1$datetimef, pig1$longsc, type="l")
-lines(pig1$datetimef, predict(fitlong)$y, col="red")
+lines(pig1$datetimef, predict(fitlong), col="red")
 
 plot(pig1$datetimef, pig1$latsc, type="l")
-lines(pig1$datetimef, predict(fitlat)$y, col="red")
+lines(pig1$datetimef, predict(fitlat), col="red")
 
 ```
 
@@ -213,11 +219,11 @@ predlong =iterpLong(predTime)
 predlat = iterpLat(predTime)
 
 # For B-spline fit
-# predlong =  predict(fitlong, newdata=data.frame(datetimef=predTime))
-# predlat = predict(fitlat, newdata=data.frame(datetimef=predTime))
+predlong =  predict(fitlong, newdata=data.frame(datetimef=predTime))
+predlat = predict(fitlat, newdata=data.frame(datetimef=predTime))
 
-# predlong =  predict(fitlong, as.numeric(predTime))$y
-# predlat = predict(fitlat, as.numeric(predTime))$y
+predlong =  predict(fitlong, as.numeric(predTime))$y
+predlat = predict(fitlat, as.numeric(predTime))$y
 
 
 # Convert back to the natural scale
@@ -226,11 +232,16 @@ predlatT = predlat*sd(pig1$latitude) + mean(pig1$latitude)
 
 # Make sure the projected paths don't go off the landscape
 
-jpeg("../results/predmove.jpg")
+# jpeg("../results/predmove.jpg")
 plot(rcval1)
 points(predlongT, predlatT, cex=0.1)
-dev.off()
+#dev.off()
 
+```
+
+```{r}
+plat = predict(fitlat, newdata=data.frame(datetimef=predTime), interval="confidence")
+ggplot(data=as.data.frame(plat)) + geom_line(aes(x=predTime, y=fit)) + geom_ribbon(aes(x=predTime, ymin=lwr, ymax=upr))
 ```
 
 ## Step 4: Set up the data for CTMC analysis

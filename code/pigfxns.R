@@ -5,17 +5,51 @@ library(geosphere)
 library(raster)
 library(lubridate)
 library(fda)
+library(RcppEigen) # Using fastLm
+library(parallel)
 
+parallel_pigs = function(pid, alldata, ...){
 
-fit_ctmcmodel = function(pigdata, loc.stack, grad.stack, timestep="15 mins", 
-                                  method="interp", buffer=0.001){
-  # 
+  args = list(...)
+  pigdata = alldata[pigID == pid, ]
+
+}
+
+fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 mins", 
+                                  method="interp", buffer=0.001,
+                                  n.mcmc=400, df=NULL, impute=1, 
+                                  mc.cores=1, sigma.fixed=NA){
+  # Fits a continuous movement path and generates glm data
   #
   # Parameters
   # ----------
-  # pigdata : data.frame/data.table, columns time, x (longitude), y (longitude),
-  #
-  # rasterlist : list of raster layers that will be clipped
+  # pigdata : data.frame/data.table
+  #     Columns datetime, x (longitude), y (longitude),
+  # pigID : str
+  #   A unique identifier for a pig.
+  # loc.stack : RasterStack
+  #   Location rasters
+  # grad.stack : RasterStack
+  #   Gradient rasters
+  # timestep : str
+  #   e.g. "15 mins"
+  # method: str
+  #   Specifies how to compute the continuous path.
+  #   Options are:
+  #     "interp": Linear interpolation along the path
+  #     "bspline_freq": Cubic B-spline without penalization in a frequentist 
+  #       framework.
+  #     "bspline_bayes": Cubic B-spline with penalization in a Bayesian framework.
+  #         Calls ctmcmove::mcmc.fmove
+  # impute : int
+  #   The number of continuous paths to impute. If "iterp == 1"
+  # df : int
+  #   Degrees of freedom of the B-spline
+  # n.mcmc : int
+  #     Number of MCMC samples if Bayesian approach is used
+  # buffer : float
+  #     Buffer the cropping of the rasters.  Particularly important if using 
+  #     a b-spline fit.
 
   # Get the bounding box around observations and crop raster
   ymin = min(pigdata$y)
@@ -23,37 +57,68 @@ fit_ctmcmodel = function(pigdata, loc.stack, grad.stack, timestep="15 mins",
   xmin = min(pigdata$x)
   xmax = max(pigdata$x)
 
-  # Crop raster for data
-  bbox = extent(xmin - buffer, xmax + buffer, ymin - buffer, ymax + buffer)
-  cloc.stack = stack(crop(loc.stack, bbox))
-  cgrad.stack = stack(crop(grad.stack, bbox))
+  # Add on a dummy raster to loc and grad to prevent column error in ctmc2glm
+  dumgrad = unstack(grad.stack)[[1]]
+  names(dumgrad) = "dummy_grad"
+  grad.stack = stack(list(grad.stack, dumgrad))
+  names(dumgrad) = "dummy_loc"
+  loc.stack = stack(list(loc.stack, dumgrad))
 
-  # Interpolate between pigs points to account for temporal gaps
-  predPath = continuous_path(pigdata, timestep=timestep, method=method)
+  # Compute continuous pig path
+  predPath = continuous_path(pigdata, timestep, method, n.mcmc=n.mcmc, df=df, 
+                                  impute=impute, sigma.fixed=sigma.fixed)
 
   # Specify where animals can move on the landscape
   # move_field = cras
   # values(move_field) = 1
   # trans = transition(move_field, prod, 4)
-  path = list(xy=predPath$xy, t=as.vector(predPath$time))
 
-  ctmc = path2ctmc(xy=path$xy, t=path$t, rast=cgrad.stack)
+  # Make this break more intelligently. 
+  imputepath = function(x){
 
-  # Can be slow...need to be smart about which cells to consider.
-  glm_data = ctmc2glm(ctmc, cloc.stack, cgrad.stack)
-  glm_data$ID = unique(pigdata$pigID)
+    cat("Working on imputation ", x, " of ", impute, "\n")
+    path = list(xy=predPath$path[[x]], t=as.vector(predPath$time))
 
-  # Extract the hour of the day to look for time varying covariates
-  # glm_data$hours = hour(as.POSIXct(glm_data$t, origin = '1970-01-01', tz = 'GMT'))
-  # glm_data$forest_loc_hours = glm_data$forest_loc * glm_data$hours
-  # glm_data$crw_hours = glm_data$crw * glm_data$hours
+    # Can be slow...need to be smart about which cells to consider.
+    ctmc = path2ctmc(xy=path$xy, t=path$t, rast=grad.stack)
 
-  return(glm_data)
+    tglm_data = ctmc2glm(ctmc, loc.stack, grad.stack)
+    tglm_data$pigID = pigID
+    tglm_data$imputeID = x # Number the imputed distributions
+    return(tglm_data)
+  }
+
+  if(method == "interp")
+      impute = 1
+
+  if(mc.cores > 1)
+    full_glmdat = mclapply(1:impute, imputepath, mc.cores=mc.cores)
+  else
+    full_glmdat = lapply(1:impute, imputepath)
+
+
+  # full_glmdat = list()
+  # for(i in 1:length(predPath$path)){
+
+  #   cat("Working on imputation ", i, " of ", impute, "\n")
+  #   path = list(xy=predPath$path[[i]], t=as.vector(predPath$time))
+
+  #   # Can be slow...need to be smart about which cells to consider.
+  #   ctmc = path2ctmc(xy=path$xy, t=path$t, rast=cgrad.stack)
+
+  #   tglm_data = ctmc2glm(ctmc, cloc.stack, cgrad.stack)
+  #   tglm_data$ID = unique(pigdata$pigID)
+  #   full_glmdat[[i]] = tglm_data
+  # }
+
+  #return(ctmc)
+  return(do.call(rbind, full_glmdat))
 
 }
 
 
-continuous_path = function(data, timestep, method, impute=1, df=NULL){
+continuous_path = function(data, timestep, method, impute=1, df=NULL,
+                      n.mcmc=400, sigma.fixed=NA){
   # Get predictions for a continuous path from data
   #
   # Parameters
@@ -74,11 +139,27 @@ continuous_path = function(data, timestep, method, impute=1, df=NULL){
   #   The number of continuous paths to impute. If "iterp == 1"
   # df : int
   #   Degrees of freedom of the B-spline
+  # n.mcmc : int
+  #     Number of MCMC samples if Bayesian approach is used
+  #
+  # Returns
+  # -------
+  # : list
+  #     $predPaths : A list of impute paths (x, y matrices)
+  #     $time : The times that were imputed.
 
+  if(is.null(df))
+    df = nrow(data) / 2 # Set the number of knots relative to data length
 
   mintime = min(data$datetime)
   maxtime = max(data$datetime)
   predTime = seq(mintime, maxtime, by=timestep)
+  traw = as.numeric(data$datetime)
+  t = traw - mean(traw)
+  tpred = as.numeric(predTime) - mean(traw)
+
+  # For unscaling
+  mux = mean(data$x); sdx = sd(data$x); muy = mean(data$y); sdy = sd(data$y)
 
   if(method == "interp"){
 
@@ -94,37 +175,66 @@ continuous_path = function(data, timestep, method, impute=1, df=NULL){
   } else if(method == "bspline_bayes"){
 
     xy = as.matrix(data[, list(scale(x), scale(y))])
-    t = as.numeric(data$datetime)
-    t = t - mean(t)
 
     # Calculate bspline knots
     bsp = bs(t, df=df)
     knots = attributes(bsp)$knots
     basisfxn = create.bspline.basis(c(min(t), max(t)), breaks=knots, norder=4)
-    tpred = as.numeric(predTime) - mean(t)
 
-    fit = mcmc.fmove(xy, t, basisfxn, tpred, QQ="CAR", n.mcmc=400, num.paths.save=impute)
+    fit = mcmc.fmove(xy, t, basisfxn, tpred, QQ="CAR", n.mcmc=n.mcmc, 
+                  num.paths.save=impute, sigma.fixed = sigma.fixed)
 
-    predPaths = lapply(1:length(fit$pathlist), function(x) fit$pathlist[[x]]$xy)
+    predPaths = lapply(1:length(fit$pathlist), function(x){
+                                        xy = fit$pathlist[[x]]$xy;
+                                        x = xy[, 1]*sdx + mux;
+                                        y = xy[, 2]*sdy + muy;
+                                        return(cbind(x=x, y=y))})
 
   } else if(method == "bspline_freq"){
 
-    # TODO: Implement this one so that you return multiple simulated paths
-    # from the model based on the spline fit.
+
     bsp = bs(t, df=df)
     knots = attributes(bsp)$knots
 
-    
-  } else if(method == "fmm"){
-    stop('Not yet implemented')
+    basisfxn = create.bspline.basis(c(min(t), max(t)), breaks=knots, norder=4)
 
+    Xmat = eval.basis(t, basisfxn)
+
+    fitlong = fastLm(Xmat, scale(data$x))
+    fitlat = fastLm(Xmat, scale(data$y))
+    Betas1 = coef(fitlong)
+    Betas2 = coef(fitlat)
+    print("done fitting")
+
+    # Assume same latlong variance for prediction
+    sigma2 = mean(c(sum(fitlong$residuals^2) / fitlong$df.residual, 
+                    sum(fitlat$residuals^2) / fitlat$df.residual))
+
+    # This is brutally slow...
+    Vmat = sigma2*chol2inv(chol(t(Xmat) %*% Xmat))
+    L = chol(Vmat) 
+    print("done with inversion")
+
+    # Very slow...but converting to the sparse matrix really speeds up imputation
+    Xpred = eval.basis(tpred, basisfxn)
+    print("done with basis pred")
+    #print(class(Xpred))
+
+    predPaths = list()
+    for(i in 1:impute){
+  
+      predX = Xpred %*% (Betas1 + (L %*% rnorm(length(Betas1))))
+      predY = Xpred %*% (Betas2 + (L %*% rnorm(length(Betas2))))
+      predPaths[[i]] = cbind(x=as.vector(predX*sdx + mux), y=as.vector(predY*sdy + muy))
+  
+    }
+    
   } else{
-    stop(paste(method, "is not a known method.\nOptions are 'iterp', 'spline',
-      'crawl', 'fmm', and 'X'"))
+    stop(paste(method, "is not a known method.\nOptions are 'interp', 'bspline_freq', 
+            'bspline_bayes'"))
   }
 
-  predPath = cbind(predX, predY)
-  return(list(xy=predPath, time=predTime))
+  return(list(paths=predPaths, time=predTime))
 }
 
 

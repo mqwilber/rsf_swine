@@ -68,7 +68,7 @@ Remove the substantial outliers.
 
 ```{r}
 trimdat = tcdat[-fullind, ]
-ggplot(trimdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
+tp = ggplot(trimdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
 ```
 
 
@@ -90,7 +90,7 @@ longdat = merge(trimdat, lrdat, by="pigID")[lr == TRUE]
 collarDur2 = longdat[, list(mindate=min(datetime), maxdate=max(datetime)), by=pigID]
 ggplot(data=collarDur2) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
           theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=10)) + 
-          scale_y_datetime(breaks = seq(min(collarDur$mindate), max(collarDur$maxdate), by="month"))
+          scale_y_datetime(breaks = seq(min(collarDur2$mindate), max(collarDur2$maxdate), by="month"))
 ```
 
 ```{r}
@@ -133,7 +133,7 @@ A total of 26 pigs to consider
 ```{r}
 for(pid in unique(longdat2$pigID)){
   tp = longdat2[pigID == pid, ]
-  plot(tp$datetime, type="l")
+  # plot(tp$datetime, type="l")
 }
 
 longdat2[, list(maxdelta=max(diff(datetime)), mindelta=min(diff(datetime)), meddelta=median(diff(datetime))), by=pigID]
@@ -152,8 +152,9 @@ The largest time gap we have is around 24 hours. It might be useful to clean tha
 
 ```{r}
 source("pigfxns.R")
-pig1 = longdat2[pigID == "txcamp20160"]
-extobj = extent(min(pig1$longitude), max(pig1$longitude), min(pig1$latitude), max(pig1$latitude))
+pig1 = longdat2[pigID == "txcamp20127"]
+buffer = 0.005
+extobj = extent(min(pig1$longitude) - buffer, max(pig1$longitude) + buffer, min(pig1$latitude) - buffer, max(pig1$latitude) + buffer)
 
 loc_stack = process_covariates(c("temperature", "croplayer"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="loc")
 grad_stack = process_covariates(c("elevation"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="grad")
@@ -166,62 +167,149 @@ grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack
 
 ## Step 2: Fit a continuous time basis functions and get the continuous path
 
-Two options here:
+Three options here:
 
-1. Use the `mcmc.fmove` in ctmcmove
-2. Use the `lm` and `bs` in base R
+1. Use simple interpolation.
+2. Use a b-spline approach in a frequentist framework
+2. Use a b-spline approach in a Bayesian framework (`mcmc.fmove`)
 
-```{r}
-
-max=nrow(pig1)
-xy = as.matrix(pig1[1:max, list(scale(longitude), scale(latitude))])
-t = as.numeric(pig1[1:max, datetime])
-t = t - mean(t)
-
-bsp = bs(t, df=1000)
-knots = attributes(bsp)$knots
-b = create.bspline.basis(c(min(t), max(t)), breaks=knots, norder=4)
-tpred = seq(min(t), max(t), by=15)
-fit = mcmc.fmove(xy, t, b, tpred, QQ="CAR", n.mcmc=400, num.paths.save=30)
-
-plot(xy, type="b")
-points(fit$pathlist[[1]]$xy,col="red",type="l")
-points(fit$pathlist[[2]]$xy,col="blue",type="l")
-points(fit$pathlist[[3]]$xy,col="orange",type="l")
-
-```
-
-So the `mcmc.fmove` function is pretty nice. Can we get a similar (and faster) answer using bs likelihood assumptions
 
 ```{r}
-Xmat = eval.basis(t, b)
+source("pigfxns.R")
 
-fitlong = lm.fit(Xmat, xy[, 1])
-fitlat = lm.fit(Xmat, xy[, 2])
-sigma2 = mean(c(sum(fitlong$residuals^2) / fitlong$df.residual, sum(fitlat$residuals^2) / fitlat$df.residual))
+dat  = pig1[1:100, list(x=longitude, y=latitude, datetime=datetime)]
+predinterp = continuous_path(dat, "15 mins", "interp")
 
-Betas1 = coef(fitlong)
-Betas2 = coef(fitlat)
+plot(dat[, list(x, y)], type="b")
+points(predinterp$paths[[1]], cex=0.1, col="red")
 
-Vmat1 = sigma2*solve(t(Xmat)%*%Xmat)
-L = chol(Vmat1)
+predbfreq = continuous_path(dat, "15 mins", "bspline_freq", impute=3, df=100, sigma.fixed = 0.001)
 
-# Ahh, so this is what takes so long with the 
-Xpred = eval.basis(tpred, b) # Still pretty slow with the fda package
+plot(dat[, list(x, y)], type="b")
+points(predbfreq$paths[[1]], type="l", col="red")
+points(predbfreq$paths[[2]], type="l", col="blue")
+points(predbfreq$paths[[3]], type="l", col="green")
 
-plot(xy, type="b")
-for(i in 1:1){
-  long = Xpred %*% (Betas1 + (L %*% rnorm(length(Betas1))))
-  lat = Xpred %*% (Betas2 + (L %*% rnorm(length(Betas2))))
-  points(long, lat, col=colors()[i + 100], type="l")
-}
+predbbayes = continuous_path(dat, "15 mins", "bspline_bayes", impute=3, sigma.fixed = 0.001, df=190)
 
+plot(dat[, list(x, y)], type="b")
+points(predbbayes$paths[[1]], type="l", col="red")
+points(predbbayes$paths[[2]], type="l", col="blue")
+points(predbbayes$paths[[3]], type="l", col="green")
 ```
 
-In general, the `lm` approach isn't saving too much time to fitting these bsplines and it is not regularizing, Therefore, mcmc.fmove might be a good way to go. 
 
 ## Step 3: Fit the CTMC model using the ctmcmove package
 
+Looking at three primary covariates in this analysis:
+
+1. Temperature
+2. Elevation
+3. Forest cover
+
+```{r}
+source("pigfxns.R")
+dat = pig1[1:100, list(x=longitude, y=latitude, datetime=datetime)]
+glm_data = fit_ctmcmodel(dat, loc_stackproj, grad_stackproj, method="interp", impute=4,
+                         buffer=0.009, mc.cores=4, df=100, sigma.fixed=0.001)
+glm_data = as.data.table(glm_data)
+```
+
 ## Step 4: Look at how resources effect movement
 
+```{r}
 
+# Format various time-dependent measures
+glm_data$datetime = as.POSIXct(glm_data$t, origin = '1970-01-01', tz = 'GMT')
+glm_data$hour = hour(glm_data$datetime)
+glm_data$month = month(glm_data$datetime)
+glm_data$year = year(glm_data$datetime)
+glm_data$monthyear = paste(glm_data$month, glm_data$year, sep="_")
+
+# Convert temperature data
+unqtemp = t(glm_data[, unique(.SD), .SDcols = names(glm_data) %like% "temperature"])
+monthyear = sapply(strsplit(rownames(unqtemp), "_"), function(x) paste(x[[2]], x[[3]], sep="_"))
+tempdt = data.table(monthyear=monthyear, temperature=unqtemp[, 1])
+
+glm_datatemp = merge(glm_data, tempdt, by="monthyear")
+
+fits = list()
+for(i in 1:4){
+  fits[[i]] = glm(z ~ croplayer_loc + crw + elevation_grad,
+              family="poisson", offset=log(tau), data=glm_datatemp[imputeID == i, ])
+}
+
+lapply(fits, coef)
+```
+
+Depending on the scale of the grid cells and the uncertainty in the basis function estimate of movement, we can really change our results regarding the significance of location predictors.  This makes a lot of sense if you think about
+
+## Step 5: Parallelize across individual pigs in txcamp
+
+```{r}
+library(parallel)
+source("pigfxns.R")
+
+ppigs = function(i, allpigs, numpoints, buffer){
+  
+  unqpig = unique(allpigs$pigID)
+  pigdata = allpigs[pigID == unqpig[i], ]
+  
+  extobj = extent(min(pigdata$longitude) - buffer, max(pigdata$longitude) + buffer, 
+                  min(pigdata$latitude) - buffer, max(pigdata$latitude) + buffer)
+  
+  loc_stack = process_covariates(c("temperature", "croplayer"), "txcamp", extobj, 
+                                 min(allpigs$datetime), max(allpigs$datetime), ext="loc")
+  grad_stack = process_covariates(c("elevation"), "txcamp", extobj, 
+                                 min(allpigs$datetime), max(allpigs$datetime), ext="grad")
+  
+  # Ensure projections are the same
+  locnames = names(loc_stack)
+  loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, loc_stack[['croplayer_loc']],
+                                                                                method="ngb")))
+  grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack[['croplayer_loc']],
+                                                                                method="bilinear")))
+  
+  pigdata = pigdata[, list(x=longitude, y=latitude, datetime=datetime)]
+  tglmdat = fit_ctmcmodel(pigdata[1:numpoints, ], unqpig[i], loc_stackproj, grad_stackproj, method="interp", impute=1,
+                          buffer=0.002, mc.cores=1)
+  
+  # NEED TO MATCH COLUMNS
+  
+  return(tglmdat)
+}
+
+unqpig = unique(longdat2$pigID)
+allglmdat = mclapply(1:length(unqpig), ppigs, longdat2, 100, 0.002, mc.cores=4)
+
+```
+
+```{r}
+glmdat = as.data.table(do.call(rbind, allglmdat))
+
+# Format various time-dependent measures
+glmdat$datetime = as.POSIXct(glmdat$t, origin = '1970-01-01', tz = 'GMT')
+glmdat$hour = hour(glmdat$datetime)
+glmdat$month = month(glmdat$datetime)
+glmdat$year = year(glmdat$datetime)
+glmdat$monthyear = paste(glmdat$month, glmdat$year, sep="_")
+
+# Convert temperature data
+unqtemp = t(glmdat[, unique(.SD), .SDcols = names(glmdat) %like% "temperature"])
+monthyear = sapply(strsplit(rownames(unqtemp), "_"), function(x) paste(x[[2]], x[[3]], sep="_"))
+tempdt = data.table(monthyear=monthyear, temperature=unqtemp[, 1])
+
+glmdat_temp = merge(glmdat, tempdt, by="monthyear")
+
+```
+
+```{r}
+library(lme4)
+fit = glmer(z ~ croplayer_loc + elevation_grad + (croplayer_loc + elevation_grad | pigID) + crw,
+              family="poisson", offset=log(tau), data=glmdat_temp)
+```
+
+```{r}
+summary(fit)
+boxplot(coef(fit)$pigID[, "croplayer_loc"])
+```

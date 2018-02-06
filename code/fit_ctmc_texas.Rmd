@@ -8,7 +8,6 @@ library(data.table)
 library(raster)
 library(ggplot2)
 library(lubridate)
-library(crawl)
 library(sp)
 library(rgdal)
 library(rgeos)
@@ -156,8 +155,8 @@ pig1 = longdat2[pigID == "txcamp20127"]
 buffer = 0.005
 extobj = extent(min(pig1$longitude) - buffer, max(pig1$longitude) + buffer, min(pig1$latitude) - buffer, max(pig1$latitude) + buffer)
 
-loc_stack = process_covariates(c("temperature", "croplayer"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="loc")
-grad_stack = process_covariates(c("elevation"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="grad")
+loc_stack = process_covariates(c("temperature", "croplayer", "ndvi"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="loc")
+grad_stack = process_covariates(c("elevation","ndvi"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="grad")
 
 # Ensure projections are the same
 locnames = names(loc_stack)
@@ -169,28 +168,36 @@ grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack
 
 Three options here:
 
-1. Use simple interpolation.
+1. Use simple interpolation
+  - **Advantage**: Because this approach assumes perfect data, we will recover the observed locations when we ``simulate'' the the movement path.
+                   Fast and easy to calculate trajectories.
+  - **Disadvatanges**:  Does not propoerly account for uncertainty in movement.  Particularly if there is a long time (e.g. 3 hours) between fixes,
+                   this approach just interpolates a straight-line between points which might be very wrong.
 2. Use a b-spline approach in a frequentist framework
+  - **Advantages**: Captures uncertainty in movement path and can propagate this uncertainty through to parameter estimates of resource selection. 
+  - **Disadvantages**: While quite fast for small to medium data, both fitting and uncertainty estimation are pretty slow for large data (e.g. 100,000 predictions).
 2. Use a b-spline approach in a Bayesian framework (`mcmc.fmove`)
+  - **Advantages**:  Same advantages as above. But also regularlizations is baked into this approach which is quite useful.
+  - **Disadvatanges**:  Will need to check convergence of MCMC chains for each site, which could be time consuming across populations. Moreover, long MCMC runs may take awhile, but preliminary simulations suggest that these might not be too much slower than the frequentist fit (seems strange...).
 
 
 ```{r}
 source("pigfxns.R")
 
-dat  = pig1[1:100, list(x=longitude, y=latitude, datetime=datetime)]
+dat  = pig1[1:1000, list(x=longitude, y=latitude, datetime=datetime)]
 predinterp = continuous_path(dat, "15 mins", "interp")
 
 plot(dat[, list(x, y)], type="b")
 points(predinterp$paths[[1]], cex=0.1, col="red")
 
-predbfreq = continuous_path(dat, "15 mins", "bspline_freq", impute=3, df=100, sigma.fixed = 0.001)
+predbfreq = continuous_path(dat, "15 mins", "bspline_freq", impute=3, df=500, sigma.fixed = 0.001)
 
 plot(dat[, list(x, y)], type="b")
 points(predbfreq$paths[[1]], type="l", col="red")
 points(predbfreq$paths[[2]], type="l", col="blue")
 points(predbfreq$paths[[3]], type="l", col="green")
 
-predbbayes = continuous_path(dat, "15 mins", "bspline_bayes", impute=3, sigma.fixed = 0.001, df=190)
+predbbayes = continuous_path(dat, "15 mins", "bspline_bayes", impute=3, sigma.fixed = NA, df=500)
 
 plot(dat[, list(x, y)], type="b")
 points(predbbayes$paths[[1]], type="l", col="red")
@@ -203,14 +210,14 @@ points(predbbayes$paths[[3]], type="l", col="green")
 
 Looking at three primary covariates in this analysis:
 
-1. Temperature
-2. Elevation
-3. Forest cover
+1. Temperature (study-level, but time varying)
+2. Elevation (cell-level)
+3. Forest cover (cell-level)
 
 ```{r}
 source("pigfxns.R")
-dat = pig1[1:100, list(x=longitude, y=latitude, datetime=datetime)]
-glm_data = fit_ctmcmodel(dat, loc_stackproj, grad_stackproj, method="interp", impute=4,
+dat = pig1[1:1000, list(x=longitude, y=latitude, datetime=datetime)]
+glm_data = fit_ctmcmodel(dat, pig1$pigID[1], loc_stackproj, grad_stackproj, method="interp", impute=4,
                          buffer=0.009, mc.cores=4, df=100, sigma.fixed=0.001)
 glm_data = as.data.table(glm_data)
 ```
@@ -234,15 +241,15 @@ tempdt = data.table(monthyear=monthyear, temperature=unqtemp[, 1])
 glm_datatemp = merge(glm_data, tempdt, by="monthyear")
 
 fits = list()
-for(i in 1:4){
-  fits[[i]] = glm(z ~ croplayer_loc + crw + elevation_grad,
+for(i in 1:1){
+  fits[[i]] = glm(z ~ croplayer_loc + scale(crw) + scale(elevation_grad) + scale(ndvi_3_2016_grad) + scale(ndvi_3_2016_loc),
               family="poisson", offset=log(tau), data=glm_datatemp[imputeID == i, ])
 }
 
 lapply(fits, coef)
 ```
 
-Depending on the scale of the grid cells and the uncertainty in the basis function estimate of movement, we can really change our results regarding the significance of location predictors.  This makes a lot of sense if you think about
+Depending on the scale of the grid cells and the uncertainty in the basis function estimate of movement, we can really change our results regarding the significance of location predictors.  This makes a lot of sense.
 
 ## Step 5: Parallelize across individual pigs in txcamp
 

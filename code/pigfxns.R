@@ -5,8 +5,8 @@ library(geosphere)
 library(raster)
 library(lubridate)
 library(fda)
-library(RcppEigen) # Using fastLm
 library(parallel)
+library(glmnet)
 
 parallel_pigs = function(pid, alldata, ...){
 
@@ -197,20 +197,22 @@ continuous_path = function(data, timestep, method, impute=1, df=NULL,
     knots = attributes(bsp)$knots
 
     basisfxn = create.bspline.basis(c(min(t), max(t)), breaks=knots, norder=4)
+    Xmat = Matrix(eval.basis(t, basisfxn), sparse=TRUE)
 
-    Xmat = eval.basis(t, basisfxn)
-
-    fitlong = fastLm(Xmat, scale(data$x))
-    fitlat = fastLm(Xmat, scale(data$y))
-    Betas1 = coef(fitlong)
-    Betas2 = coef(fitlat)
+    fitlong = glmnet(Xmat, scale(data$x), alpha=0, lambda=0, standardize = F, intercept=F) # No regularization
+    fitlat = glmnet(Xmat, scale(data$y), alpha=0, lambda=0, standardize = F, intercept=F) # No regularization
+    Betas1 = as.vector(fitlong$beta)
+    Betas2 = as.vector(fitlat$beta)
+    residlong = scale(data$x) - predict(fitlong, newx=Xmat) 
+    residlat = scale(data$y) - predict(fitlat, newx=Xmat) 
     print("done fitting")
 
     # Assume same latlong variance for prediction
-    sigma2 = mean(c(sum(fitlong$residuals^2) / fitlong$df.residual, 
-                    sum(fitlat$residuals^2) / fitlat$df.residual))
+    sigma2 = mean(c(sum(residlong^2) / (fitlong$nobs - fitlong$df), 
+                    sum(residlat^2) / (fitlat$nobs - fitlat$df)))
+    print(sigma2)
 
-    # This is brutally slow...
+    # This is brutally slow for large matrices.  Does not scale well...
     Vmat = sigma2*chol2inv(chol(t(Xmat) %*% Xmat))
     L = chol(Vmat) 
     print("done with inversion")
@@ -425,7 +427,7 @@ sim_traj = function(R, fit, start, steps=100){
 process_covariates = function(locvars, studynm, extobj, 
           mindate, maxdate, ext,
           cov_path="/Users/mqwilber/Repos/rsf_swine/data/covariate_data",
-          timevar=c("temperature")){
+          timevar=c("temperature", "ndvi")){
 	# Compiles lists of rasters to be used as location and gradient covariates
   # in analyses.
   #

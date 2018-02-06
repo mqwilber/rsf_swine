@@ -1,21 +1,47 @@
 ---
-title: "Data Summary"
-output: html_notebook
+title: "Data summary for pig RSF project"
+author: "Mark Wilber and Sarah Chinn"
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
-Load in the formatted pig data and pig attribute data and explore them.
+## Data overview
 
 ```{r}
 library(data.table)
+library(ggplot2)
 dat = fread("~/Repos/rsf_swine/data/formatted/full_pig_data.csv")
 ```
 
-## Summary statistics of data
+The total data that is available for the pig study consists of
+
+- 24 studies
+- 500 pigs
+- 1714595 fixes across all studies
+
+Geographically, this is the extent of our data
 
 ```{r}
-dim(dat)
-ncol(dat)
-nrow(dat)
+library(ggmap)
+
+drop = 20 # Drop the first 20 points of any pig.
+meandat = dat[order(pigID, datetime), ][,list(meanlat = mean(latitude[drop:length(latitude)]), meanlong = mean(longitude[drop:length(latitude)])), by=list(study, pigID)][]
+
+us <- c(left = -125, bottom = 23.75, right = -67, top = 54)
+map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite")
+plt = ggmap(map) + geom_point(data=meandat, aes(x=meanlong, y=meanlat, color=study), size=1)
+plt
+```
+
+The study IDs are unique identifiers for different studies which are describes in the file `data_descriptions.docx`.
+
+
+## Summary statistics of data
+
+Some basic summary statistics for each study.
+
+```{r}
 
 dat[ , list(numpigs=length(unique(pigID)), minlat=min(latitude),
             maxlat=max(latitude), minlong=min(longitude), maxlong=max(longitude),
@@ -23,56 +49,50 @@ dat[ , list(numpigs=length(unique(pigID)), minlat=min(latitude),
             by=study]
 ```
 
+## Pig attributes by site
+
+### Pig sex data
+
 Load in the pig attribute data and let's look at how pig attributes vary across studies.
 
 ```{r}
 attrib = fread("~/Repos/rsf_swine/data/formatted/pig_attributes.csv")
-head(attrib)
 
-# Change "female" to "F" and change "male" to "M"
-attrib$sex[attrib$sex == "female"] = "F"
-attrib$sex[attrib$sex == "male"] = "M"
-unique(attrib$sex)
-head(attrib)
-head(dat)
-```
-
-
-```{r}
 attrib[ , list(numfem=sum(sex == "F"), nummale=sum(sex == "M"), 
-               neither=sum(sex == "")), by=study]
+               unknown=sum(sex == "")), by=study]
 ```
 
-Look at mean pig locations by study
+Of the 500 pigs, there are 15 for which we still do not have sex data.
+
+### Pig weight data
 
 ```{r}
-dat[, list(meanlat=mean(latitude), meanlong=mean(longitude)), by=list(study, pigID)]
+wdat = attrib[, list(number_with_weight = sum(!is.na(weight_lb))), by=list(study)]
+wdat
 ```
+
+Generally, we currently don't have weight data for the studies from the movement study.  
 
 ```{r}
-
-setdiff(unique(dat$pigID), unique(attrib$pigID))
-
-newdat = merge(dat, attrib, key="pigID")
-head(newdat)
-
-newdat[, list(meanlat=mean(latitude), meanlong=mean(longitude)), by=list(study, sex)]
+sum(wdat$number_with_weight)
 ```
+
+We have weight data for 220 pigs.
+
+## Summary of collaring and fix times
 
 ```{r}
 dat$datetime = as.POSIXct(dat$datetime, tz="GMT")
 ```
 
-```{r}
-collarDur = dat[, list(deltat=max(datetime) - min(datetime), 
-                       maxdate=max(datetime), 
-                       mindate=min(datetime)), 
-                    by=list(study, pigID)]
-collarDur
-```
+Look that the distribution of collaring times for the different studies.  Note that `study == "canada"` has not been cleaned.
 
 ```{r}
-library(ggplot2)
+drop = 0
+collarDur = dat[, list(deltat=max(datetime[drop:length(datetime)]) - min(datetime[drop:length(datetime)]), 
+                       maxdate=max(datetime[drop:length(datetime)]), 
+                       mindate=min(datetime[drop:length(datetime)])), 
+                    by=list(study, pigID)]
 
 ggplot(data=collarDur) + geom_boxplot(aes(x=study, y=deltat)) + theme_bw() + 
                 xlab("Study") + ylab("Length of study in days") + 
@@ -80,10 +100,45 @@ ggplot(data=collarDur) + geom_boxplot(aes(x=study, y=deltat)) + theme_bw() +
                 
 ```
 
-Compare the range of collar dates by pigs across studies
+What are the median fix times per study?
 
 ```{r}
-ggplot(data=collarDur) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+fixtimes = dat[order(pigID, datetime), list(fixtime = median(diff(datetime))), by=list(study)]
+units(fixtimes$fixtime) = "mins"
+ggplot(fixtimes) + geom_boxplot(aes(x=study, y=fixtime)) + theme_bw() + 
+                xlab("Study") + ylab("Median fix time in minutes") + 
+                theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Most studies have a median fix time of 1 hour or less,  with the exception of `ga_bill` and `sc_jim1`.
+
+Which pigs have runs of at least 500 consecutive fixes than are less or equal to 120 minutes apart?
+
+```{r}
+source("pigfxns.R")
+
+fixrun = dat[order(pigID, datetime), list(hasrun=runs(datetime, ctime=120, clength=500)), by=list(study, pigID)][, list(totpigs=sum(hasrun)), by=study][totpigs != 0]
+fixrun
+
+```
+
+12 studies and 159 pigs have at least 500 consecutive fixes that are less than or equal to 120 minutes apart.  This is a pretty stingy criteria, so let's looks at 200 consecutive fixes that are less than ~3 hrs apart.
+
+```{r}
+fix2 = dat[order(pigID, datetime), list(hasrun=runs(datetime, ctime=190, clength=200)), by=list(study, pigID)][, list(totpigs=sum(hasrun)), by=study][totpigs != 0]
+fix2
+```
+
+This gives us 4 more studies and 305 pigs. Basically, what this summary is showing is that we might not be using all 500 pigs when looking at resource selection.
+
+## Temporal distribution of collaring times
+
+Visualize the overlap between the extent of collaring times and individual pigs. 
+
+```{r}
+tplot = ggplot(data=collarDur) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
           facet_wrap(~study, scales = 'free') + 
-          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=3))
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=0))
+tplot
+#ggsave("temp.pdf", height=15, width=15)
 ```

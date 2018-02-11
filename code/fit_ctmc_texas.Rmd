@@ -151,17 +151,24 @@ The largest time gap we have is around 24 hours. It might be useful to clean tha
 
 ```{r}
 source("pigfxns.R")
+source("covariate_scripts/covariate_fxns.R")
 pig1 = longdat2[pigID == "txcamp20127"]
 buffer = 0.005
 extobj = extent(min(pig1$longitude) - buffer, max(pig1$longitude) + buffer, min(pig1$latitude) - buffer, max(pig1$latitude) + buffer)
 
 loc_stack = process_covariates(c("temperature", "croplayer", "ndvi"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="loc")
-grad_stack = process_covariates(c("elevation","ndvi"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="grad")
+grad_stack = process_covariates(c("ndvi", "elevation"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="grad")
+
+# Compute the distance2item gradients
+gradxy_stack = process_covariates(c("croplayer"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="grad", distgrad=TRUE)
+gradx_stack = stack(lapply(gradxy_stack, function(x) x$xgrad))
+grady_stack = stack(lapply(gradxy_stack, function(x) x$ygrad))
 
 # Ensure projections are the same
 locnames = names(loc_stack)
-loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, loc_stack[['croplayer_loc']], method="ngb")))
-grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack[['croplayer_loc']], method="bilinear")))
+loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, loc_stack[['crops_2016_loc']], method="ngb")))
+grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack[['crops_2016_loc']], method="bilinear")))
+
 ```
 
 ## Step 2: Fit a continuous time basis functions and get the continuous path
@@ -206,19 +213,20 @@ points(predbbayes$paths[[3]], type="l", col="green")
 ```
 
 
-## Step 3: Fit the CTMC model using the ctmcmove package
+## Step 3: Fit the CTMC model using ctmcmove
 
 Looking at three primary covariates in this analysis:
 
 1. Temperature (study-level, but time varying)
-2. Elevation (cell-level)
+2. NDVI (cell-level)
 3. Forest cover (cell-level)
 
 ```{r}
 source("pigfxns.R")
-dat = pig1[1:1000, list(x=longitude, y=latitude, datetime=datetime)]
+dat = pig1[1:200, list(x=longitude, y=latitude, datetime=datetime)]
 glm_data = fit_ctmcmodel(dat, pig1$pigID[1], loc_stackproj, grad_stackproj, method="interp", impute=4,
-                         buffer=0.009, mc.cores=4, df=100, sigma.fixed=0.001)
+                         buffer=0.009, mc.cores=4, df=100, sigma.fixed=0.001, path2ctmcMethod = "LinearInterp",
+                         xygrad=TRUE, xgrad.stack = gradx_stack, ygrad.stack=grady_stack)
 glm_data = as.data.table(glm_data)
 ```
 
@@ -242,11 +250,11 @@ glm_datatemp = merge(glm_data, tempdt, by="monthyear")
 
 fits = list()
 for(i in 1:1){
-  fits[[i]] = glm(z ~ croplayer_loc + scale(crw) + scale(elevation_grad) + scale(ndvi_3_2016_grad) + scale(ndvi_3_2016_loc),
+  fits[[i]] = glm(z ~ forest_2016_loc + scale(openwater_2016_grad) + scale(crw),
               family="poisson", offset=log(tau), data=glm_datatemp[imputeID == i, ])
 }
 
-lapply(fits, coef)
+lapply(fits, summary)
 ```
 
 Depending on the scale of the grid cells and the uncertainty in the basis function estimate of movement, we can really change our results regarding the significance of location predictors.  This makes a lot of sense.
@@ -257,7 +265,7 @@ Depending on the scale of the grid cells and the uncertainty in the basis functi
 library(parallel)
 source("pigfxns.R")
 
-ppigs = function(i, allpigs, numpoints, buffer){
+ppigs = function(i, allpigs, numpoints, buffer, timestep){
   
   unqpig = unique(allpigs$pigID)
   pigdata = allpigs[pigID == unqpig[i], ]
@@ -265,58 +273,70 @@ ppigs = function(i, allpigs, numpoints, buffer){
   extobj = extent(min(pigdata$longitude) - buffer, max(pigdata$longitude) + buffer, 
                   min(pigdata$latitude) - buffer, max(pigdata$latitude) + buffer)
   
-  loc_stack = process_covariates(c("temperature", "croplayer"), "txcamp", extobj, 
-                                 min(allpigs$datetime), max(allpigs$datetime), ext="loc")
-  grad_stack = process_covariates(c("elevation"), "txcamp", extobj, 
-                                 min(allpigs$datetime), max(allpigs$datetime), ext="grad")
+  loc_stack = process_covariates(c("temperature", "croplayer", "ndvi"), "txcamp", extobj, 
+                                 min(pigdata$datetime), max(pigdata$datetime), ext="loc")
+  grad_stack = process_covariates(c("ndvi"), "txcamp", extobj, 
+                                 min(pigdata$datetime), max(pigdata$datetime), ext="grad")
+  gradxy_stack = process_covariates(c("croplayer"), "txcamp", extobj, 
+                                 min(pigdata$datetime), max(pigdata$datetime), ext="grad")
+  
+  gradx_stack = stack(lapply(gradxy_stack, function(m) m$xgrad))
+  grady_stack = stack(lapply(gradxy_stack, function(m) m$ygrad))
   
   # Ensure projections are the same
   locnames = names(loc_stack)
-  loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, loc_stack[['croplayer_loc']],
+  loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, loc_stack[['forest_2016_loc']],
                                                                                 method="ngb")))
-  grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack[['croplayer_loc']],
+  grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack[['forest_2016_loc']],
                                                                                 method="bilinear")))
+  gradx_stackproj = stack(lapply(gradx_stack, function(x) projectRaster(x, loc_stack[['forest_2016_loc']],
+                                                                                method="ngb")))
+  grady_stackproj = stack(lapply(grady_stack, function(x) projectRaster(x, loc_stack[['forest_2016_loc']],
+                                                                                method="ngb")))
   
   pigdata = pigdata[, list(x=longitude, y=latitude, datetime=datetime)]
-  tglmdat = fit_ctmcmodel(pigdata[1:numpoints, ], unqpig[i], loc_stackproj, grad_stackproj, method="interp", impute=1,
-                          buffer=0.002, mc.cores=1)
-  
-  # NEED TO MATCH COLUMNS
+  tglmdat = fit_ctmcmodel(pigdata[1:numpoints, ], unqpig[i], loc_stackproj, grad_stackproj, 
+                          method="interp", impute=1, timestep=timestep,
+                          buffer=0.002, mc.cores=1, path2ctmcMethod="ShortestPath",
+                          xygrad=TRUE, xgrad.stack = gradx_stackproj, ygrad.stack = grady_stackproj)
   
   return(tglmdat)
 }
 
-unqpig = unique(longdat2$pigID)
-allglmdat = mclapply(1:length(unqpig), ppigs, longdat2, 100, 0.002, mc.cores=4)
+ppigs(unqpig[1], longdat2, 500, 0.002, "15 mins")
+
+#unqpig = unique(longdat2$pigID)
+#allglmdat = mclapply(1:length(unqpig), ppigs, longdat2, 500, 0.002, "15 mins", mc.cores=4)
 
 ```
 
 ```{r}
-glmdat = as.data.table(do.call(rbind, allglmdat))
+source("pigfxns.R")
+tg = process_glmdata(allglmdat,
+                            c("temperature", "ndvi.*loc", "ndvi.*grad", "forest.*loc", "crop.*loc", "openwater.*loc", "grain.*loc"),
+                            c("temperature_loc", "ndvi_loc", "ndvi_grad", "forest_loc", "crop_loc", "water_loc", "grain_loc"),
+                            c("my", "my", "my", "y", "y", "y", "y"))
 
-# Format various time-dependent measures
-glmdat$datetime = as.POSIXct(glmdat$t, origin = '1970-01-01', tz = 'GMT')
-glmdat$hour = hour(glmdat$datetime)
-glmdat$month = month(glmdat$datetime)
-glmdat$year = year(glmdat$datetime)
-glmdat$monthyear = paste(glmdat$month, glmdat$year, sep="_")
+tgform = lapply(tg, function(x) x[, c('z', 'pigID', 'temperature_loc', 'ndvi_loc', 'ndvi_grad', 
+                                      'forest_loc', 'crop_loc', 'water_loc', 'grain_loc', 'imputeID', 
+                                      'crw', 'x.current', 'y.current', 'x.adj', 'y.adj', 'tau', 't', 'datetime')])
 
-# Convert temperature data
-unqtemp = t(glmdat[, unique(.SD), .SDcols = names(glmdat) %like% "temperature"])
-monthyear = sapply(strsplit(rownames(unqtemp), "_"), function(x) paste(x[[2]], x[[3]], sep="_"))
-tempdt = data.table(monthyear=monthyear, temperature=unqtemp[, 1])
+```
 
-glmdat_temp = merge(glmdat, tempdt, by="monthyear")
+```{r}
+glmdat = as.data.table(do.call(rbind, tgform))
 
 ```
 
 ```{r}
 library(lme4)
-fit = glmer(z ~ croplayer_loc + elevation_grad + (croplayer_loc + elevation_grad | pigID) + crw,
-              family="poisson", offset=log(tau), data=glmdat_temp)
+fit = glmer(z ~ forest_loc + scale(ndvi_loc) + scale(ndvi_grad) + scale(crw) + (forest_loc | pigID),
+              family="poisson", offset=log(tau), data=glmdat)
 ```
 
 ```{r}
 summary(fit)
-boxplot(coef(fit)$pigID[, "croplayer_loc"])
+boxplot(coef(fit)$pigID[, "forest_loc"])
 ```
+
+In general, pigs tend to move slower in forest

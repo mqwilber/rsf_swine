@@ -13,7 +13,18 @@ All the raw datasets are stored in ../archival and are converted in this script.
 
 Pig attribute data are converted to match the the format of the GPS data.
 
-Both converted files are saved in the formatted data folder
+Both converted files are saved in the formatted data folder.
+
+Throughout this script various adjustments are made to the data. Some of the
+important adjustments include
+
+1. Points from SRS Kilgo are dropped that are clearly erroneous based on outlying
+GPS locations.
+
+2. Michigan pigs that were sampled in the year 2000 are removed as there are no
+H:M:S fixes on the GPS dates.
+
+3. Data are cleaned and IDs are changed to match with pig attributes file
 
 """
 
@@ -154,6 +165,11 @@ for i, df in enumerate(dfs):
 
 
 full_dat = pd.concat(dfs)
+
+# For the michigan study, exclude all the points from year 2000 as they don't have
+# daily times
+full_dat.loc[:, "year"] = [a.year for a in full_dat.datetime] 
+full_dat = full_dat[~((full_dat.year == 2000) & (full_dat.study == "michigan"))]
 
 print("Done")
 
@@ -389,9 +405,6 @@ study_sum = comb_dat.groupby("study").agg({'latitude' : {'min': np.min, 'max': n
                                              'maxdate': np.max}})
 
 study_sum.columns = ['_'.join(col).strip() for col in study_sum.columns.values]
-
-# Extract min max year for each study
-
 
 study_sum.to_csv("study_summary.csv")
 

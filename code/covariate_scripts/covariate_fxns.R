@@ -81,3 +81,9 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 
 }
 
+
+
+
+
+
+

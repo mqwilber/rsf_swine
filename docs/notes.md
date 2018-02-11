@@ -180,8 +180,48 @@ Got the Hanks et al. model up and running using an interpolation approach to the
 
 4. Implement time varying movement
 
-**Challenge**
 
+
+## February 6, 2018
+
+The movement model is implemented and now it is a matter of identifying questions that are interesting and extracting the covariates that are important. I had a couple thoughts on this.
+
+First, in order to make the analysis comparable across populations I think we could focus on the following question
+
+1. How does pig movement vary in response to cultivated resources/cultivated resource gradients and uncultivated resources/gradients?  Do these movements change across scales populations and do they interact with temperature, pig density, and water availability? 
+
+	- To answer this question, I propose that we think about broad scale "uncultivated" resources in terms of NDVI/EVI, which is a rough proxy for productivity.  There are obviously some issues with this as this isn't going to really get at all of the uncultivated resources available to the pigs.  However, this will give a rough and consistent measure of "productivity" across populations such that we can build an uncultivated resource gradient on the landscape.  We can supplement this layer with a masting layer provided by Mikey. 
+		- Sources: VegScape (USDA) for NDVI.  MODIS for EVI. Mikey for masting layer.
+		- This could be a composite layer oF NDVI, masting, and other variables that define "non-cultivated" resource
+
+	- Second, we also need to consider cultivated resources (e.g. agriculture). In this case, we want to make agriculture comparable across populations, so we have discussed converting crops into calories per bushel and looking at average yield per county for particular crop types in the US (see https://quickstats.nass.usda.gov/ for the data). In this way we could look at a "calorie landscape" for cultivated crops and, at least coarsely, compare across different crop types.  The biological rational is that if pigs are generalists, than perhaps they are selecting for the caloric potential of a resource patch.  This would also allow us to explore how cultivated calories affects movements (or even if it does), how this interacts with temperature, and how this changes with time.
+		- Will need to extract measures of calories per pound for each type of crop.
+		- 
+
+	- We will also need to include a proxy for cover: i.e. forest habitat.  Multiple studies have shown that this is important for resting behaviors. I think the easiest way to do this will be to use the CropScape data to classify either forest or non-forest across different populations.
+
+	- The questions
+
+	1. How does pig movement respond to the cultivated and non-cultivated resources? Do movement patterns/selection of these resources change over time?
+
+	2. How do biological factors such as pig density effect the way in which pigs interact with cultivated and non-cultivated resources?
+
+	3. How do abiotic factors such as temperature and availability of water affect the movement patterns/selection of pigs?
+
+	4. Are these effects consistent across populations, suggesting a consistent way in which pigs select and use resource?
+
+	5. Finally, for Sarah's question, how do individual attributes of (weight, sex, reproductive status) affect the selection of resources by pigs?
+
+
+## Feb. 9, 2018
+
+Goals for today
+
+1. Extract NDVI, Cropscape, and Temperature data for Michigan pigs.
+2. Clean and format Michigan pigs.
+3. Run a comparison between Michigan pigs and Tx Camp pigs. 
+4. Account for time varying NDVI and include it in model.
+5. Read at least 2 paper on feral swine (movement/influenza).
 
 
 

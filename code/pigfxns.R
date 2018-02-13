@@ -13,7 +13,9 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
                                   n.mcmc=400, df=NULL, impute=1, 
                                   mc.cores=1, sigma.fixed=NA,
                                   path2ctmcMethod="ShortestPath",
-                                  xygrad=FALSE, xgrad.stack=NULL, ygrad.stack=NULL){
+                                  xygrad=FALSE, xgrad.stack=NULL, 
+                                  ygrad.stack=NULL,
+                                  grad.point.decreasing=FALSE){
   # Fits a continuous movement path and generates glm data
   #
   # Parameters
@@ -52,6 +54,17 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
   #   and allows for impassible barriers specified through
   #   "zero.idx".  "LinearInterp" is faster but does not allow for
   #   impassible barriers.
+  # xygrad : bool
+  #   If TRUE expects, xgrad.stack and ygrad.stack arguments that contain RasterStacks
+  #   of pre-computed gradient covariates.  Note that ctmcmove will compute most
+  #   gradients for you and this is for covariates such as a gradient pointing 
+  #   toward the nearest cropland. 
+  # xgrad.stack : Null or RasterStack
+  #   RasterStack containing x dimension of covariates
+  # ygrad.stack : Null or RasterStack
+  #   RasterStack containing y dimension of covariates
+  # grad.point.decreasing: Bool
+  #   If TRUE, take the negative gradient.
 
   # Get the bounding box around observations and crop raster
   ymin = min(pigdata$y)
@@ -75,10 +88,10 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
   # values(move_field) = 1
   # trans = transition(move_field, prod, 4)
 
-  # Make this break more intelligently. 
+  # TODO: Make this break more intelligently. 
   imputepath = function(x){
 
-    cat("Working on imputation ", x, " of ", impute, "\n")
+    cat("Computing imputation", x, "of", impute, "for", pigID, "\n")
     path = list(xy=predPath$path[[x]], t=as.vector(predPath$time))
 
     # Can be slow...need to be smart about which cells to consider.
@@ -87,9 +100,11 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
                 method=path2ctmcMethod)
 
     if(xygrad)
-      tglm_data = ctmc2glm_wgrad(ctmc, loc.stack, grad.stack, xgrad.stack, ygrad.stack)
+      tglm_data = ctmc2glm_wgrad(ctmc, loc.stack, grad.stack, xgrad.stack, ygrad.stack, 
+                        grad.point.decreasing=grad.point.decreasing)
     else
-      tglm_data = ctmc2glm(ctmc, loc.stack, grad.stack)
+      tglm_data = ctmc2glm(ctmc, loc.stack, grad.stack, grad.point.decreasing=grad.point.decreasing)
+
     tglm_data$pigID = pigID
     tglm_data$imputeID = x # Number the imputed distributions
     return(tglm_data)
@@ -132,6 +147,9 @@ continuous_path = function(data, timestep, method, impute=1, df=NULL,
   #   Degrees of freedom of the B-spline
   # n.mcmc : int
   #     Number of MCMC samples if Bayesian approach is used
+  # sigma.fixed : float
+  #   Fix the observation error in the MCMC to sigma.fixed. If NA, this
+  #   parameter will be estimated.
   #
   # Returns
   # -------
@@ -196,21 +214,20 @@ continuous_path = function(data, timestep, method, impute=1, df=NULL,
     Betas2 = as.vector(fitlat$beta)
     residlong = scale(data$x) - predict(fitlong, newx=Xmat) 
     residlat = scale(data$y) - predict(fitlat, newx=Xmat) 
-    print("done fitting")
+    cat("done fitting\n")
 
     # Assume same latlong variance for prediction
     sigma2 = mean(c(sum(residlong^2) / (fitlong$nobs - fitlong$df), 
                     sum(residlat^2) / (fitlat$nobs - fitlat$df)))
-    print(sigma2)
 
     # This is brutally slow for large matrices.  Does not scale well...
     Vmat = sigma2*chol2inv(chol(t(Xmat) %*% Xmat))
     L = chol(Vmat) 
-    print("done with inversion")
+    cat("done with inversion\n")
 
     # Very slow...but converting to the sparse matrix really speeds up imputation
     Xpred = eval.basis(tpred, basisfxn)
-    print("done with basis pred")
+    cat("done with basis pred\n")
     #print(class(Xpred))
 
     predPaths = list()
@@ -233,7 +250,7 @@ continuous_path = function(data, timestep, method, impute=1, df=NULL,
 
 getR = function (object, stack.static, stack.grad, normalize.gradients = FALSE, 
                  grad.point.decreasing = TRUE, directions = 4, zero.idx = integer(), 
-                 coef){
+                 coef, xygrad=TRUE, stack.xgrad=NULL, stack.ygrad=NULL){
   # same as ctmcmove::get.rate.matrix, but allows you to use dummy variables. ctmcmove has a bug along these lines.
   if (inherits(stack.static, "Raster")) {
     p.static = nlayers(stack.static)
@@ -241,8 +258,24 @@ getR = function (object, stack.static, stack.grad, normalize.gradients = FALSE,
   else p.static = 0
   p.crw = 0
   if (inherits(stack.grad, "Raster")) {
-    p.grad = nlayers(stack.grad)
-    stack.gradient = rast.grad(stack.grad)
+
+    # TODO: Add in additional gradient vectors.
+    if(!xygrad){
+      p.grad = nlayers(stack.grad)
+      stack.gradient = rast.grad(stack.grad)
+    } else{
+      p.grad = nlayers(stack.grad) + nlayers(stack.xgrad)
+      stack.gradient = rast.grad(stack.grad)
+
+      # Add on the additional gradient covariates
+      stack.gradient$rast.grad.x = stack(list(stack.gradient$rast.grad.x, stack.xgrad))
+      stack.gradient$rast.grad.y = stack(list(stack.gradient$rast.grad.y, stack.ygrad))
+      stack.gradient$grad.x = cbind(do.call(cbind, lapply(unstack(stack.xgrad), function(x) values(x))), stack.gradient$grad.x)
+      stack.gradient$grad.y = cbind(do.call(cbind, lapply(unstack(stack.ygrad), function(x) values(x))), stack.gradient$grad.y)
+      colnames(stack.gradient$grad.x)[1:length(names(stack.xgrad))] = names(stack.xgrad)
+      colnames(stack.gradient$grad.y)[1:length(names(stack.ygrad))] = names(stack.ygrad)
+    }
+
     if (normalize.gradients) {
       lengths = sqrt(stack.gradient$grad.x^2 + stack.gradient$grad.y^2)
       stack.gradient$grad.x <- stack.gradient$grad.x/lengths
@@ -290,6 +323,8 @@ getR = function (object, stack.static, stack.grad, normalize.gradients = FALSE,
   X$tau = 1
   X$crw = 0
   if (missing(coef)) {
+    # print(X)
+    a = as.vector(predict(object, newdata = X, type = "response"))
     R[idx.mot] = as.vector(predict(object, newdata = X, type = "response"))
   }
   else {
@@ -304,7 +339,8 @@ getR = function (object, stack.static, stack.grad, normalize.gradients = FALSE,
 }
 
 
-ctmc2glm_wgrad = function (ctmc, stack.static, stack.grad, stack.xgrad, stack.ygrad, crw = TRUE, 
+ctmc2glm_wgrad = function (ctmc, stack.static, stack.grad, 
+    stack.xgrad, stack.ygrad, crw = TRUE, 
     normalize.gradients = FALSE, 
     grad.point.decreasing = TRUE, include.cell.locations = TRUE, 
     directions = 4, zero.idx = integer()) 
@@ -322,6 +358,7 @@ ctmc2glm_wgrad = function (ctmc, stack.static, stack.grad, stack.xgrad, stack.yg
         p.grad = nlayers(stack.grad) + nlayers(stack.xgrad)
         stack.gradient = rast.grad(stack.grad)
 
+        # Add on the additional gradient covariates
         stack.gradient$rast.grad.x = stack(list(stack.gradient$rast.grad.x, stack.xgrad))
         stack.gradient$rast.grad.y = stack(list(stack.gradient$rast.grad.y, stack.ygrad))
         stack.gradient$grad.x = cbind(do.call(cbind, lapply(unstack(stack.xgrad), function(x) values(x))), stack.gradient$grad.x)
@@ -602,9 +639,10 @@ process_covariates = function(locvars, studynm, extobj,
           fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", ctype, "_", yr, ".grd", sep=""))
           tras = raster(fp)
 
+          # Compute distance2 gradients for croptypes
           if(distgrad){ 
             if(ctype != "forest"){
-              print(paste("Working on", ctype))
+              cat("Processing", ctype, "\n")
               loclist[[paste(ctype, yr, ext, sep="_")]] = get_distance_to_gradient(crop(tras, extobj))
             }
           }
@@ -755,7 +793,7 @@ condense_cols = function(gd, likename, timeref, timetype="my"){
   # Parameters
   # ----------
   # gd : data.table
-  # likename: str, regex expression to matdh columns
+  # likename: str, regex expression to match columns
   # timeref : vector with time either years or month_year values
   # timetype : str, "my" for month_year and "y" for year
 
@@ -792,18 +830,25 @@ get_distance_to_gradient = function(raster){
   #
   # Notes
   # -----
-  # Need to make this a bit more efficient 
+  # Need to make this much more efficient OR preprocess
 
+  xras = yras = raster
   longlat_ctype = rasterToPoints(raster, function(x) x == 1)[, c("x", "y"), drop=FALSE]
 
-  if(nrow(longlat_ctype) == 0)
-    return(list(xgrad=rep(0, ncell(raster)), ygrad=rep(0, ncell(raster))))
+  # If there are no crop types return 0 gradients
+  if(nrow(longlat_ctype) == 0){
 
-  longlat_all = rasterToPoints(raster)[, c('x', 'y')]
-  grad = t(apply(longlat_all, 1, wgradient, longlat_ctype))
-  xras = yras = raster
-  values(xras) = grad[, 1]
-  values(yras) = grad[, 2]
+    values(xras) = 0
+    values(yras) = 0
+
+  } else{
+
+    longlat_all = rasterToPoints(raster)[, c('x', 'y')]
+    grad = t(apply(longlat_all, 1, wgradient, longlat_ctype))
+    values(xras) = grad[, 1]
+    values(yras) = grad[, 2]
+  }
+
   return(list(xgrad=xras, ygrad=yras))
 
 }
@@ -816,13 +861,13 @@ wgradient = function(pt, longlat_ctype){
   dists = as.vector(spDists(longlat_ctype, matrix(pt, nrow=1, ncol=2), longlat=TRUE))
   norm_vects =  t(apply(t(t(longlat_ctype) - pt), 1, scalar1))
 
-  ind = dists != 0 # Drop any 0 distances
+  ind = dists != 0 # Drop any 0 distances (i.e. the cell itself)
 
   if(all(!ind))
-    sum_grad = c(0, 0)
+    sum_grad = c(0, 0) # If there are no croptypes return 0 gradient.
   else{
-    weighted_vects = norm_vects[ind, , drop=FALSE] * 1 / dists[ind] # Weight vectors by distance. 
-    sum_grad = scalar1(colSums(weighted_vects))
+    weighted_vects = norm_vects[ind, , drop=FALSE] * exp(-dists[ind]) # Weight vectors by distance. HOW? 
+    sum_grad = colSums(weighted_vects) #scalar1
   }
   return(sum_grad)
 

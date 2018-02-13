@@ -1,0 +1,192 @@
+Working on pig 1 of 32 : txcamp20125 
+Working on pig 2 of 32 : txcamp20126 
+Working on pig 3 of 32 : txcamp20127 
+Working on pig 4 of 32 : txcamp20130 
+Processing crops 
+Processing crops 
+Processing crops 
+Processing crops 
+Processing grainshayseeds 
+Processing grainshayseeds 
+Processing grainshayseeds 
+Processing grainshayseeds 
+Processing openwater 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20130 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20126 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20127 
+Computing imputation 1 of 1 for txcamp20125 
+Done with pig 2 of 32 : txcamp20126 
+Working on pig 6 of 32 : txcamp20133 
+Processing crops 
+Done with pig 4 of 32 : txcamp20130 
+Working on pig 8 of 32 : txcamp20135 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20135 
+Done with pig 1 of 32 : txcamp20125 
+Working on pig 5 of 32 : txcamp20132 
+Processing crops 
+Done with pig 3 of 32 : txcamp20127 
+Working on pig 7 of 32 : txcamp20134 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20134 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20132 
+Done with pig 7 of 32 : txcamp20134 
+Working on pig 11 of 32 : txcamp20138 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20138 
+Done with pig 5 of 32 : txcamp20132 
+Working on pig 9 of 32 : txcamp20136 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Done with pig 8 of 32 : txcamp20135 
+Working on pig 12 of 32 : txcamp20139 
+Processing crops 
+Processing grainshayseeds 
+Computing imputation 1 of 1 for txcamp20136 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20139 
+Done with pig 11 of 32 : txcamp20138 
+Working on pig 15 of 32 : txcamp20145 
+Processing crops 
+Processing grainshayseeds 
+Processing grainshayseeds 
+Done with pig 12 of 32 : txcamp20139 
+Working on pig 16 of 32 : txcamp20146 
+Processing crops 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20145 
+Done with pig 9 of 32 : txcamp20136 
+Working on pig 13 of 32 : txcamp20141 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20133 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20141 
+Processing openwater 
+Done with pig 15 of 32 : txcamp20145 
+Working on pig 19 of 32 : txcamp20150 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20150 
+Done with pig 6 of 32 : txcamp20133 
+Working on pig 10 of 32 : txcamp20137 
+Processing crops 
+Processing grainshayseeds 
+Done with pig 13 of 32 : txcamp20141 
+Working on pig 17 of 32 : txcamp20147 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20137 
+Computing imputation 1 of 1 for txcamp20147 
+Done with pig 19 of 32 : txcamp20150 
+Working on pig 23 of 32 : txcamp20157 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20157 
+Done with pig 17 of 32 : txcamp20147 
+Working on pig 21 of 32 : txcamp20154 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20154 
+Done with pig 23 of 32 : txcamp20157 
+Working on pig 27 of 32 : txcamp20165 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20165 
+Done with pig 21 of 32 : txcamp20154 
+Working on pig 25 of 32 : txcamp20160 
+Processing crops 
+Done with pig 10 of 32 : txcamp20137 
+Working on pig 14 of 32 : txcamp20142 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20142 
+Done with pig 27 of 32 : txcamp20165 
+Working on pig 31 of 32 : txcamp20426 
+Processing grainshayseeds 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20160 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20426 
+Done with pig 14 of 32 : txcamp20142 
+Working on pig 18 of 32 : txcamp20149 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20149 
+Done with pig 31 of 32 : txcamp20426 
+Done with pig 18 of 32 : txcamp20149 
+Working on pig 22 of 32 : txcamp20155 
+Processing crops 
+Done with pig 25 of 32 : txcamp20160 
+Working on pig 29 of 32 : txcamp20168 
+Processing crops 
+Done with pig 16 of 32 : txcamp20146 
+Working on pig 20 of 32 : txcamp20153 
+Processing crops 
+Processing grainshayseeds 
+Processing grainshayseeds 
+Processing openwater 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20155 
+Processing grainshayseeds 
+Computing imputation 1 of 1 for txcamp20153 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20168 
+Done with pig 22 of 32 : txcamp20155 
+Working on pig 26 of 32 : txcamp20163 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20163 
+Done with pig 20 of 32 : txcamp20153 
+Working on pig 24 of 32 : txcamp20159 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20159 
+Done with pig 26 of 32 : txcamp20163 
+Working on pig 30 of 32 : txcamp20169 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20169 
+Done with pig 24 of 32 : txcamp20159 
+Working on pig 28 of 32 : txcamp20167 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Done with pig 30 of 32 : txcamp20169 
+Computing imputation 1 of 1 for txcamp20167 
+Done with pig 29 of 32 : txcamp20168 
+Done with pig 28 of 32 : txcamp20167 
+Working on pig 32 of 32 : txcamp20427 
+Processing crops 
+Processing grainshayseeds 
+Processing openwater 
+Computing imputation 1 of 1 for txcamp20427 
+Done with pig 32 of 32 : txcamp20427 

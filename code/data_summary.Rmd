@@ -18,9 +18,9 @@ The total data that is available for the pig study consists of
 
 - 24 studies
 - 500 pigs
-- 1714595 fixes across all studies
+- 1,714,595 fixes across all studies
 
-Geographically, this is the extent of our data
+Geographically, the extent of the data is
 
 ```{r, message=FALSE, echo=FALSE}
 library(ggmap)
@@ -34,7 +34,20 @@ plt = ggmap(map) + geom_point(data=meandat, aes(x=meanlong, y=meanlat, color=stu
 plt
 ```
 
-The study IDs are unique identifiers for different studies which are described in the file `data_descriptions.docx`.  
+The study IDs are unique identifiers for different studies which are described in the file `data_descriptions.docx`. The contributors/contacts that we have associated with each study are
+
+- `cali`: Lindsey Holstrom
+- `canada`: Ryan Brook
+- `fl_raoul`: Raoul Boughton
+- `florida`: David Wolfson, Ryan Miller, Raoul Boughton
+- `judas_pig`: Justin Fisher
+- `michigan`: Gary Roloff
+- `srel_contact`: Jim Beasley
+- `srel_vacuum`: Jim Beasley
+- `srs_kilgo`: John Kilgo
+- `tejon`: Ryan Miller
+- `txcamp`: Nate Snow
+- All other studies are part of Kay et al. 2017 (*Movement Ecology*) with various contacts and descriptions described therein.
 
 ## Summary statistics of data
 
@@ -52,13 +65,18 @@ dat[ , list(numpigs=length(unique(pigID)), minlat=min(latitude),
 
 ### Pig sex data
 
-How does pig sex varies across studies?
+How does pig sex vary across studies?
 
 ```{r, echo=FALSE}
-attrib = fread("~/Repos/rsf_swine/data/formatted/pig_attributes.csv")
+attrib = fread("~/Repos/rsf_swine/data/formatted/pig_attributes.csv")[study != "alwe"]
+attrib[sex == "", "sex"] = "unknown"
 
-attrib[ , list(numfem=sum(sex == "F"), nummale=sum(sex == "M"), 
-               unknown=sum(sex == "")), by=study]
+sex = attrib[ , list(numfem=sum(sex == "F"), nummale=sum(sex == "M"), 
+               unknown=sum(sex == "unknown")), by=study]
+
+sex
+ggplot(attrib) + geom_bar(aes(x=study, fill=sex), position="dodge", width=0.5) + theme_bw() + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) 
 ```
 
 Of the 500 pigs, there are 15 for which we still do not have sex data.
@@ -70,7 +88,7 @@ wdat = attrib[, list(number_with_weight = sum(!is.na(weight_lb))), by=list(study
 wdat
 ```
 
-Generally, we currently don't have weight data for the studies from the movement study (Kay et al. 2017 *Movement Ecology*) or the Canada pigs.  We likely won't use weight as a variable for the large scale analysis, so this is probably ok.  Though do plan to focus on weight for more site specific anlayses.
+Generally, we currently don't have weight data for the studies from the movement study (i.e. Kay et al. 2017 *Movement Ecology*) or the Canada pigs.  We likely won't use weight as a variable in the large scale analysis, so this is probably OK. However, we are planning on performing a more fine-scale resource selection analysis for which we will plan on using pig weight data.
 
 ```{r, echo=FALSE}
 totweight = sum(wdat$number_with_weight)
@@ -82,7 +100,9 @@ totweight = sum(wdat$number_with_weight)
 dat$datetime = as.POSIXct(dat$datetime, tz="GMT")
 ```
 
-Look at the distribution of collaring times per pig for the different studies.  Note that `study == "canada"` has not been cleaned, it has some large collaring times. There are a number of other points that also indicate that additional data cleaning will be necessary before fitting the resource/movement models.
+The figure below shows the distribution of collaring times per pig for the different studies.  Note that a number of studies have not yet been cleaned, leading to some large collaring times.  Additional data cleaning will be necessary before fitting the resource selection/movement models.  
+
+At the moment, we are doing this individually for each study **but if you have any insight into your particular study regarding which points at the beginning/end should be excluded to account for either capture effects or non-animal fixes, please let us know**.
 
 ```{r, echo=FALSE}
 drop = 0
@@ -100,18 +120,26 @@ ggplot(data=collarDur) + geom_boxplot(aes(x=study, y=deltat)) + theme_bw() +
 What are the median fix times per study?
 
 ```{r, echo=FALSE}
-fixtimes = dat[order(pigID, datetime), list(fixtime = median(diff(datetime))), by=list(study)]
+
+diffunits = function(x){
+  dt = diff(x)
+  units(dt) = "mins"
+  return(dt)
+}
+fixtimes = dat[order(pigID, datetime), list(fixtime = median(diffunits(datetime))), by=list(study)]
 units(fixtimes$fixtime) = "mins"
 ggplot(fixtimes) + geom_boxplot(aes(x=study, y=fixtime)) + theme_bw() + 
                 xlab("Study") + ylab("Median fix time in minutes") + 
                 theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-Most studies have a median fix time of 1 hour or less,  with the exception of `ga_bill` and `sc_jim1`.
+Many studies have a median fix time of 3 hours or less (the lowest bars are 15 min median fix times).
 
 ---
 
-The following pigs have runs of at least 500 consecutive fixes that are less or equal to 120 minutes apart.
+While the modeling approach that we are planning on using inherently accounts for unequal fix times by fitting a continuous-time movement model to the GPS data for each individual pig, it is still advantageous (statistically speaking) to have fix times that are not "too" far apart. Increasing the distance between fix times increases the uncertainty in the movement models and the subsequent predictions regarding resource selection. 
+
+To address this, let's look at how many pigs have at least 500 consecutive fixes that are less or equal to 120 minutes apart (shown below by study).
 
 ```{r, echo=FALSE}
 source("pigfxns.R")
@@ -121,23 +149,31 @@ fixrun
 
 ```
 
-12 studies and 159 pigs have at least 500 consecutive fixes that are less than or equal to 120 minutes apart.  This is a pretty stingy criteria, so let's looks at 200 consecutive fixes that are less than ~3 hrs apart.
+12 studies and 159 pigs have at least 500 consecutive fixes that are less than or equal to 120 minutes apart.  This is a pretty stingy criteria, so let's looks at how many pigs have 200 consecutive fixes that are less than ~3 hrs apart.
 
 ```{r, echo=FALSE}
 fix2 = dat[order(pigID, datetime), list(hasrun=runs(datetime, ctime=190, clength=200)), by=list(study, pigID)][, list(totpigs=sum(hasrun)), by=study][totpigs != 0]
 fix2
 ```
 
-This gives us 4 more studies and 305 pigs. Basically, what this summary is showing is that we might not be using all 500 pigs when looking at resource selection.
+This gives us 4 more studies and 305 pigs. This summary is showing us that we will likely not be able to use all of the pigs when fitting the RSF models.
 
 ## Temporal distribution of collaring times
 
-Visualize the overlap between the extent of collaring times and individual pigs. 
+As resource selection inherently varies over time, it will be important account for the fact that the extent of collaring times is not necessarily consistent for all pigs within a study and is definitely not consistent across studies. In the analysis, we will want to account for temporal differences in collaring times within and across studies (at least at the monthly level). The following plots show the range of fix times across all pigs in each study.
 
 ```{r, echo=FALSE}
-tplot = ggplot(data=collarDur) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+tplot = ggplot(data=collarDur[study %in% unique(study)[1:12]]) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
           facet_wrap(~study, scales = 'free') + 
-          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=0))
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=0)) + ylab("Date")
+tplot
+#ggsave("temp.pdf", height=15, width=15)
+```
+
+```{r, echo=FALSE}
+tplot = ggplot(data=collarDur[study %in% unique(study)[13:24]]) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+          facet_wrap(~study, scales = 'free') + 
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=0)) + ylab("Date")
 tplot
 #ggsave("temp.pdf", height=15, width=15)
 ```

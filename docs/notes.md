@@ -217,12 +217,21 @@ First, in order to make the analysis comparable across populations I think we co
 
 Goals for today
 
-1. Extract NDVI, Cropscape, and Temperature data for Michigan pigs.
-2. Clean and format Michigan pigs.
+1. Extract NDVI, Cropscape, and Temperature data for Michigan pigs. 
+	- Didn't extract NDVI.  VegScape was being tricky for bulk extractions.
+2. Clean and format Michigan pigs. [DONE]
 3. Run a comparison between Michigan pigs and Tx Camp pigs. 
-4. Account for time varying NDVI and include it in model.
-5. Read at least 2 paper on feral swine (movement/influenza).
+4. Account for time varying NDVI and include it in model. [DONE]
+5. Compute distance2gradient calculation [DONE]
+	- Need to decide on appropriate distance decay function
+6. Read at least 2 papers on feral swine (movement/influenza).
 
+## Feb. 12, 2018
+
+1. Finalize data summary and 
+2. Talk with Sarah about covariates.  Check if they are done.
+3. Run comparison between Michigan and txcamp pigs
+4. Read papers on feral 
 
 
 

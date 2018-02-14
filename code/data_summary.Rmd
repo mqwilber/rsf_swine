@@ -8,7 +8,7 @@ output:
 
 ## Data overview
 
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, include=FALSE}
 library(data.table)
 library(ggplot2)
 dat = fread("~/Repos/rsf_swine/data/formatted/full_pig_data.csv")
@@ -34,7 +34,7 @@ plt = ggmap(map) + geom_point(data=meandat, aes(x=meanlong, y=meanlat, color=stu
 plt
 ```
 
-The study IDs are unique identifiers for different studies which are described in the file `data_descriptions.docx`. The contributors/contacts that we have associated with each study are
+The study IDs are unique identifiers for different studies. The contributors/contacts that we have associated with each study are
 
 - `cali`: Lindsey Holstrom
 - `canada`: Ryan Brook
@@ -51,12 +51,13 @@ The study IDs are unique identifiers for different studies which are described i
 
 ## Summary statistics of data
 
-Some basic summary statistics for each study.  Includes the number of pigs (`numpigs`), the minimum lat/long, the maximum lat/long, and the number of fixes (`numfixes`) in each study.
+Some basic summary statistics for each study.  Includes the number of pigs (`numpigs`), the minimum lat/long, the maximum lat/long, the minimum date, the maximum date, and the number of fixes (`numfixes`) in each study.
 
 ```{r, echo=FALSE}
-
+dat$datetime = as.POSIXct(dat$datetime, tz="GMT")
 dat[ , list(numpigs=length(unique(pigID)), minlat=min(latitude),
             maxlat=max(latitude), minlong=min(longitude), maxlong=max(longitude),
+            mindate=min(datetime), maxdate=max(datetime),
             numfixes=length(pigID)),
             by=study]
 ```

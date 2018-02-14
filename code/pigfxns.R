@@ -29,7 +29,7 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
   # grad.stack : RasterStack
   #   Gradient rasters
   # timestep : str
-  #   e.g. "15 mins"
+  #   e.g. "15 mins",  specifies the equal length time interval to impute.
   # method: str
   #   Specifies how to compute the continuous path.
   #   Options are:
@@ -581,7 +581,7 @@ process_covariates = function(locvars, studynm, extobj,
           cov_path="/Users/mqwilber/Repos/rsf_swine/data/covariate_data",
           timevar=c("temperature", "ndvi"),
           croptypes=c("crops", "grainshayseeds", "forest", "openwater"),
-          distgrad=FALSE){
+          distgrad=FALSE, decay=1){
 	# Compiles lists of rasters to be used as location and gradient covariates
   # in analyses.
   #
@@ -643,7 +643,7 @@ process_covariates = function(locvars, studynm, extobj,
           if(distgrad){ 
             if(ctype != "forest"){
               cat("Processing", ctype, "\n")
-              loclist[[paste(ctype, yr, ext, sep="_")]] = get_distance_to_gradient(crop(tras, extobj))
+              loclist[[paste(ctype, yr, ext, sep="_")]] = get_distance_to_gradient(crop(tras, extobj), decay=decay)
             }
           }
           else
@@ -812,7 +812,7 @@ condense_cols = function(gd, likename, timeref, timetype="my"){
 }
 
 
-get_distance_to_gradient = function(raster){
+get_distance_to_gradient = function(raster, decay=1){
   # Given a 0 or 1 raster, compute the weighted vector (e.g. gradient) for each 
   # cell that points towards the 1 values.  The 1 values might be crops, water,
   # etc.
@@ -844,7 +844,7 @@ get_distance_to_gradient = function(raster){
   } else{
 
     longlat_all = rasterToPoints(raster)[, c('x', 'y')]
-    grad = t(apply(longlat_all, 1, wgradient, longlat_ctype))
+    grad = t(apply(longlat_all, 1, wgradient, longlat_ctype, decay))
     values(xras) = grad[, 1]
     values(yras) = grad[, 2]
   }
@@ -855,7 +855,7 @@ get_distance_to_gradient = function(raster){
 
 scalar1 = function(x) {x / sqrt(sum(x^2))}
 
-wgradient = function(pt, longlat_ctype){
+wgradient = function(pt, longlat_ctype, decay){
   # Compute the weighted sum of vectors based on distances.
 
   dists = as.vector(spDists(longlat_ctype, matrix(pt, nrow=1, ncol=2), longlat=TRUE))
@@ -866,7 +866,7 @@ wgradient = function(pt, longlat_ctype){
   if(all(!ind))
     sum_grad = c(0, 0) # If there are no croptypes return 0 gradient.
   else{
-    weighted_vects = norm_vects[ind, , drop=FALSE] * exp(-dists[ind]) # Weight vectors by distance. HOW? 
+    weighted_vects = norm_vects[ind, , drop=FALSE] * exp(-decay*dists[ind]^2) # Squared distance decay?
     sum_grad = colSums(weighted_vects) #scalar1
   }
   return(sum_grad)

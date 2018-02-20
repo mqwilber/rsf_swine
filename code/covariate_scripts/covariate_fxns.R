@@ -1,5 +1,5 @@
 ## Functions for manipulating covariates
-library(ncdf4)
+library(pbdNCDF4)
 library(rgdal)
 library(sp)
 library(plotKML)
@@ -41,7 +41,7 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 	start = rep(1, ndims)
 	start[ndims] = timeindex[1] # Start reading at a particular time step
 	count = varsize # begin w/count=(nx,ny,nz,...,nt), reads entire var
-	count[ndims] = length(timeindex) # Read this many time steps sequentially
+	count[ndims] = length(timeindex) # Read many time steps sequentially
 
 	# Extract the appropriate variable data
 	vardata = ncvar_get(nc, varname, start=start, count=count)
@@ -81,6 +81,14 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 
 }
 
+# convert_to_month = function(ncfiles){
+# 	# Converts daily ncfiles to monthly files
+
+
+# 	for(nc in ncfiles){
+		
+# 	}
+# }
 
 
 

@@ -228,10 +228,67 @@ Goals for today
 
 ## Feb. 12, 2018
 
-1. Finalize data summary and 
-2. Talk with Sarah about covariates.  Check if they are done.
+1. Finalize data summary and  [Done]
+2. Talk with Sarah about covariates.  Check if they are done. [Done]
 3. Run comparison between Michigan and txcamp pigs
 4. Read papers on feral 
+
+## Feb. 20, 2018
+
+1. Find a suitable EVI covariate and compare results to NDVI.
+2. Prepare precipitation covariates.
+3. Split crop types into groups Ryan suggested.
+4. Have Sarah start preparing distance to road layers.
+5. Extract and prepare forest canopy covariate.
+6. Figure out how to speed up the distance to water calculation.
+
+**Meeting with Sarah**
+
+1. Distance to road covariates
+
+	- For next meeting, do you think that you could create a raster file in which the bounds are for "txcamp" and each cell has the distance to the nearest road (linear distance)? 
+		- Save the ArcGIS code for how you did it.
+
+2. Try to find a drought index covariate.
+
+3. Distance to wetlands covariate.
+
+4. For mark: Figure out EVI layer...a pain
+
+5. Discuss cleaning data and removing pigs
+	- Judas Pigs and Michigan.  Should we even include these?
+	- Include or drop Judas pigs. 
+		- We'd be missing pigs from Indiana...but do you think that is reasonable?
+		- Email Justin about collar ID [Sara].
+		- Talk to Kurt about the Michigan pigs [see if they are actually usable]. 
+
+Updates:
+
+1. Can we capture season? 
+	- Is pressure an important covariate in the Kay et al paper?
+2. Temperature, precip, snow depth, drought, and pressure potentially define "season"?
+	- Kay et al. used pressure as a variable.
+3. Ryan Brook pig weights.
+
+TODOs for Sarah:
+
+1. Distance to road covariates
+2. Drought Index
+3. Search for an EVI layer that is time varying and fine spatial res.
+4. Contact Justin
+5. Add literature into Dropbox
+
+TODOs for Mark
+
+1. Format CropScape data
+2. Format Forest cover layer
+3. Format precipitation data [Done]
+3. Contact Kurt about Michigan data
+4. Try to put together a population-level analysis for Texas and California.
+5. Fix data that Kilgo mentioned.
+
+
+
 
 
 

@@ -280,7 +280,7 @@ TODOs for Sarah:
 
 TODOs for Mark
 
-1. Format CropScape data
+1. Format CropScape data according to Ryan's suggestions [Done]
 2. Format Forest cover layer
 3. Format precipitation data [Done]
 3. Contact Kurt about Michigan data

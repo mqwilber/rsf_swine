@@ -1,10 +1,7 @@
 ## Script to extract and format the CropScape data
 ## 
-## Script reads in Cropscape data and breaks the data into 4 indicator variables
-## 1. Crops
-## 2. Grains, hay, and seed
-## 3. Forest
-## 4. Open water
+## Script reads in Cropscape data and breaks the data into 10-11 indicator variables
+## based on the crop groups defined in cropgroupings.csv
 ##
 ## Each of the attributes is then saved as a separate covariate file for each study.
 ## Note that they are all saved under the covariate "croplayer/" with the format
@@ -27,27 +24,20 @@ study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)
 
 # Extract 4 crop identifiers from metadata
 #		crops, grain_hay_seeds, forest, open_water
-csmeta = fread(file.path(base, "data/covariate_data/croplayer/cropscapeIDs.csv"))
-cropvals = list()
-spltlist = strsplit(csmeta$nums, ";")
-for(i in 1:length(spltlist)) {
+csmeta = fread(file.path(base, "data/covariate_data/croplayer/cropgroupings.csv"))
 
-	splits = spltlist[[i]]
-	num = do.call(c, lapply(splits, function(x) {
-																				res = strsplit(x, "-")
-																				if(length(res[[1]]) == 1)
-																					return(as.numeric(res[[1]][1]))
-																				else 
-																					return(seq(as.numeric(res[[1]][1]), as.numeric(res[[1]][2])))
-																			}))
-	cropvals[[i]] = num
-}
+unqgroups = unique(csmeta$group_name)
+
+
+cropvals = lapply(1:length(unqgroups), function(x) csmeta[group_name == unqgroups[x], value])
 
 
 # Loop through different studies to format croplayer covariates
 for(studynm in study_sum$study){
 
 	if(studynm == "txcamp" | studynm == "michigan"){ # Just process txcamp and michigan for now
+
+		cat("Processing", studynm, "\n")
 
 		ind = study_sum$study == studynm
 		minyear = year(study_sum[ind]$datetime_mindate)
@@ -63,20 +53,24 @@ for(studynm in study_sum$study){
 											study_sum$latitude_min[ind], study_sum$latitude_max[ind])
 			cras = crop(tras, extobj)
 
-			# Make separate rasters for each crop type (crops, grain_hay_seeds, forest, open_water)
-			for(j in 1:length(csmeta$attrib)){
+			# Make separate rasters for each crop type
+			for(j in 1:length(unqgroups)){
 
 				tempras = cras
-				ctype = csmeta$attrib[j]
+				ctype = unqgroups[j]
 
-				ctypeind = (values(cras) %in% cropvals[[j]]) # Indicator TRUE if values match ctype
-				values(tempras)[ctypeind] = 1 # ctype habitat
-				values(tempras)[!ctypeind] = 0 # Not ctype forest
+				# Nothing in non-agricultural land. Don't make raster for this type
+				if(ctype != "nothing"){
 
-				# Save formated raster file
-				writeRaster(tempras, filename=file.path(base, "data/covariate_data/croplayer", 
-											studynm, paste(studynm, "_", ctype, "_", yr, ".grd", sep="")), 
-											format="raster", overwrite=TRUE)
+					ctypeind = (values(cras) %in% cropvals[[j]]) # Indicator TRUE if values match ctype
+					values(tempras)[ctypeind] = 1 # ctype habitat
+					values(tempras)[!ctypeind] = 0 # Not ctype forest
+
+					# Save formated raster file
+					writeRaster(tempras, filename=file.path(base, "data/covariate_data/croplayer", 
+												studynm, paste(studynm, "_", ctype, "_", yr, ".grd", sep="")), 
+												format="raster", overwrite=TRUE)
+				}
 
 			} # End croptype
 		} # End if

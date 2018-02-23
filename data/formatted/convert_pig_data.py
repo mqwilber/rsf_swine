@@ -119,6 +119,10 @@ kilgo.loc[:, "datetime"] = pd.to_datetime(kilgo.lmt_date + " "  + kilgo.lmt_time
 kilgo_trun = kilgo[(kilgo.latitude > 32) & (kilgo.latitude < 35) & 
                (kilgo.longitude < -79) & (kilgo.latitude > -82.5)]
 
+# Based on John Kilgo's suggestion remove all dates prior to 12/8/2015 for ID srs_kilgo16-4-2
+kilgo_trun = kilgo_trun[~((kilgo_trun.datetime < pd.to_datetime("12/8/2015")) & 
+														(kilgo_trun.pigID == "srs_kilgo16-4-2"))]
+
 print("Done")
 
 ###########################################################################

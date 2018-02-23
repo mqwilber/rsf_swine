@@ -81,16 +81,6 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 
 }
 
-# convert_to_month = function(ncfiles){
-# 	# Converts daily ncfiles to monthly files
-
-
-# 	for(nc in ncfiles){
-		
-# 	}
-# }
-
-
 
 
 

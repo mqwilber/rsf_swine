@@ -1,0 +1,120 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[left=1.25 in, right=1.25 in, top=1.25 in, bottom=1.25 in]{geometry}
+\usepackage{hyperref}
+\usepackage{gensymb}
+\usepackage{bbold}
+
+
+% Bibliography
+\usepackage[numbers, compress]{natbib} % Bibliography - APA
+\bibpunct{(}{)}{;}{a}{}{,}
+\usepackage{lineno} % Line numbers
+\def\linenumberfont{\normalfont\footnotesize\ttfamily}
+\setlength\linenumbersep{0.2 in}
+
+\usepackage{setspace}
+
+\newcommand{\ignore}[1]{}
+
+\begin{document}
+
+\noindent
+\textbf{Title}: You are where you eat:  Linking feral swine movement to resource use within and across pig populations
+
+\bigskip
+
+\noindent
+\textbf{Running title}:
+
+\bigskip
+
+\noindent
+\textbf{Authors}: Mark Q. Wilber$^1$, Sarah Chinn
+
+\bigskip
+
+\noindent
+\textbf{Author affiliations}: \\
+
+\bigskip
+
+\noindent
+\textbf{Corresponding author}:
+
+\bigskip
+
+\noindent
+\textbf{Word count}:
+
+\bigskip
+
+\noindent
+\textbf{Keywords}:
+
+\newpage
+
+\doublespacing
+\linenumbers
+
+\section*{Abstract}
+
+\section*{Introduction}
+
+Outline
+
+Paragraph 1: 
+	- Could start out pig specific.  The problems pigs cause etc.
+	- Could start more general regarding how individual-movement is diverse, but being able to elucidate general patterns across scales can help understand resource use and aid management (sorry Hugh! I will think about how).
+	- Why do we care about movement? The first step to understanding population dynamics.  If we can get a good sense of movement dynamics we can explore disease transmission, reproduction, damage, etc. Individual-level movement is a means to an end. 
+
+Paragraph 2:
+	- What do we know about pig movement (Harltey et al., Kay et al. 2017, Garza, Snow, Lewis, McClure).
+	- With the exception of Hartley and Kay, these studies focused on movement at the large scale pig movement and and did not explicitly account for the dynamic pig movement\?
+	- The disadvantage of these approaches is that they don't provide much to build upon.  In contrast, a dynamic model of pig movement and resource use will be applicable for population-level inferences. 
+	-  Most movement studies have been focused on home-range size and factors than affect home range (Garza, and others).  While home range captures a fundamental aspect of feral swine biology, it misses critical patterns of movement \emph{within} a home range, which can have important implications for contact, reproduction, and resource use. 
+
+\section*{Methods}
+
+\subsection*{Data}
+
+\subsubsection*{Feral swine movement data}
+
+\subsubsection*{Covariates}
+
+\subsection*{Movement models}
+
+To understand how resources, etc. affected pig movement within and across populations, we used the modeling framework of \cite{Hanks2015} and \cite{Wilson2018}. Broadly, this framework uses a continuous-time, discrete-space movement model to make two types of inference: 1) how various biotic and abiotic covariates (i.e. "resources") affect pig movement rate and the direction of pig movement \citep{Hanks2015} and 2) the long-term probability of resource use for an organism in a given area, based on a dynamic model of individual movement \citep{Wilson2018}.  The key advantage of this approach for our purposes is that the continuous-time nature allows us to sync-up time scales across various populations, such that we are making inference regarding [resource selection] at consistent time-scales across different studies. 
+
+Specifically, this approach can be broken into two distinct steps which we describe in detail below: fitting a continuous-time movement model to the movement data and using this continuous-time movement model to explore how resource selection affects pig movement.
+
+\subsection*{Continuous-time movement models}
+
+% While discrete-time movement models have a rich history of use in movement ecology [citations], continuous-time movement models have recently been gaining prominence \citep[e.g.][]{Johnson2008a,Hanks2015,Buderman2016,Hooten2017} [Brownian bridge stuff, etc.].  One advantage of continuous-time movement models is that they naturally handle movement data in which time steps are not equal, without having to resort to various state-space/missing data approaches that are often used when accounting for unequal time steps in discrete-time movement models. However, fitting continuous-time movement models 
+
+To fit a continuous-time movement model to GPS data for a particular pig, we used basis function approach developed by \cite{Buderman2016}.  This is a phenomenological approach to modeling pig movement and proceeds by fitting linear model to pig movement data. [And Buderman 2018] developed a basis function approach for fitting continuous-time movement models to animal movement data that [advantages of approach].  
+
+
+
+
+\subsection*{Analysis}
+
+
+
+\section*{Results}
+{}
+\section*{Discussion}
+
+\singlespacing
+\bibliographystyle{/Users/mqwilber/Dropbox/Documents/Bibformats/mee.bst}
+\bibliography{/Users/mqwilber/Dropbox/Documents/Bibfiles/Projects_and_Permits-feral_swine.bib}
+
+
+
+%\section*{References}
+
+\end{document}

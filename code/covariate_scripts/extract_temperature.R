@@ -50,7 +50,7 @@ for(studynm in unique(study_sum$study)){
 	ind = study_sum$study == studynm
 
 	cellsize = 0
-	extobj = extent(study_sum$longitude_min[ind] - cellsize, study_sum$longitude_max[ind] + cellsize,
+	extobj = extent(study_sum$longitude_min[ind] - cellsize, study_sum$longitu de_max[ind] + cellsize,
 					 study_sum$latitude_min[ind] - cellsize, study_sum$latitude_max[ind] + cellsize)
 
 	res = ncdf_to_raster(nc, timeinds, "air", extobj)

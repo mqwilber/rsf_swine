@@ -401,8 +401,8 @@ for study in comb_dat.study.unique():
 ### Make a summary file for each study ###
 ##########################################
 
-study_sum = comb_dat.groupby("study").agg({'latitude' : {'min': np.min, 'max': np.max}, 
-                               'longitude' : {'min': np.min, 'max': np.max},
+study_sum = comb_dat.groupby("study").agg({'latitude' : {'min': np.min, 'max': np.max, 'mean': np.mean}, 
+                               'longitude' : {'min': np.min, 'max': np.max, 'mean': np.mean},
                                'pigID': {'num_pigs': lambda x: len(np.unique(x)),
                                          'num_fixes': len},
                                 'datetime': {'mindate': np.min, 

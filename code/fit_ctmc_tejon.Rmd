@@ -1,0 +1,250 @@
+---
+title: "CTMC model of Tejon pigs"
+author: Mark Wilber and Sarah Chinn
+output:
+  html_notebook: default
+  pdf_document: default
+bibliography: /Users/mqwilber/Dropbox/Documents/Bibfiles/Projects_and_Permits-feral_swine.bib
+---
+
+```{r, echo=FALSE, include=FALSE}
+library(data.table)
+library(raster)
+library(ggplot2)
+library(lubridate)
+library(sp)
+library(rgdal)
+library(rgeos)
+library(ctmcmove)
+library(splines)
+library(fda)
+source('/Users/mqwilber/Repos/rsf_swine/code/pigfxns.R')
+```
+
+## Step 1: Identify outliers using K-means
+
+```{r, echo=FALSE, include=FALSE}
+
+## Clean the Camp Bullis Data
+
+# For each pig, remove unrealistic observations
+dat = fread("../data/formatted/full_pig_data.csv")
+tcdat = dat[study == "tejon"]
+rm(dat) # Free up some space
+
+```
+
+```{r}
+# At least three pigs have some errant movements
+tplot = ggplot(tcdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
+tplot
+```
+
+
+```{r}
+# There are a few pigs where we seem to have errant movements
+
+badpigs = c("tejonF02_F12", "tejonM314")
+
+badout = array(NA, dim=2)
+fullind = list()
+
+for(i in 1:length(badpigs)){
+  
+  bp = badpigs[i]
+  bpdat = tcdat[pigID == bp, list(longitude, latitude)]
+  kmeans.result = kmeans(bpdat, 1)
+  centers = kmeans.result$centers[kmeans.result$cluster, ]
+  distances <- sqrt(rowSums((bpdat - centers)^2))
+  
+  outliers <- order(distances, decreasing=T)[1:6]
+
+  print(outliers) 
+  badout[i] = outliers[1]
+  fullind[[i]] = sapply(1:length(outliers), function(j) which((tcdat$pigID == bp) & (tcdat$longitude == bpdat$longitude[outliers[j]]) & (tcdat$latitude == bpdat$latitude[outliers[j]])))
+  
+  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1)
+  points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
+  points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
+  
+}
+
+# Remove 6 outliers for "tejonF02_F12" and 1 outlier for "tejonM314"
+rminds = c(fullind[[1]], fullind[[2]][1])
+
+tcdat[c(fullind[[1]], fullind[[1]] + 1, fullind[[1]] - 1)][order(datetime)]
+```
+
+```{r}
+# Remove the substantial outliers.
+
+trimdat = tcdat[-rminds, ]
+tp = ggplot(trimdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
+tp
+```
+
+## Step 2: Identify runs of data that are sufficient length
+
+```{r}
+# Now, given that behavior can change over the course of the season, we likely want to make inference over consistent time intervals. Let's look at a plot of collaring times.
+
+trimdat$datetime = as.POSIXct(trimdat$datetime, tz="GMT")
+collarDur = trimdat[, list(mindate=min(datetime), maxdate=max(datetime)), by=pigID]
+tp = ggplot(data=collarDur) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=3)) + 
+          scale_y_datetime(breaks = seq(min(collarDur$mindate), max(collarDur$maxdate), by="month"))
+
+tp
+```
+
+```{r}
+# Which pigs are between have at least `clength` consecutive fixes of `ctime` minutes or less?
+
+lrdat = trimdat[, list(lr=runs(datetime, ctime=200, clength=500)), by=pigID]
+longdat = merge(trimdat, lrdat, by="pigID")[lr == TRUE]
+
+collarDur2 = longdat[, list(mindate=min(datetime), maxdate=max(datetime)), by=pigID]
+tp = ggplot(data=collarDur2) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=10)) + 
+          scale_y_datetime(breaks = seq(min(collarDur2$mindate), max(collarDur2$maxdate), by="month"))
+tp
+```
+
+What are the maximum gaps in collar trajectories for each pig?
+
+```{r}
+diffunits = function(x){
+  dt = diff(x)
+  units(dt) = "mins"
+  return(dt)
+}
+
+trimdat[, list(diff=max(diffunits(datetime))), by=pigID]
+```
+
+We are going to have instances where we have multiple runs for a single pig that are split by long gaps in between fix times.  In these cases, we will want to break these runs into independent trajectories
+
+```{r}
+maxtime = 200  # minutes
+minlength = 200 # steps
+
+unqpigs = unique(trimdat$pigID)
+
+newdat = list()
+for(pignm in unqpigs){
+  
+  tdat = trimdat[pigID == pignm]
+  tdat$run_number = 0 
+  runinds = split_runs(tdat$datetime, ctime=maxtime, clength=minlength)
+  
+  for(i in 1:length(runinds)){
+    inds = runinds[[i]]
+    tdat$run_number[inds] = i
+  }
+  
+  keepinds = do.call(c, runinds)
+  rundat = tdat[keepinds]
+  newdat[[pignm]] = rundat
+  
+}
+
+# This is data split up by consecutive runs.
+newdat = do.call(rbind, newdat)
+```
+
+## Step 3: Fit the continuous time movement model to each run, for each individual
+
+
+```{r}
+
+unqpigs = unique(newdat$pigID)
+
+# Loop through and fit a continuous time movement model for each pig on each run
+allpaths = list()
+for(pignm in unqpigs){
+  
+  tdat = newdat[pigID == pignm]
+  predpaths = lapply(unique(tdat$run_number), function(x) continuous_path(tdat[run_number == x, list(x=longitude, y=latitude, datetime=datetime)], "15 mins", "interp" ))
+  allpaths[[pignm]] = predpaths
+  
+}
+
+```
+
+```{r}
+
+locvars = c("temperature", "croplayer", "ndvi", "landcover", "precipitation")
+gradvars = c("ndvi", "landcover")
+gradxyvar = c("croplayer")
+
+landcovertypes = c("wetland", "canopycover")
+distgrad_types = c("root_and_tuber", "fruit_and_nuts")
+
+buffer = 0.001
+
+for(pignm in unqpigs[1]){
+  
+  tdat = newdat[pigID == pignm]
+  extobj = extent(c(xmin=min(tdat$longitude) - buffer, xmax=max(tdat$longitude) + buffer, ymin=min(tdat$latitude) - buffer, ymax=max(tdat$latitude) + buffer))
+  
+  loc_stack = process_covariates(locvars, "tejon", extobj, 
+                                 min(tdat$datetime), max(tdat$datetime), ext="loc", 
+                                 landcovertypes = landcovertypes)
+  
+  grad_stack = process_covariates(gradvars, "tejon", extobj,
+                                 min(tdat$datetime), max(tdat$datetime), ext="grad",
+                                 landcovertypes = landcovertypes)
+  
+  gradxy_stack = process_covariates(gradxyvar, "tejon", extobj,
+                                 min(tdat$datetime), max(tdat$datetime), ext="grad",
+                                 landcovertypes = landcovertypes, distgrad = TRUE, distgrad_types = distgrad_types)
+  
+  gradx_stack = lapply(gradxy_stack, function(m) m$xgrad)
+  grady_stack = lapply(gradxy_stack, function(m) m$ygrad)
+  
+  # Ensure projections are the same...lose some edge values this way
+  baseras = loc_stack[[paste('cereals_', year(min(tdat$datetime)), "_loc", sep="")]]
+  loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, baseras,
+                                                                                method="ngb")))
+  grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, baseras,
+                                                                                method="bilinear")))
+  gradx_stackproj = stack(lapply(gradx_stack, function(x) projectRaster(x, baseras,
+                                                                                method="ngb")))
+  grady_stackproj = stack(lapply(grady_stack, function(x) projectRaster(x, baseras,
+                                                                                method="ngb")))
+  
+  
+  pigpaths = allpaths[[pignm]]
+  
+  # Loop through runs for individual pigs
+  runglmdat = list()
+  for(j in 1:length(pigpaths)){
+    
+    cat("Run", j, "\n")
+    smallpath = pigpaths[[j]]
+    
+    # Get reduced extent
+    minll = apply(smallpath$path[[1]], 2, min)
+    maxll = apply(smallpath$path[[1]], 2, max)
+    smallextobj = extent(c(xmin=minll[1] - buffer, xmax=maxll[1] + buffer, ymin=minll[2] - buffer, ymax=maxll[2] + buffer))
+    
+    tglmdat = fit_ctmcmodel(tdat, pignm, crop(loc_stackproj, smallextobj), crop(grad_stackproj, smallextobj), 
+                            xygrad=TRUE, xgrad.stack=crop(gradx_stackproj, smallextobj), ygrad.stack = crop(grady_stackproj, smallextobj),
+                            predPath=smallpath, path2ctmcMethod="LinearInterp")
+    runglmdat[[j]] = tglmdat
+     
+  }
+  pigglmdat = do.call(rbind, runglmdat)
+  
+}
+
+```
+
+
+
+
+
+
+```
+
+

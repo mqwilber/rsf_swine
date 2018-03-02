@@ -35,7 +35,7 @@ cropvals = lapply(1:length(unqgroups), function(x) csmeta[group_name == unqgroup
 # Loop through different studies to format croplayer covariates
 for(studynm in study_sum$study){
 
-	if(studynm == "txcamp" | studynm == "michigan"){ # Just process txcamp and michigan for now
+	if(studynm %in% c("tejon")) { # Just process txcamp, tejon, and michigan
 
 		cat("Processing", studynm, "\n")
 

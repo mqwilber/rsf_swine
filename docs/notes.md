@@ -281,11 +281,40 @@ TODOs for Sarah:
 TODOs for Mark
 
 1. Format CropScape data according to Ryan's suggestions [Done]
-2. Format Forest cover layer
+2. Format Forest cover layer [Done]
 3. Format precipitation data [Done]
 3. Contact Kurt about Michigan data
 4. Try to put together a population-level analysis for Texas and California.
-5. Fix data that Kilgo mentioned.
+5. Fix data that Kilgo mentioned. [Done]
+
+## Feb. 26 2018
+
+Regarding the RSF analysis, the goals for today are to
+
+1. Extract time-varying NDVI for Tejon. [DONE]
+2. Explore some options for extracting EVI. [DONE]
+
+	- There are some MODIS extractors for R that will allow us to extract time-varying EVI.  These were a little challenging to get to work right out of the box (MODIS, MODIStsp, MODISTools).  The raw MODIS data we need is
+
+	a. MOD13Q1: MODIS/Terra Vegetation Indices 16-Day L3 Global 250 m SIN Grid V006 (https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mod13q1_v006)
+	b. See this website for the MODIS gridding scheme (https://modis-land.gsfc.nasa.gov/MODLAND_grid.html). 
+	c. You can extract raw MODIS rasters without any reprojection using curl or wget.  Not super useful though as they have the JPG legend on them. 
+	d. pyModis might be useful for extracting and formatting MODIS files.
+	e. Need to install GDAL to use any of these files.
+
+3. Run a comparative analysis for CA and TX with NDVI, Temp, precip, crop types, forest cover.  
+4. Push material onto Webb Lab Github and contact Deedra about the analysis. 
+5. Write a bit more of methods (1 hr of writing)
+
+## Feb. 28 2018
+
+**On extracting shapefiles to rasters**
+
+A number of our layers will come in as shapefiles (i.e. wetland layers). We are going to want to convert these to rasters. The "raster" package in R let's us read in shapefiles, crop them, and convert them to rasters.
+
+
+
+
 
 
 

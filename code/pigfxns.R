@@ -1,12 +1,12 @@
 ## Functions for analyzing feral swine movement data
 
-library(ctmcmove)
-library(geosphere)
-library(raster)
-library(lubridate)
-library(fda)
-library(parallel)
-library(glmnet)
+
+list.of.packages <- c("ctmcmove", "geosphere", "raster", "lubridate", "fda", 
+                        "parallel", "glmnet")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(list.of.packages, require, character.only=TRUE)
+
 
 fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 mins", 
                                   method="interp", buffer=0.001,
@@ -15,7 +15,8 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
                                   path2ctmcMethod="ShortestPath",
                                   xygrad=FALSE, xgrad.stack=NULL, 
                                   ygrad.stack=NULL,
-                                  grad.point.decreasing=FALSE){
+                                  grad.point.decreasing=FALSE, 
+                                  predPath=NULL){
   # Fits a continuous movement path and generates glm data
   #
   # Parameters
@@ -67,10 +68,10 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
   #   If TRUE, take the negative gradient.
 
   # Get the bounding box around observations and crop raster
-  ymin = min(pigdata$y)
-  ymax = max(pigdata$y)
-  xmin = min(pigdata$x)
-  xmax = max(pigdata$x)
+  # ymin = min(pigdata$y)
+  # ymax = max(pigdata$y)
+  # xmin = min(pigdata$x)
+  # xmax = max(pigdata$x)
 
   # Add on a dummy raster to loc and grad to prevent column error in ctmc2glm
   dumgrad = unstack(grad.stack)[[1]]
@@ -80,8 +81,11 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
   loc.stack = stack(list(loc.stack, dumgrad))
 
   # Compute continuous pig path
-  predPath = continuous_path(pigdata, timestep, method, n.mcmc=n.mcmc, df=df, 
+
+  if(is.null(predPath)){
+    predPath = continuous_path(pigdata, timestep, method, n.mcmc=n.mcmc, df=df, 
                                   impute=impute, sigma.fixed=sigma.fixed)
+  }
 
   # Specify where animals can move on the landscape
   # move_field = cras
@@ -99,11 +103,13 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
     ctmc = path2ctmc(xy=path$xy, t=path$t, rast=grad.stack, 
                 method=path2ctmcMethod)
 
-    if(xygrad)
+    if(xygrad){
       tglm_data = ctmc2glm_wgrad(ctmc, loc.stack, grad.stack, xgrad.stack, ygrad.stack, 
                         grad.point.decreasing=grad.point.decreasing)
-    else
+    }
+    else{
       tglm_data = ctmc2glm(ctmc, loc.stack, grad.stack, grad.point.decreasing=grad.point.decreasing)
+    }
 
     tglm_data$pigID = pigID
     tglm_data$imputeID = x # Number the imputed distributions
@@ -579,9 +585,15 @@ sim_traj = function(R, fit, start, steps=100){
 process_covariates = function(locvars, studynm, extobj, 
           mindate, maxdate, ext,
           cov_path="/Users/mqwilber/Repos/rsf_swine/data/covariate_data",
-          timevar=c("temperature", "ndvi"),
-          croptypes=c("crops", "grainshayseeds", "forest", "openwater"),
-          distgrad=FALSE, decay=1){
+          timevar=c("temperature", "ndvi", "precipitation"),
+          croptypes=c("beverage_and_spice", "cereals", "oilseed", "other", 
+                      "fruit_and_nuts", "grasses", "leguminous",
+                      "root_and_tuber", "sugar", "tobacco", 
+                      "vegetables_and_melons"),
+          landcovertypes=c("barren_land", "canopycover", "deciduous_forest", 
+                           "developed", "evergreen_forest", "mixed_forest", 
+                           "wetland"),
+          distgrad=FALSE, distgrad_types=numeric(), decay=1){
 	# Compiles lists of rasters to be used as location and gradient covariates
   # in analyses.
   #
@@ -605,8 +617,14 @@ process_covariates = function(locvars, studynm, extobj,
   # ext : str
   #   To be appended to rasters. Either "loc" (location covariates) or "grad" 
   #   (gradient covariates)
-  # distgrad : cool
+  # distgrad : bool
   #   If True, for croptype variables the distance gradient is computed.
+  # distgrad_types : vector
+  #   Include croptypes for which you DO want a gradient computed.
+  # croptypes : vector
+  #   Categories within croplayer locvar.
+  # landcovertypes: vector
+  #   Categories within landcover locvar.
   #
   # Returns
   # -------
@@ -614,11 +632,9 @@ process_covariates = function(locvars, studynm, extobj,
   #
   # Notes
   # -----
-  # TODO: While all the rasters are cropped in the same way, they are not projected 
-  # identically in this function. This can be down easily outside of the function.
-  # For example,
-  #
-  #
+  # While all the rasters are cropped in the same way, they are not projected 
+  # identically in this function. This can be done easily outside of the function.
+
 
   loclist = list()
 
@@ -636,19 +652,19 @@ process_covariates = function(locvars, studynm, extobj,
       for(yr in minyear:maxyear){
         for(ctype in croptypes){
 
-          fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", ctype, "_", yr, ".grd", sep=""))
+          fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", ctype, 
+                                                        "_", yr, ".grd", sep=""))
           tras = raster(fp)
 
           # Compute distance2 gradients for croptypes
           if(distgrad){ 
-            if(ctype != "forest"){
-              cat("Processing", ctype, "\n")
-              loclist[[paste(ctype, yr, ext, sep="_")]] = get_distance_to_gradient(crop(tras, extobj), decay=decay)
+            if(ctype %in% distgrad_types){
+              cat("Processing gradient for", ctype, "\n")
+              loclist[[paste(ctype, yr, ext, sep="_")]] = 
+                        get_distance_to_gradient(crop(tras, extobj), decay=decay)
             }
-          }
-          else
+          } else
             loclist[[paste(ctype, yr, ext, sep="_")]] = crop(tras, extobj)
-
 
         }
       }
@@ -664,21 +680,113 @@ process_covariates = function(locvars, studynm, extobj,
       # Extract time-dependent rasters
       for(j in 1:length(months)){
 
-        fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", loccov, "_", months[j], "_", years[j], ".grd", sep=""))
+        fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", loccov, 
+                                  "_", months[j], "_", years[j], ".grd", sep=""))
         tras = raster(fp)
         loclist[[paste(loccov, months[j], years[j], ext, sep="_")]] = crop(tras, extobj)
       }
 
     } else {
-      # Extract time-independent raster
-      tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", loccov, ".grd", sep="")))
-      loclist[[paste(loccov, ext, sep="_")]] = crop(tras, extobj)
-    }
-  }
+      # Extract time-independent rasters
+
+      if(loccov == "landcover"){
+
+        for(ltype in landcovertypes){
+          tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", 
+                                                         ltype, ".grd", sep="")))
+
+          if(distgrad){ 
+
+            if(ltype %in% distgrad_types){
+              cat("Processing gradient for", ltype, "\n")
+              loclist[[paste(ltype, ext, sep="_")]] = 
+                        get_distance_to_gradient(crop(tras, extobj), decay=decay)
+            } 
+          } else
+            loclist[[paste(ltype, ext, sep="_")]] = crop(tras, extobj)
+
+        } # End for loop
+      } else {
+
+        tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", 
+                                                        loccov, ".grd", sep="")))
+        loclist[[paste(loccov, ext, sep="_")]] = crop(tras, extobj)
+      } # End else
+    } # End else
+  } # End for loop
 
   return(loclist)
 
   
+}
+
+get_regex_columns = function(lgvars, croptypes, landcovertypes, ext){
+  # Get the regex representation of location or gradient columns
+  #
+  # Parameters 
+  # ----------
+  # lgvars : vector
+  #   Strings of location of gradient variables
+  # croptypes : vector
+  #   For the "croplayer" variable, strings of the specific croptypes 
+  #   that are present
+  # landcovertypes : vector
+  #   For the "landcover" variable, strings of the specific landcovertypes that 
+  #   are present
+  # ext : string
+  #   Either "grad" or "loc" depending on whether the variables are gradient or 
+  #   location variables.
+
+  regexnms = list()
+  for(lvar in lgvars){
+
+    if(lvar == "croplayer"){
+      for(ctype in croptypes){
+        regexnms[[ctype]] = paste(ctype, ".*", ext, sep="")
+      }
+    } else if(lvar == "landcover"){
+      for(ltype in landcovertypes){
+        regexnms[[ltype]] = paste(ltype, ".*", ext, sep="")
+      }
+    } else{
+      regexnms[[lvar]] = paste(lvar, ".*", ext, sep="")
+    }
+  }
+  return(regexnms)
+}
+
+get_timevar_status = function(allregexcols, croptypes, monthlyvars){
+  # Get the time-varying status of a column name for each column
+  # Returns vector with either "y" or "my"
+  #
+  # Parameters
+  # ----------
+  # allregexcols : vector
+  #   Vector of regex columns names with ".*" notation.
+  #   (i.e. c("temperature.*loc", "temperature.*grad")
+  # croptypes : vector
+  #   Vector of different croptypes as string
+  # monthlyvars : vector
+  #   Vector of covariate names that vary by month
+  #
+  # Returns
+  # -------
+  # : vector of "my" (for monthly variable) or "y" for yearly or "n" for neither
+
+  timevar_vect = array(NA, length(allregexcols))
+  for(i in 1:length(allregexcols)){
+
+    col = allregexcols[i]
+    vartype = strsplit(col, ".*", fixed=T)[[1]][1]
+    if(vartype %in% croptypes){
+      timevar_vect[i] = "y"
+    } else if(vartype %in% monthlyvars){
+      timevar_vect[i] = "my"
+    } else {
+      timevar_vect[i] = "n"
+    }
+  }
+  return(timevar_vect)
 }
 
 ###### Helper functions ##########
@@ -703,7 +811,8 @@ get_distance_vect = function(longlat){
   v2 = cbind(longs[-1], lats[-1])
   
   tuples = lapply(1:nrow(v1), function(i) list(v1[i, ], v2[i, ]))
-  distvect = lapply(tuples, function(x) distm(x=x[[1]], y=x[[2]], fun=distHaversine))
+  distvect = lapply(tuples, function(x) distm(x=x[[1]], y=x[[2]], 
+                                                    fun=distHaversine))
   # 
   return(do.call(rbind, distvect))
 }
@@ -716,7 +825,7 @@ runs = function(x, ctime=60, clength=10, ctimemin=0){
   # Parameters
   # ----------
   # x : vector of datetimes
-  # ctime : Diffs must be less than this time
+  # ctime : Diffs must be less than or equal to this time
   # clength : Length of a run
   
   # Notes
@@ -726,12 +835,88 @@ runs = function(x, ctime=60, clength=10, ctimemin=0){
   
   deltat = diff(x)
   units(deltat) = "mins"
-  inds = (deltat < ctime) & (deltat > ctimemin) # String of booleans
+  inds = (deltat <= ctime) & (deltat > ctimemin) # String of booleans
   
   # Count runs
   run_vect = rle(inds)
   res = any((run_vect$values == TRUE) & (run_vect$lengths >= clength))
   return(res)
+  
+}
+
+split_runs = function(x, ctime=60, clength=10, ctimemin=0){
+  # Given a vector of times x
+  # find the indexes the runs that have a time difference <= ctime and 
+  # a length greater than or equal to clength.
+  #
+  # Parameters
+  # ----------
+  # x : vector of datetimes
+  # ctime : Diffs must be less than this time
+  # clength : Length of a run
+  #
+  # Returns
+  # -------
+  # : a list of indices that fullfill the criteria
+
+  deltat = diff(x)
+  units(deltat) = "mins"
+  inds = (deltat <= ctime) & (deltat > ctimemin)
+
+  falseinds = which(inds == FALSE)
+
+  # All data is usable
+  if(length(falseinds) == 0)
+    return(list(1:length(x)))
+
+  # No data is usable
+  if(all(inds == FALSE))
+    return(list(numeric()))
+
+  # Extract various runs
+  start = 1
+  end = length(inds)
+
+  runinds = list()
+
+  for(i in 1:length(falseinds)){
+    
+    if(i == 1 & length(falseinds) != 1){
+      
+      if(falseinds[i] == 1)
+        run = numeric()
+      else
+        run = 1:(falseinds[i])
+      
+      
+    } else if(i > 1 & i < length(falseinds)){
+      
+      run = (falseinds[i - 1] + 1):(falseinds[i])
+      
+    } else if(i == length(falseinds) & length(falseinds) != 1){
+      
+      run = (falseinds[i - 1] + 1):(falseinds[i])
+      
+      if(falseinds[i] != end)
+        runfinal = (falseinds[i] + 1):(end + 1)
+      else
+        runfinal = numeric()
+      
+    } else if(i == 1 & length(falseinds) == 1){
+
+      run = 2:end
+
+    }
+    
+    runinds[[i]] = run
+    if(i == length(falseinds) & i != 1)
+      runinds[[i + 1]] = runfinal
+  }
+
+
+  # Which runinds are of the right length?
+  sinds = sapply(runinds, function(x) length(x) >= clength)
+  return(runinds[sinds])
   
 }
 
@@ -747,7 +932,7 @@ process_glmdata = function(glmdata, regexcol, colnm, format){
   # colnm : vector
   #   Same length as regexcol.  The desired name of the regex columns after condensing.
   # format : vector
-  #   Same length as regexcol. Either "my" if the variable varies monthy, or "y"
+  #   Same length as regexcol. Either "my" if the variable varies monthly, or "y"
   #   if the variable varies yearly.
   #
   # Returns
@@ -772,7 +957,7 @@ process_glmdata = function(glmdata, regexcol, colnm, format){
 
       if(format[j] == "my")
         timeref = gd$monthyear
-      else if(format[j] == "y")
+      else
         timeref = gd$year
 
       gd[, colnm[j]] = condense_cols(gd, regexcol[j], timeref, timetype=format[j])
@@ -795,24 +980,33 @@ condense_cols = function(gd, likename, timeref, timetype="my"){
   # gd : data.table
   # likename: str, regex expression to match columns
   # timeref : vector with time either years or month_year values
-  # timetype : str, "my" for month_year and "y" for year
+  # timetype : str, "my" for month_year and "y" for year, "n" for not time varying
 
 
   temp_cols = names(gd)[names(gd) %like% likename]
+  prefix = strsplit(likename, ".*", fixed=TRUE)[[1]][1]
 
-  if(timetype == "my")
-    temp_my = lapply(strsplit(temp_cols, "_"), function(x) paste(x[2], x[3], sep="_"))
-  else
-    temp_my = lapply(strsplit(temp_cols, "_"), function(x) as.numeric(x[2]))
+  if(timetype != "n"){
 
-  boolmat = do.call(cbind, lapply(temp_my, function(x) x == timeref))
-  temp_val = rowSums(boolmat * gd[, temp_cols, with=FALSE]) 
+    if(timetype == "my")
+      temp_my = lapply(strsplit(sapply(strsplit(temp_cols, prefix), function(x) x[2]), "_"), function(x) paste(x[2], x[3], sep="_"))
+    else if(timetype == "y")
+      temp_my = lapply(strsplit(sapply(strsplit(temp_cols, prefix), function(x) x[2]), "_"), function(x) as.numeric(x[2]))
+
+    boolmat = do.call(cbind, lapply(temp_my, function(x) x == timeref))
+    temp_val = rowSums(boolmat * gd[, temp_cols, with=FALSE]) 
+
+  } else{
+
+    temp_val = gd[, temp_cols, with=FALSE]
+  }
+ 
   return(temp_val)
 
 }
 
 
-get_distance_to_gradient = function(raster, decay=1){
+get_distance_to_gradient = function(rast, decay=1){
   # Given a 0 or 1 raster, compute the weighted vector (e.g. gradient) for each 
   # cell that points towards the 1 values.  The 1 values might be crops, water,
   # etc.
@@ -832,8 +1026,21 @@ get_distance_to_gradient = function(raster, decay=1){
   # -----
   # Need to make this much more efficient OR preprocess
 
-  xras = yras = raster
-  longlat_ctype = rasterToPoints(raster, function(x) x == 1)[, c("x", "y"), drop=FALSE]
+  xras = yras = rast
+  longlat_ctype = rasterToPoints(rast, function(x) x == 1)[, c("x", "y"), drop=FALSE]
+
+  # Check if the calculations are going to be outrageous (i.e. > base)
+  numcalc = ncell(rast) * nrow(longlat_ctype)
+  base = 1e6 #1.5e7 # ~45 seconds with 1e7, ~16 seconds with 1e6, ~1 minute with 1.5e7
+  if(numcalc > base){
+    # TODO: What if ncells > base?
+    # Draw a random subset of values at which to compute the gradient. 
+    # The idea is that this random sample will capture the general influence of 
+    # the gradient. Otherwise, this will not be computationally feasible.
+    numsamp = floor(base / ncell(rast))
+    inds = sample(1:nrow(longlat_ctype), numsamp, replace=FALSE)
+    longlat_ctype = longlat_ctype[inds, ] 
+  }
 
   # If there are no crop types return 0 gradients
   if(nrow(longlat_ctype) == 0){
@@ -843,7 +1050,7 @@ get_distance_to_gradient = function(raster, decay=1){
 
   } else{
 
-    longlat_all = rasterToPoints(raster)[, c('x', 'y')]
+    longlat_all = rasterToPoints(rast)[, c('x', 'y')]
     grad = t(apply(longlat_all, 1, wgradient, longlat_ctype, decay))
     values(xras) = grad[, 1]
     values(yras) = grad[, 2]

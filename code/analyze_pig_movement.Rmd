@@ -1,0 +1,62 @@
+---
+title: "Analyze pig movement"
+output: html_notebook
+---
+
+## Analysis of pig movement based on CTMC
+
+```{r}
+library(data.table)
+```
+
+```{r}
+tejondat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/txcamp.csv")
+```
+
+```{r}
+nans = apply(tejondat, 2, function(x) any(is.na(x)))
+#tejondat[is.na(tejondat$crw)]
+```
+
+```{r}
+nans[nans == TRUE]
+```
+
+```{r}
+sum(is.na(tejondat$DSCI))
+```
+
+```{r}
+colnames(tejondat)
+
+pigdat = tejondat[pigID == "tejonM302"]
+pigdat = pigdat[complete.cases(pigdat)]
+plot(pigdat$x.adj, pigdat$y.adj, cex=0.03)
+#fit1 = glm(z ~ scale(crw) + fruit_and_nuts_loc + scale, family="poisson", offset=log(tau), data=tejondat[pigID == "tejonM302"])
+```
+
+
+```{r}
+library("raster")
+temp = raster("/Users/mqwilber/Repos/rsf_swine/data/covariate_data/precipitation/tejon/tejon_precipitation_1_2016.grd")
+
+```
+
+```{r}
+image(temp)
+points(pigdat$x.adj, pigdat$y.adj, cex=0.03)
+```
+
+```{r}
+cer = raster("~/Repos/rsf_swine/data/covariate_data/croplayer/tejon/tejon_beverage_and_spice_2015.grd")
+
+cercrop = crop(cer, extent(c(xmin=min(pigdat$x.adj), xmax=max(pigdat$x.adj), 
+                            ymin=min(pigdat$y.adj), ymax=max(pigdat$y.adj))))
+
+ras = disaggregate(temp, fact=c(30, 30))
+image(ras)
+
+projras = projectRaster(temp, cercrop, method="ngb")
+image(projras)
+points(pigdat$x.adj, pigdat$y.adj, cex=0.03)
+```

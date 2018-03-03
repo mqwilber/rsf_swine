@@ -88,10 +88,11 @@ for(studynm in unique(study_sum$study)){
 
 
 	ind = study_sum$study == studynm
-	cellsize = 0
-	extobj = extent(study_sum$longitude_min[ind] - cellsize, study_sum$longitude_max[ind] + cellsize,
-					 study_sum$latitude_min[ind] - cellsize, study_sum$latitude_max[ind] + cellsize)
-
+	cellsize = 0.07
+	extobj = extent(c(xmin=study_sum$longitude_min[ind] - cellsize, 
+										xman=study_sum$longitude_max[ind] + cellsize,
+					 					ymin=study_sum$latitude_min[ind] - cellsize, 
+					 					ymax=study_sum$latitude_max[ind] + cellsize))
 
 	pfiles = paste0("precip_", month(dates), "_", year(dates), ".grd", sep="")
 
@@ -99,7 +100,8 @@ for(studynm in unique(study_sum$study)){
 
 		fl = pfiles[j]
 		tras = raster(file.path(base, rasfolder, fl))
-		cras = crop(rotate(tras), extobj)
+		tras_agg = disaggregate(tras, fact=c(8, 8)) # Dissaggregate data to help cropping
+		cras = crop(rotate(tras_agg), extobj)
 
 		tfp = file.path(base, studynm)
 		dir.create(tfp, showWarnings = FALSE)

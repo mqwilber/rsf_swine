@@ -582,7 +582,7 @@ sim_traj = function(R, fit, start, steps=100){
 }
 
 
-process_covariates = function(locvars, studynm, extobj, 
+process_covariates = function(locvars, studynm, baseras, 
           mindate, maxdate, ext,
           cov_path="/Users/mqwilber/Repos/rsf_swine/data/covariate_data",
           timevar=c("temperature", "ndvi", "precipitation"),
@@ -593,7 +593,8 @@ process_covariates = function(locvars, studynm, extobj,
           landcovertypes=c("barren_land", "canopycover", "deciduous_forest", 
                            "developed", "evergreen_forest", "mixed_forest", 
                            "wetland"),
-          distgrad=FALSE, distgrad_types=numeric(), decay=1){
+          distgrad=FALSE, distgrad_types=numeric(), decay=1, 
+          projectionMethod="bilinear"){
 	# Compiles lists of rasters to be used as location and gradient covariates
   # in analyses.
   #
@@ -604,8 +605,8 @@ process_covariates = function(locvars, studynm, extobj,
   #   folder in cov_path.
   # studynm : str
   #   Name of the study under consideration
-  # extobj : Extent object from raster package
-  #   Gives the extent to which to crop the rasters
+  # baseras : RasterLayer
+  #   Base raster layer to which all other rasters will be projected.
   # mindate : POSIXct object
   #   Minimum date
   # maxdate : POSIXct object
@@ -661,10 +662,12 @@ process_covariates = function(locvars, studynm, extobj,
             if(ctype %in% distgrad_types){
               cat("Processing gradient for", ctype, "\n")
               loclist[[paste(ctype, yr, ext, sep="_")]] = 
-                        get_distance_to_gradient(crop(tras, extobj), decay=decay)
+                        get_distance_to_gradient(projectRaster(tras, baseras, 
+                            method=projectionMethod), decay=decay)
             }
           } else
-            loclist[[paste(ctype, yr, ext, sep="_")]] = crop(tras, extobj)
+            loclist[[paste(ctype, yr, ext, sep="_")]] = 
+                            projectRaster(tras, baseras, method=projectionMethod)
 
         }
       }
@@ -683,7 +686,7 @@ process_covariates = function(locvars, studynm, extobj,
         fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", loccov, 
                                   "_", months[j], "_", years[j], ".grd", sep=""))
         tras = raster(fp)
-        loclist[[paste(loccov, months[j], years[j], ext, sep="_")]] = crop(tras, extobj)
+        loclist[[paste(loccov, months[j], years[j], ext, sep="_")]] = projectRaster(tras, baseras, method=projectionMethod)
       }
 
     } else {
@@ -700,23 +703,67 @@ process_covariates = function(locvars, studynm, extobj,
             if(ltype %in% distgrad_types){
               cat("Processing gradient for", ltype, "\n")
               loclist[[paste(ltype, ext, sep="_")]] = 
-                        get_distance_to_gradient(crop(tras, extobj), decay=decay)
+                        get_distance_to_gradient(projectRaster(tras, baseras, method=projectionMethod), decay=decay)
             } 
           } else
-            loclist[[paste(ltype, ext, sep="_")]] = crop(tras, extobj)
+            loclist[[paste(ltype, ext, sep="_")]] = projectRaster(tras, baseras, method=projectionMethod)
 
         } # End for loop
       } else {
 
         tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", 
                                                         loccov, ".grd", sep="")))
-        loclist[[paste(loccov, ext, sep="_")]] = crop(tras, extobj)
+        loclist[[paste(loccov, ext, sep="_")]] = projectRaster(tras, baseras, method=projectionMethod)
       } # End else
     } # End else
   } # End for loop
 
   return(loclist)
 
+  
+}
+
+add_covariates = function(fullglm, covariates, studynm, 
+        basedir="/Users/mqwilber/Repos/rsf_swine/data/covariate_data"){
+  # Adds various population-level covariates onto the data.table after 
+  # the initial CTMC processing.
+  #
+  # Parameters
+  # ----------
+  # fullglm : data.table 
+  #  The processed CTMC data
+  # covariates : vector
+  #   Strings containing the various covariates to add
+  # basedir : string
+  #   The location of the covariate data
+
+  if("drought" %in% covariates){
+
+    # Match the drought data to the dates in fullglm
+    files = Sys.glob(file.path(basedir, "drought", studynm, paste(studynm, "_drought*.csv", sep="")))
+    drought = fread(files[1])[, list(DSCI, ValidStart, ValidEnd)]
+    drought$ValidStart = as.numeric(as.POSIXct(drought$ValidStart, 
+                            origin = '1970-01-01', tz = 'GMT'))
+    drought$ValidEnd = as.numeric(as.POSIXct(drought$ValidEnd, 
+                            origin = '1970-01-01', tz = 'GMT'))
+
+
+    get_date = function(t){
+      dt = date(as.POSIXct(t, origin = '1970-01-01', tz = 'GMT'))
+      return(as.numeric(as.POSIXct(dt, origin = '1970-01-01', tz = 'GMT')))
+    }
+
+    fullglm[, c("ValidStart", "ValidEnd"):=list(get_date(t), get_date(t))]
+    setkey(drought, ValidStart, ValidEnd)
+    setkey(fullglm, ValidStart, ValidEnd)
+    fullglm = foverlaps(fullglm, drought, type="within")
+
+    # Remove the Valid* columns
+    fullglm = fullglm[, -names(fullglm)[names(fullglm) %like% "Valid"], with=F]
+
+  }
+
+  return(fullglm)
   
 }
 
@@ -1031,7 +1078,7 @@ get_distance_to_gradient = function(rast, decay=1){
 
   # Check if the calculations are going to be outrageous (i.e. > base)
   numcalc = ncell(rast) * nrow(longlat_ctype)
-  base = 1e6 #1.5e7 # ~45 seconds with 1e7, ~16 seconds with 1e6, ~1 minute with 1.5e7
+  base = 1.5e7 # ~45 seconds with 1e7, ~16 seconds with 1e6, ~1 minute with 1.5e7
   if(numcalc > base){
     # TODO: What if ncells > base?
     # Draw a random subset of values at which to compute the gradient. 

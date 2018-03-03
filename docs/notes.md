@@ -313,7 +313,19 @@ Regarding the RSF analysis, the goals for today are to
 A number of our layers will come in as shapefiles (i.e. wetland layers). We are going to want to convert these to rasters. The "raster" package in R let's us read in shapefiles, crop them, and convert them to rasters.
 
 
+## March 2, 2018
 
+**Meeting with Sarah**
+
+1. Update on distance-to-X metrics
+	- How did you end up doing it? Particularly for the hydrology layer.
+	- Which layer did you end up using?
+2. Look through covariate sheet.
+3. Share screen to show folder structure.
+4. EVI: I think I found a way to get this
+	- PyModis. 
+5. Stop with covariates and focus on literature review.
+6. Drought Index update.
 
 
 

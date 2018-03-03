@@ -1,383 +1,562 @@
-Beginning analysis for tejon 
-Computing continuous path for tejonF02_F12 
-Computing continuous path for tejonF16 
-Computing continuous path for tejonF17 
-Computing continuous path for tejonM03 
-Computing continuous path for tejonM307 
-Computing continuous path for tejonF06 
-Computing continuous path for tejonM301 
-Computing continuous path for tejonM401 
-Computing continuous path for tejonF07 
-Computing continuous path for tejonM306 
-Computing continuous path for tejonF05 
-Computing continuous path for tejonM302 
-Computing continuous path for tejonF04 
-Beginning CTMC for tejonF02_F12 
+Beginning analysis for txcamp 
+Computing continuous path for txcamp20125 
+Computing continuous path for txcamp20126 
+Computing continuous path for txcamp20127 
+Computing continuous path for txcamp20130 
+Computing continuous path for txcamp20133 
+Computing continuous path for txcamp20132 
+Computing continuous path for txcamp20135 
+Computing continuous path for txcamp20134 
+Computing continuous path for txcamp20136 
+Computing continuous path for txcamp20139 
+Computing continuous path for txcamp20143 
+Computing continuous path for txcamp20138 
+Computing continuous path for txcamp20140 
+Computing continuous path for txcamp20147 
+Computing continuous path for txcamp20153 
+Computing continuous path for txcamp20157 
+Computing continuous path for txcamp20144 
+Computing continuous path for txcamp20142 
+Computing continuous path for txcamp20149 
+Computing continuous path for txcamp20161 
+Computing continuous path for txcamp20146 
+Computing continuous path for txcamp20168 
+Computing continuous path for txcamp20154 
+Computing continuous path for txcamp20158 
+Computing continuous path for txcamp20163 
+Computing continuous path for txcamp20151 
+Computing continuous path for txcamp20169 
+Computing continuous path for txcamp20156 
+Computing continuous path for txcamp20160 
+Computing continuous path for txcamp20167 
+Computing continuous path for txcamp20427 
+Computing continuous path for txcamp20137 
+Computing continuous path for txcamp20141 
+Computing continuous path for txcamp20145 
+Computing continuous path for txcamp20150 
+Computing continuous path for txcamp20155 
+Computing continuous path for txcamp20159 
+Computing continuous path for txcamp20165 
+Computing continuous path for txcamp20426 
+Beginning CTMC for txcamp20125 
+Beginning CTMC for txcamp20126 
+Beginning CTMC for txcamp20127 
+Beginning CTMC for txcamp20130 
+Processing gradient for cereals 
+Processing gradient for cereals 
+Processing gradient for cereals 
+Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
-Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
 Processing gradient for wetland 
-Run 1 for tejonF02_F12 
-Computing imputation 1 of 1 for tejonF02_F12 
-Run 2 for tejonF02_F12 
-Computing imputation 1 of 1 for tejonF02_F12 
-Run 3 for tejonF02_F12 
-Computing imputation 1 of 1 for tejonF02_F12 
-Run 4 for tejonF02_F12 
-Computing imputation 1 of 1 for tejonF02_F12 
-Run 5 for tejonF02_F12 
-Computing imputation 1 of 1 for tejonF02_F12 
-Run 6 for tejonF02_F12 
-Computing imputation 1 of 1 for tejonF02_F12 
-Run 7 for tejonF02_F12 
-Computing imputation 1 of 1 for tejonF02_F12 
-Finished CTMC for tejonF02_F12 
-[[1]]
-        z temperature_8_2015_loc temperature_9_2015_loc temperature_10_2015_loc
-     1: 0                 291.15                 290.78                  288.56
-     2: 0                 291.15                 290.78                  288.56
-     3: 0                 291.15                 290.78                  288.56
-     4: 1                 291.15                 290.78                  288.56
-     5: 0                 291.15                 290.78                  288.56
-    ---                                                                        
-123160: 0                 291.15                 290.78                  288.56
-123161: 0                 291.15                 290.78                  288.56
-123162: 0                 291.15                 290.78                  288.56
-123163: 0                 291.15                 290.78                  288.56
-123164: 1                 291.15                 290.78                  288.56
-        temperature_11_2015_loc temperature_12_2015_loc temperature_1_2016_loc
-     1:                  281.51                  279.02                 279.79
-     2:                  281.51                  279.02                 279.79
-     3:                  281.51                  279.02                 279.79
-     4:                  281.51                  279.02                 279.79
-     5:                  281.51                  279.02                 279.79
-    ---                                                                       
-123160:                  281.51                  279.02                 279.79
-123161:                  281.51                  279.02                 279.79
-123162:                  281.51                  279.02                 279.79
-123163:                  281.51                  279.02                 279.79
-123164:                  281.51                  279.02                 279.79
-        temperature_2_2016_loc temperature_3_2016_loc temperature_4_2016_loc
-     1:                 282.89                 282.02                  283.8
-     2:                 282.89                 282.02                  283.8
-     3:                 282.89                 282.02                  283.8
-     4:                 282.89                 282.02                  283.8
-     5:                 282.89                 282.02                  283.8
-    ---                                                                     
-123160:                 282.89                 282.02                  283.8
-123161:                 282.89                 282.02                  283.8
-123162:                 282.89                 282.02                  283.8
-123163:                 282.89                 282.02                  283.8
-123164:                 282.89                 282.02                  283.8
-        temperature_5_2016_loc temperature_6_2016_loc temperature_7_2016_loc
-     1:                 284.78                 289.96                 291.28
-     2:                 284.78                 289.96                 291.28
-     3:                 284.78                 289.96                 291.28
-     4:                 284.78                 289.96                 291.28
-     5:                 284.78                 289.96                 291.28
-    ---                                                                     
-123160:                 284.78                 289.96                 291.28
-123161:                 284.78                 289.96                 291.28
-123162:                 284.78                 289.96                 291.28
-123163:                 284.78                 289.96                 291.28
-123164:                 284.78                 289.96                 291.28
-        temperature_8_2016_loc precipitation_8_2015_loc
-     1:                 290.33                        0
-     2:                 290.33                        0
-     3:                 290.33                        0
-     4:                 290.33                        0
-     5:                 290.33                        0
-    ---                                                
-123160:                 290.33                        0
-123161:                 290.33                        0
-123162:                 290.33                        0
-123163:                 290.33                        0
-123164:                 290.33                        0
-        precipitation_9_2015_loc precipitation_10_2015_loc
-     1:                 16.74224                  14.83749
-     2:                 16.74224                  14.83749
-     3:                 16.74224                  14.83749
-     4:                 16.74224                  14.83749
-     5:                 16.74224                  14.83749
-    ---                                                   
-123160:                 16.74224                  14.83749
-123161:                 16.74224                  14.83749
-123162:                 16.74224                  14.83749
-123163:                 16.74224                  14.83749
-123164:                 16.74224                  14.83749
-        precipitation_11_2015_loc precipitation_12_2015_loc
-     1:                  8.889634                  21.23892
-     2:                  8.889634                  21.23892
-     3:                  8.889634                  21.23892
-     4:                  8.889634                  21.23892
-     5:                  8.889634                  21.23892
-    ---                                                    
-123160:                  8.889634                  21.23892
-123161:                  8.889634                  21.23892
-123162:                  8.889634                  21.23892
-123163:                  8.889634                  21.23892
-123164:                  8.889634                  21.23892
-        precipitation_1_2016_loc precipitation_2_2016_loc
-     1:                 69.06646                 38.22804
-     2:                 69.06646                 38.22804
-     3:                 69.06646                 38.22804
-     4:                 69.06646                 38.22804
-     5:                 69.06646                 38.22804
-    ---                                                  
-123160:                 69.06646                 38.22804
-123161:                 69.06646                 38.22804
-123162:                 69.06646                 38.22804
-123163:                 69.06646                 38.22804
-123164:                 69.06646                 38.22804
-        precipitation_3_2016_loc precipitation_4_2016_loc
-     1:                 45.37521                 15.89921
-     2:                 45.37521                 15.89921
-     3:                 45.37521                 15.89921
-     4:                 45.37521                 15.89921
-     5:                 45.37521                 15.89921
-    ---                                                  
-123160:                 45.37521                 15.89921
-123161:                 45.37521                 15.89921
-123162:                 45.37521                 15.89921
-123163:                 45.37521                 15.89921
-123164:                 45.37521                 15.89921
-        precipitation_5_2016_loc precipitation_6_2016_loc
-     1:                 7.388222                        0
-     2:                 7.388222                        0
-     3:                 7.388222                        0
-     4:                 7.388222                        0
-     5:                 7.388222                        0
-    ---                                                  
-123160:                 7.388222                        0
-123161:                 7.388222                        0
-123162:                 7.388222                        0
-123163:                 7.388222                        0
-123164:                 7.388222                        0
-        precipitation_7_2016_loc precipitation_8_2016_loc ndvi_8_2015_loc
-     1:                        0                        0          197.75
-     2:                        0                        0          197.75
-     3:                        0                        0          197.75
-     4:                        0                        0          197.75
-     5:                        0                        0          197.75
-    ---                                                                  
-123160:                        0                        0          203.00
-123161:                        0                        0          203.00
-123162:                        0                        0          203.00
-123163:                        0                        0          203.00
-123164:                        0                        0          203.00
-        ndvi_9_2015_loc ndvi_10_2015_loc ndvi_11_2015_loc ndvi_12_2015_loc
-     1:          202.25              199              213              199
-     2:          202.25              199              213              199
-     3:          202.25              199              213              199
-     4:          202.25              199              213              199
-     5:          202.25              199              213              199
-    ---                                                                   
-123160:          204.50              203              212              212
-123161:          204.50              203              212              212
-123162:          204.50              203              212              212
-123163:          204.50              203              212              212
-123164:          204.50              203              212              212
-        ndvi_1_2016_loc ndvi_2_2016_loc ndvi_3_2016_loc ndvi_4_2016_loc
-     1:        192.8333        203.8333        201.8333           212.5
-     2:        192.8333        203.8333        201.8333           212.5
-     3:        192.8333        203.8333        201.8333           212.5
-     4:        192.8333        203.8333        201.8333           212.5
-     5:        192.8333        203.8333        201.8333           212.5
-    ---                                                                
-123160:        197.1667        205.0000        206.3333           213.0
-123161:        197.1667        205.0000        206.3333           213.0
-123162:        197.1667        205.0000        206.3333           213.0
-123163:        197.1667        205.0000        206.3333           213.0
-123164:        197.1667        205.0000        206.3333           213.0
-        ndvi_5_2016_loc ndvi_6_2016_loc ndvi_7_2016_loc ndvi_8_2016_loc
-     1:        215.8571        205.6667        195.3333        192.6667
-     2:        215.8571        205.6667        195.3333        192.6667
-     3:        215.8571        205.6667        195.3333        192.6667
-     4:        215.8571        205.6667        195.3333        192.6667
-     5:        215.8571        205.6667        195.3333        192.6667
-    ---                                                                
-123160:        215.2857        209.5000        202.5000        199.1111
-123161:        215.2857        209.5000        202.5000        199.1111
-123162:        215.2857        209.5000        202.5000        199.1111
-123163:        215.2857        209.5000        202.5000        199.1111
-123164:        215.2857        209.5000        202.5000        199.1111
-        beverage_and_spice_2015_loc cereals_2015_loc oilseed_2015_loc
-     1:                           0                0                0
-     2:                           0                0                0
-     3:                           0                0                0
-     4:                           0                0                0
-     5:                           0                0                0
-    ---                                                              
-123160:                           0                0                0
-123161:                           0                0                0
-123162:                           0                0                0
-123163:                           0                0                0
-123164:                           0                0                0
-        other_2015_loc fruit_and_nuts_2015_loc grasses_2015_loc
-     1:              0                       0                0
-     2:              0                       0                0
-     3:              0                       0                0
-     4:              0                       0                0
-     5:              0                       0                0
-    ---                                                        
-123160:              0                       0                0
-123161:              0                       0                0
-123162:              0                       0                0
-123163:              0                       0                0
-123164:              0                       0                0
-        leguminous_2015_loc root_and_tuber_2015_loc sugar_2015_loc
-     1:                   0                       0              0
-     2:                   0                       0              0
-     3:                   0                       0              0
-     4:                   0                       0              0
-     5:                   0                       0              0
-    ---                                                           
-123160:                   0                       0              0
-123161:                   0                       0              0
-123162:                   0                       0              0
-123163:                   0                       0              0
-123164:                   0                       0              0
-        tobacco_2015_loc vegetables_and_melons_2015_loc
-     1:                0                              0
-     2:                0                              0
-     3:                0                              0
-     4:                0                              0
-     5:                0                              0
-    ---                                                
-123160:                0                              0
-123161:                0                              0
-123162:                0                              0
-123163:                0                              0
-123164:                0                              0
-        beverage_and_spice_2016_loc cereals_2016_loc oilseed_2016_loc
-     1:                           0                0                0
-     2:                           0                0                0
-     3:                           0                0                0
-     4:                           0                0                0
-     5:                           0                0                0
-    ---                                                              
-123160:                           0                0                0
-123161:                           0                0                0
-123162:                           0                0                0
-123163:                           0                0                0
-123164:                           0                0                0
-        other_2016_loc fruit_and_nuts_2016_loc grasses_2016_loc
-     1:              0                       0                0
-     2:              0                       0                0
-     3:              0                       0                0
-     4:              0                       0                0
-     5:              0                       0                0
-    ---                                                        
-123160:              0                       0                0
-123161:              0                       0                0
-123162:              0                       0                0
-123163:              0                       0                0
-123164:              0                       0                0
-        leguminous_2016_loc root_and_tuber_2016_loc sugar_2016_loc
-     1:                   0                       0              0
-     2:                   0                       0              0
-     3:                   0                       0              0
-     4:                   0                       0              0
-     5:                   0                       0              0
-    ---                                                           
-123160:                   0                       0              0
-123161:                   0                       0              0
-123162:                   0                       0              0
-123163:                   0                       0              0
-123164:                   0                       0              0
-        tobacco_2016_loc vegetables_and_melons_2016_loc wetland_loc
-     1:                0                              0           0
-     2:                0                              0           0
-     3:                0                              0           0
-     4:                0                              0           0
-     5:                0                              0           0
-    ---                                                            
-123160:                0                              0           0
-123161:                0                              0           0
-123162:                0                              0           0
-123163:                0                              0           0
-123164:                0                              0           0
-        canopycover_loc masting_loc dummy_loc fruit_and_nuts_2015_grad
-     1:              34    49.59131  198.0980                        0
-     2:              34    49.59131  198.0980                        0
-     3:              34    49.59131  198.0980                        0
-     4:              34    49.59131  198.0980                        0
-     5:              34    49.59131  199.2991                        0
-    ---                                                               
-123160:              47    32.15493  201.0203                        0
-123161:              21    32.15493  199.6444                        0
-123162:              21    32.15493  199.6444                        0
-123163:              21    32.15493  199.6444                        0
-123164:              21    32.15493  199.6444                        0
-        fruit_and_nuts_2016_grad wetland_grad ndvi_8_2015_grad ndvi_9_2015_grad
-     1:                        0            0      0.035912217      0.047030092
-     2:                        0            0     -0.035912217     -0.047030092
-     3:                        0            0     -0.033308868     -0.006918634
-     4:                        0            0      0.033308868      0.006918634
-     5:                        0            0      0.030278863      0.039656264
-    ---                                                                        
-123160:                        0            0      0.038168818      0.047457994
-123161:                        0            0      0.002012235      0.010306324
-123162:                        0            0     -0.002012235     -0.010306324
-123163:                        0            0     -0.038168767     -0.047458038
-123164:                        0            0      0.038168767      0.047458038
-        ndvi_10_2015_grad ndvi_11_2015_grad ndvi_12_2015_grad ndvi_1_2016_grad
-     1:      3.003142e-18        0.08365964       0.047884462       0.01825296
-     2:     -3.003142e-18       -0.08365964      -0.047884462      -0.01825296
-     3:     -4.904504e-02        0.01567323       0.003465683      -0.01086475
-     4:      4.904504e-02       -0.01567323      -0.003465683       0.01086475
-     5:      3.405989e-16        0.07057523       0.040376993       0.01538830
-    ---                                                                       
-123160:      1.245976e-02        0.05362892       0.049055798       0.03748804
-123161:      1.832666e-02        0.02039056      -0.017881582       0.01041532
-123162:     -1.832666e-02       -0.02039056       0.017881582      -0.01041532
-123163:     -1.246175e-02       -0.05362853      -0.049062022      -0.03748806
-123164:      1.246175e-02        0.05362853       0.049062022       0.03748806
-        ndvi_2_2016_grad ndvi_3_2016_grad ndvi_4_2016_grad ndvi_5_2016_grad
-     1:      0.016542677     -0.018253582    -0.0119795515    -0.0044008755
-     2:     -0.016542677      0.018253582     0.0119795515     0.0044008755
-     3:     -0.003017907      0.005022336     0.0070210261     0.0006474163
-     4:      0.003017907     -0.005022336    -0.0070210261    -0.0006474163
-     5:      0.013946351     -0.015388823    -0.0100992686    -0.0037100798
-    ---                                                                    
-123160:      0.036094412      0.013981762     0.0008199857    -0.0033831597
-123161:      0.010426485     -0.004457917    -0.0005289394    -0.0009684648
-123162:     -0.010426485      0.004457917     0.0005289394     0.0009684648
-123163:     -0.036095201     -0.013981701    -0.0008199857     0.0033831586
-123164:      0.036095201      0.013981701     0.0008199857    -0.0033831586
-        ndvi_6_2016_grad ndvi_7_2016_grad ndvi_8_2016_grad canopycover_grad
-     1:      0.011979026     0.0114075526       0.01254751      -0.13524061
-     2:     -0.011979026    -0.0114075526      -0.01254751       0.13524061
-     3:     -0.013447724    -0.0215417519      -0.02521318      -0.11563155
-     4:      0.013447724     0.0215417519       0.02521318       0.11563155
-     5:      0.010098826     0.0096170369       0.01057810      -0.27782613
-    ---                                                                    
-123160:      0.019058373     0.0252681579       0.01950292       0.31415349
-123161:      0.002698363     0.0008489941       0.00580676      -0.02470759
-123162:     -0.002698363    -0.0008489941      -0.00580676       0.02470759
-123163:     -0.019058426    -0.0252681539      -0.01950283      -0.26582039
-123164:      0.019058426     0.0252681539       0.01950283       0.26582039
-        masting_grad   dummy_grad crw x.current y.current     x.adj    y.adj
-     1:  0.008943013  0.035912217   0 -118.6839  34.91543 -118.6842 34.91543
-     2: -0.008943013 -0.035912217   0 -118.6839  34.91543 -118.6836 34.91543
-     3: -0.029131285 -0.033308868   0 -118.6839  34.91543 -118.6839 34.91575
-     4:  0.029131285  0.033308868   0 -118.6839  34.91543 -118.6839 34.91510
-     5:  0.009640735  0.030278863   0 -118.6839  34.91510 -118.6842 34.91510
-    ---                                                                     
-123160:  0.012425976  0.038168818  NA -118.6744  34.91380 -118.6744 34.91347
-123161:  0.011736523  0.002012235  NA -118.6744  34.91412 -118.6748 34.91412
-123162: -0.011736523 -0.002012235  NA -118.6744  34.91412 -118.6741 34.91412
-123163: -0.012426046 -0.038168767  NA -118.6744  34.91412 -118.6744 34.91445
-123164:  0.012426046  0.038168767  NA -118.6744  34.91412 -118.6744 34.91380
-         tau          t        pigID imputeID
-     1: 2700 1440065760 tejonF02_F12        1
-     2: 2700 1440065760 tejonF02_F12        1
-     3: 2700 1440065760 tejonF02_F12        1
-     4: 2700 1440065760 tejonF02_F12        1
-     5:  900 1440066660 tejonF02_F12        1
-    ---                                      
-123160:  900 1472351460 tejonF02_F12        1
-123161: 9000 1472360460 tejonF02_F12        1
-123162: 9000 1472360460 tejonF02_F12        1
-123163: 9000 1472360460 tejonF02_F12        1
-123164: 9000 1472360460 tejonF02_F12        1
-
+Run 1 for txcamp20127 
+Computing imputation 1 of 1 for txcamp20127 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for fruit_and_nuts 
+Processing gradient for root_and_tuber 
+Processing gradient for grasses 
+Processing gradient for wetland 
+Run 1 for txcamp20130 
+Computing imputation 1 of 1 for txcamp20130 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20126 
+Computing imputation 1 of 1 for txcamp20126 
+Run 2 for txcamp20127 
+Computing imputation 1 of 1 for txcamp20127 
+Run 3 for txcamp20127 
+Computing imputation 1 of 1 for txcamp20127 
+Run 4 for txcamp20127 
+Computing imputation 1 of 1 for txcamp20127 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20125 
+Computing imputation 1 of 1 for txcamp20125 
+Run 5 for txcamp20127 
+Computing imputation 1 of 1 for txcamp20127 
+Finished CTMC for txcamp20126 
+Beginning CTMC for txcamp20133 
+Processing gradient for cereals 
+Finished CTMC for txcamp20127 
+Beginning CTMC for txcamp20134 
+Finished CTMC for txcamp20130 
+Beginning CTMC for txcamp20135 
+Processing gradient for cereals 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20134 
+Computing imputation 1 of 1 for txcamp20134 
+Run 2 for txcamp20134 
+Computing imputation 1 of 1 for txcamp20134 
+Run 3 for txcamp20134 
+Processing gradient for fruit_and_nuts 
+Computing imputation 1 of 1 for txcamp20134 
+Processing gradient for grasses 
+Run 4 for txcamp20134 
+Computing imputation 1 of 1 for txcamp20134 
+Run 5 for txcamp20134 
+Computing imputation 1 of 1 for txcamp20134 
+Run 6 for txcamp20134 
+Computing imputation 1 of 1 for txcamp20134 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20135 
+Computing imputation 1 of 1 for txcamp20135 
+Finished CTMC for txcamp20134 
+Beginning CTMC for txcamp20138 
+Run 2 for txcamp20135 
+Computing imputation 1 of 1 for txcamp20135 
+Processing gradient for cereals 
+Run 3 for txcamp20135 
+Computing imputation 1 of 1 for txcamp20135 
+Run 4 for txcamp20135 
+Computing imputation 1 of 1 for txcamp20135 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20138 
+Computing imputation 1 of 1 for txcamp20138 
+Finished CTMC for txcamp20125 
+Beginning CTMC for txcamp20132 
+Processing gradient for cereals 
+Run 2 for txcamp20138 
+Computing imputation 1 of 1 for txcamp20138 
+Run 3 for txcamp20138 
+Computing imputation 1 of 1 for txcamp20138 
+Run 4 for txcamp20138 
+Computing imputation 1 of 1 for txcamp20138 
+Run 5 for txcamp20138 
+Computing imputation 1 of 1 for txcamp20138 
+Finished CTMC for txcamp20135 
+Beginning CTMC for txcamp20139 
+Processing gradient for cereals 
+Run 6 for txcamp20138 
+Computing imputation 1 of 1 for txcamp20138 
+Run 7 for txcamp20138 
+Computing imputation 1 of 1 for txcamp20138 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20139 
+Computing imputation 1 of 1 for txcamp20139 
+Finished CTMC for txcamp20138 
+Beginning CTMC for txcamp20142 
+Processing gradient for cereals 
+Finished CTMC for txcamp20139 
+Beginning CTMC for txcamp20143 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Processing gradient for fruit_and_nuts 
+Run 1 for txcamp20143 
+Processing gradient for grasses 
+Computing imputation 1 of 1 for txcamp20143 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20142 
+Computing imputation 1 of 1 for txcamp20142 
+Finished CTMC for txcamp20143 
+Beginning CTMC for txcamp20147 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Processing gradient for cereals 
+Run 1 for txcamp20132 
+Computing imputation 1 of 1 for txcamp20132 
+Run 2 for txcamp20142 
+Computing imputation 1 of 1 for txcamp20142 
+Run 3 for txcamp20142 
+Computing imputation 1 of 1 for txcamp20142 
+Run 4 for txcamp20142 
+Computing imputation 1 of 1 for txcamp20142 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20147 
+Computing imputation 1 of 1 for txcamp20147 
+Finished CTMC for txcamp20142 
+Beginning CTMC for txcamp20146 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Finished CTMC for txcamp20132 
+Beginning CTMC for txcamp20136 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Finished CTMC for txcamp20147 
+Beginning CTMC for txcamp20153 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20133 
+Computing imputation 1 of 1 for txcamp20133 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20136 
+Computing imputation 1 of 1 for txcamp20136 
+Processing gradient for cereals 
+Run 2 for txcamp20136 
+Computing imputation 1 of 1 for txcamp20136 
+Run 3 for txcamp20136 
+Computing imputation 1 of 1 for txcamp20136 
+Run 4 for txcamp20136 
+Computing imputation 1 of 1 for txcamp20136 
+Run 5 for txcamp20136 
+Computing imputation 1 of 1 for txcamp20136 
+Run 6 for txcamp20136 
+Computing imputation 1 of 1 for txcamp20136 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20153 
+Computing imputation 1 of 1 for txcamp20153 
+Finished CTMC for txcamp20136 
+Beginning CTMC for txcamp20140 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Finished CTMC for txcamp20133 
+Beginning CTMC for txcamp20137 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Processing gradient for cereals 
+Run 2 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 3 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 4 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 5 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 6 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 7 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 8 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 9 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 10 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Run 11 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Run 12 for txcamp20140 
+Computing imputation 1 of 1 for txcamp20140 
+Finished CTMC for txcamp20140 
+Beginning CTMC for txcamp20144 
+Finished CTMC for txcamp20153 
+Beginning CTMC for txcamp20157 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20144 
+Computing imputation 1 of 1 for txcamp20144 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20157 
+Computing imputation 1 of 1 for txcamp20157 
+Finished CTMC for txcamp20144 
+Beginning CTMC for txcamp20149 
+Run 2 for txcamp20157 
+Computing imputation 1 of 1 for txcamp20157 
+Processing gradient for cereals 
+Run 3 for txcamp20157 
+Computing imputation 1 of 1 for txcamp20157 
+Run 4 for txcamp20157 
+Computing imputation 1 of 1 for txcamp20157 
+Run 5 for txcamp20157 
+Computing imputation 1 of 1 for txcamp20157 
+Run 6 for txcamp20157 
+Computing imputation 1 of 1 for txcamp20157 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20137 
+Computing imputation 1 of 1 for txcamp20137 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Finished CTMC for txcamp20157 
+Beginning CTMC for txcamp20161 
+Run 2 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20161 
+Computing imputation 1 of 1 for txcamp20161 
+Finished CTMC for txcamp20161 
+Beginning CTMC for txcamp20168 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20149 
+Computing imputation 1 of 1 for txcamp20149 
+Processing gradient for cereals 
+Finished CTMC for txcamp20137 
+Beginning CTMC for txcamp20141 
+Run 2 for txcamp20149 
+Computing imputation 1 of 1 for txcamp20149 
+Processing gradient for cereals 
+Run 3 for txcamp20149 
+Computing imputation 1 of 1 for txcamp20149 
+Run 3 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Run 4 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Finished CTMC for txcamp20149 
+Beginning CTMC for txcamp20154 
+Run 5 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Run 6 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Run 7 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Processing gradient for cereals 
+Finished CTMC for txcamp20146 
+Beginning CTMC for txcamp20151 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20151 
+Computing imputation 1 of 1 for txcamp20151 
+Run 2 for txcamp20151 
+Computing imputation 1 of 1 for txcamp20151 
+Run 3 for txcamp20151 
+Computing imputation 1 of 1 for txcamp20151 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 4 for txcamp20151 
+Run 1 for txcamp20154 
+Computing imputation 1 of 1 for txcamp20154 
+Computing imputation 1 of 1 for txcamp20151 
+Run 5 for txcamp20151 
+Computing imputation 1 of 1 for txcamp20151 
+Run 6 for txcamp20151 
+Computing imputation 1 of 1 for txcamp20151 
+Run 7 for txcamp20151 
+Computing imputation 1 of 1 for txcamp20151 
+Run 8 for txcamp20151 
+Computing imputation 1 of 1 for txcamp20151 
+Finished CTMC for txcamp20151 
+Beginning CTMC for txcamp20156 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20156 
+Computing imputation 1 of 1 for txcamp20156 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Finished CTMC for txcamp20156 
+Beginning CTMC for txcamp20160 
+Finished CTMC for txcamp20154 
+Beginning CTMC for txcamp20158 
+Processing gradient for cereals 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20158 
+Computing imputation 1 of 1 for txcamp20158 
+Finished CTMC for txcamp20158 
+Beginning CTMC for txcamp20163 
+Processing gradient for leguminous 
+Processing gradient for cereals 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20141 
+Computing imputation 1 of 1 for txcamp20141 
+Processing gradient for fruit_and_nuts 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for grasses 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20163 
+Computing imputation 1 of 1 for txcamp20163 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20168 
+Computing imputation 1 of 1 for txcamp20168 
+Finished CTMC for txcamp20141 
+Beginning CTMC for txcamp20145 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20160 
+Computing imputation 1 of 1 for txcamp20160 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Finished CTMC for txcamp20163 
+Beginning CTMC for txcamp20169 
+Finished CTMC for txcamp20168 
+Processing gradient for cereals 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20145 
+Computing imputation 1 of 1 for txcamp20145 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20169 
+Computing imputation 1 of 1 for txcamp20169 
+Finished CTMC for txcamp20145 
+Beginning CTMC for txcamp20150 
+Processing gradient for cereals 
+Finished CTMC for txcamp20160 
+Beginning CTMC for txcamp20167 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for cereals 
+Finished CTMC for txcamp20169 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20150 
+Computing imputation 1 of 1 for txcamp20150 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20167 
+Computing imputation 1 of 1 for txcamp20167 
+Finished CTMC for txcamp20150 
+Beginning CTMC for txcamp20155 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Finished CTMC for txcamp20167 
+Beginning CTMC for txcamp20427 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Processing gradient for cereals 
+Run 1 for txcamp20155 
+Computing imputation 1 of 1 for txcamp20155 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Run 2 for txcamp20155 
+Computing imputation 1 of 1 for txcamp20155 
+Run 3 for txcamp20155 
+Computing imputation 1 of 1 for txcamp20155 
+Run 4 for txcamp20155 
+Computing imputation 1 of 1 for txcamp20155 
+Run 5 for txcamp20155 
+Computing imputation 1 of 1 for txcamp20155 
+Run 6 for txcamp20155 
+Computing imputation 1 of 1 for txcamp20155 
+Finished CTMC for txcamp20155 
+Beginning CTMC for txcamp20159 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20427 
+Computing imputation 1 of 1 for txcamp20427 
+Processing gradient for cereals 
+Run 2 for txcamp20427 
+Computing imputation 1 of 1 for txcamp20427 
+Run 3 for txcamp20427 
+Computing imputation 1 of 1 for txcamp20427 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20159 
+Computing imputation 1 of 1 for txcamp20159 
+Finished CTMC for txcamp20427 
+Finished CTMC for txcamp20159 
+Beginning CTMC for txcamp20165 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20165 
+Computing imputation 1 of 1 for txcamp20165 
+Finished CTMC for txcamp20165 
+Beginning CTMC for txcamp20426 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20426 
+Computing imputation 1 of 1 for txcamp20426 
+Run 2 for txcamp20426 
+Computing imputation 1 of 1 for txcamp20426 
+Finished CTMC for txcamp20426 
+Adding post-processing covariates for txcamp 
+Written 20.7% of 3614424 rows in 2 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 7 secs.      Written 31.3% of 3614424 rows in 3 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 6 secs.      Written 42.2% of 3614424 rows in 4 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 5 secs.      Written 52.9% of 3614424 rows in 5 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 4 secs.      Written 63.8% of 3614424 rows in 6 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 3 secs.      Written 74.1% of 3614424 rows in 7 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 2 secs.      Written 84.1% of 3614424 rows in 8 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 1 secs.      Written 95.1% of 3614424 rows in 9 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 0 secs.                                                                                                                                           Completed analysis for txcamp 

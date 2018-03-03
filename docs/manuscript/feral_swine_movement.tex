@@ -84,29 +84,46 @@ Paragraph 2:
 
 \subsubsection*{Feral swine movement data}
 
+[How we excluded errant measurements cite Bjornass, and accounted for capture 
+effects]
+
+For any given pig in any given study, the times between GPS fixes were not consistent.  [Summary of this data a bit].  While the movement models that we describe below account for variable fix times, too large of a distance between fix times will lead to a large amount of uncertainty about where a pig was in between two fixes. To account for this, we excluded all fix times that were less or equal to 2-3 hours apart [THINK ABOUT JUSTIFICATION]. Moreover, we only analyzed movement trajectories that had greater than or equal to 200 fixes that met this timing criteria. We chose 200 because at our minimum fix time of 15 minutes this was approximately two days of fix times, which is the minimum time span needed for inference on daily trends in resource selection. 
+
 \subsubsection*{Covariates}
 
 \subsection*{Movement models}
 
-To understand how resources, etc. affected pig movement within and across populations, we used the modeling framework of \cite{Hanks2015} and \cite{Wilson2018}. Broadly, this framework uses a continuous-time, discrete-space movement model to make two types of inference: 1) how various biotic and abiotic covariates (i.e. "resources") affect pig movement rate and the direction of pig movement \citep{Hanks2015} and 2) the long-term probability of resource use for an organism in a given area, based on a dynamic model of individual movement \citep{Wilson2018}.  The key advantage of this approach for our purposes is that the continuous-time nature allows us to sync-up time scales across various populations, such that we are making inference regarding [resource selection] at consistent time-scales across different studies. 
+To understand how resources, etc. affected pig movement within and across populations, we used the modeling framework of \cite{Hanks2015} and \cite{Wilson2018}. Broadly, this framework uses a continuous-time, discrete-space movement model to make two types of inference: 1) how various biotic and abiotic covariates (i.e. "resources") affect pig movement rate and the direction of pig movement \citep{Hanks2015} and 2) the long-term probability of resource use for an organism in a given area, based on a dynamic model of individual movement \citep{Wilson2018}.  Because this framework utilizes a continuous-time movement model, it can easily account for disparate fix times across various studies, such that we can explore resource selection at a consistent time scale-across studies.
 
-Specifically, this approach can be broken into two distinct steps which we describe in detail below: fitting a continuous-time movement model to the movement data and using this continuous-time movement model to explore how resource selection affects pig movement.
+Specifically, this approach can be broken into two distinct steps: fitting a continuous-time movement model to the telemetry data for a given animal and then using this continuous-time movement model to explore how resource selection affects pig movement. We give an overview of each of steps below. Additional detail is provided in the Supplementary Material.
 
-\subsection*{Continuous-time movement models}
+\subsection*{Step 1: Fit a continuous-time movement models}
 
 % While discrete-time movement models have a rich history of use in movement ecology [citations], continuous-time movement models have recently been gaining prominence \citep[e.g.][]{Johnson2008a,Hanks2015,Buderman2016,Hooten2017} [Brownian bridge stuff, etc.].  One advantage of continuous-time movement models is that they naturally handle movement data in which time steps are not equal, without having to resort to various state-space/missing data approaches that are often used when accounting for unequal time steps in discrete-time movement models. However, fitting continuous-time movement models 
 
-To fit a continuous-time movement model to GPS data for a particular pig, we used basis function approach developed by \cite{Buderman2016}.  This is a phenomenological approach to modeling pig movement and proceeds by fitting linear model to pig movement data. [And Buderman 2018] developed a basis function approach for fitting continuous-time movement models to animal movement data that [advantages of approach].  
+The goal of the first step is to estimate animal movement as a function of continuous time at some particular level of accuracy.  To do this, we used a phenomenological functional movement model (FMM) \citep{Buderman2016,Hooten2017a}, which is a non-mechanistic, continuous-time movement model that can capture an animal's movement patterns at some desired-level of detail \citep{Buderman2016}.  The phenomenological FMM can be represented as a series of basis functions, which allow for large flexibility in animal movement patterns.
+In particular, we use a B-spline basis expansion [check lingo] to model the longitude and latitude of an animal as a function of time.  This FMM can be written as the following linear model  
 
+\begin{equation}
+	\mathbf{y} \sim \text{MVN}(\mathbf{X} \beta, \mathbf{\Sigma})
+\end{equation}
 
+where $\mathbf{y}$ is a $n \times 2$ vector of longitude and latitude, $\mathbf{X}$ is the $n \times p$ desired basis expansion of time (i.e. the design matrix) where $p$ is the [number of basis vectors] \citep{Hefley2017}, $\beta$ is a $p \times 2$ matrix of coefficients, and $\Sigma$ is the covariance matrix.  Here we assume that there is no correlation between longitude and latitude \cite[e.g.][]{Johnson2008a}, such that that above model can be broken into two univariate multiple regressions. Because this is a standard linear model, it is fast to implement in either a Frequentist or Bayesian framework. 
 
+A larger [number of basis vectors $p$] in the model ($p$) will determine how closely the model fits the movement data, at the risk of over-fitting the data.  In our case, because of the relatively small amount of error [in radio-collared GPS data] and because of the the goal of this step was to provide a non-mechanistic and highly specific model of animal movement, we allowed $p$ relatively large (see SM for exact values) such that our model closely fit the observed movement trajectory.  Again, we stress that the goal of this first step is not \emph{prediction} in which we would clearly be over-fitting the movement data, but rather \emph{interpolation with uncertainty}.
 
-\subsection*{Analysis}
+We fit the phenomenological FMM to each particular run, of a particular pig, in a particular study.  For every fit, we used the FMM to generate 10 predictions of our movement trajectory at 15 minute intervals to account for uncertainty in the movement trajectory \citep{Hanks2015,Buderman2018}.  For example, if a particular pig had three runs where each run spanned 168 hours (7 days), after fitting the model we had 30 predictions (3 runs $\times$ 10 imputations) of 672 time points (168 hours $\times$ 60 minutes) / 15 minutes).  We then fed this data into the model analysis described next. 
+
+\subsection*{Step 2: Analyzing animal movement as a continuous-time Markov chain}
+
+After obtaining the discretized and imputed predictions from our continuous-time FMM [LOL, way to jargony], the second step of the analysis sought to understand how resources affected the movement trajectories of animals on the landscape.
+
 
 
 
 \section*{Results}
-{}
+
+
 \section*{Discussion}
 
 \singlespacing

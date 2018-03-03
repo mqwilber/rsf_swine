@@ -35,7 +35,7 @@ cropvals = lapply(1:length(unqgroups), function(x) csmeta[group_name == unqgroup
 # Loop through different studies to format croplayer covariates
 for(studynm in study_sum$study){
 
-	if(studynm %in% c("tejon")) { # Just process txcamp, tejon, and michigan
+	if(studynm %in% c("txcamp")) { # Just process txcamp, tejon, and michigan
 
 		cat("Processing", studynm, "\n")
 
@@ -49,8 +49,9 @@ for(studynm in study_sum$study){
 			tras = raster(file.path(base, "data/covariate_data/croplayer", studynm, 
 												paste(studynm, "_croplayer_", yr, "_raw.tif", sep="")))
 
-			extobj = extent(study_sum$longitude_min[ind], study_sum$longitude_max[ind], 
-											study_sum$latitude_min[ind], study_sum$latitude_max[ind])
+			buffer = 0.005
+			extobj = extent(c(xmin=study_sum$longitude_min[ind] - buffer, xmax=study_sum$longitude_max[ind] + buffer, 
+											  ymin=study_sum$latitude_min[ind] - buffer, ymax=study_sum$latitude_max[ind] + buffer))
 			cras = crop(tras, extobj)
 
 			# Make separate rasters for each crop type

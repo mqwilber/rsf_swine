@@ -53,7 +53,7 @@ unqgroups = unique(nlcdmeta$grouping)
 for(studynm in study_sum$study){
 
 	# Select a few studies to process...michigan is quite slow.
-	if(any(studynm %in% c("txcamp", "tejon", "michigan"))) {
+	if(any(studynm %in% c("txcamp"))) {
 
 		cat("Processing", studynm, "\n")
 
@@ -81,16 +81,28 @@ for(studynm in study_sum$study){
 			values(tempras)[!ctypeind] = 0 # Not ctype forest
 
 			# Save formated raster file
-			writeRaster(tempras, filename=file.path(ftp, paste(studynm, "_", ctype, ".grd", sep="")), 
-										format="raster", overwrite=TRUE)
+			fname = file.path(ftp, paste(studynm, "_", ctype, ".tif", sep=""))
+			writeRaster(tempras, filename=fname, format="GTiff", overwrite=TRUE)
+
+			if(ctype %in% c("wetland", "developed", "barren_land")){
+				fnameshp = paste(strsplit(fname, ".", fixed=TRUE)[[1]][1], ".shp", sep="")
+				system(paste("gdal_polygonize.py ", fname, " -f 'ESRI Shapefile' ", fnameshp, sep=""))
+
+				distras = dist_nearest_neighbor(tempras, fnameshp)
+				writeRaster(distras, filename=file.path(ftp, 
+									paste(studynm, "_", ctype, "_", yr, "_nndistance.tif", sep="")), 
+									format="GTiff", overwrite=TRUE)
+			}
+
+
 		}
 
 		# Crop and project the percent tree cover
 		lcras_extent = projectExtent(crop(coverTrans, extobj), crs(cover))
 		lcras = projectRaster(crop(cover, extent(lcras_extent)), crs=crsbase, method="ngb")
 
-		writeRaster(lcras, filename=file.path(ftp, paste(studynm, "_canopycover.grd", sep="")), 
-										format="raster", overwrite=TRUE)
+		writeRaster(lcras, filename=file.path(ftp, paste(studynm, "_canopycover.tif", sep="")), 
+										format="GTiff", overwrite=TRUE)
 
 	} # End if
 } # End study

@@ -4,6 +4,7 @@ library(rgdal)
 library(sp)
 library(plotKML)
 library(raster)
+library(rgeos)
 
 ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat", 
 							lonname="lon", convertLon=TRUE, cellsize=0.5){
@@ -79,6 +80,30 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 
 	return(rasterlist)
 
+}
+
+dist_nearest_neighbor = function(ras, shpfile){
+
+	shp = shapefile(shpfile)
+	polys = shp[shp$DN == 1, ]
+	tras = ras
+
+	# Polygons are present
+	if(dim(polys)[1] != 0){
+
+		# For each cell in raster, compute distance to nearest
+		centers = gCentroid(polys, byid=TRUE)
+		pts = rasterToPoints(tras, spatial=TRUE)
+
+		# Distance is in kilometers
+		mindists = apply(spDists(pts, centers, longlat=TRUE), 1, min)
+		values(tras) = mindists
+
+	} else{
+		values(tras) = NA
+	}
+
+	return(tras)
 }
 
 

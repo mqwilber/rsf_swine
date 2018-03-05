@@ -1,30 +1,295 @@
+Beginning analysis for tejon 
+Read 56.9% of 1705134 rowsRead 1705134 rows and 8 (of 8) columns from 0.124 GB file in 00:00:03
+Computing continuous path for tejonF02_F12 
+Computing continuous path for tejonF16 
+Computing continuous path for tejonF17 
+Computing continuous path for tejonM03 
+Computing continuous path for tejonM307 
+Computing continuous path for tejonF06 
+Computing continuous path for tejonM301 
+Computing continuous path for tejonM401 
+Computing continuous path for tejonF07 
+Computing continuous path for tejonM306 
+Computing continuous path for tejonF05 
+Computing continuous path for tejonM302 
+Computing continuous path for tejonF04 
+Beginning CTMC for tejonF16 
+Beginning CTMC for tejonM03 Beginning CTMC forBeginning CTMC for  
+tejonF02_F12tejonF17  
+
+Processing gradient for cereals 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for cereals 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for root_and_tuber 
+Processing gradient for cereals 
+Processing gradient for wetland 
+Run 2 for tejonF17 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Run 1 for tejonF02_F12 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Computing imputation 1 of 1 for tejonF17 
+Processing gradient for wetland 
+Run 1 for tejonF16 
+Computing imputation 1 of 1 for tejonF02_F12 
+Computing imputation 1 of 1 for tejonF16 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Run 2 for tejonF02_F12 
+Computing imputation 1 of 1 for tejonF02_F12 
+Run 2 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 3 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonM03 
+Computing imputation 1 of 1 for tejonM03 
+Run 3 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 2 for tejonM03 
+Computing imputation 1 of 1 for tejonM03 
+Run 4 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 4 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 5 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 6 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 7 for tejonF17 
+Run 5 for tejonF16 
+Computing imputation 1 of 1 for tejonF17 
+Computing imputation 1 of 1 for tejonF16 
+Run 3 for tejonF02_F12 
+Computing imputation 1 of 1 for tejonF02_F12 
+Run 8 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 4 for tejonF02_F12 
+Computing imputation 1 of 1 for tejonF02_F12 
+Run 9 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 10 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 5 for tejonF02_F12 
+Computing imputation 1 of 1 for tejonF02_F12 
+Run 6 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 11 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 7 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 12 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 13 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 8 for tejonF16 
+Run 14 for tejonF17 
+Computing imputation 1 of 1 for tejonF16 
+Computing imputation 1 of 1 for tejonF17 
+Run 15 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 6 for tejonF02_F12 
+Computing imputation 1 of 1 for tejonF02_F12 
+Run 9 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 16 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 17 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 18 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Run 19 for tejonF17 
+Computing imputation 1 of 1 for tejonF17 
+Finished CTMC for tejonF17 
+Beginning CTMC for tejonM306 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonM306 
+Computing imputation 1 of 1 for tejonM306 
+Finished CTMC for tejonM306 
+Beginning CTMC for tejonF05 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonF05 
+Computing imputation 1 of 1 for tejonF05 
+Run 10 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Finished CTMC for tejonM03 
+Beginning CTMC for tejonM307 
+Finished CTMC for tejonF05 
+Run 11 for tejonF16 
+Processing gradient for cereals 
+Computing imputation 1 of 1 for tejonF16 
+Run 12 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonM307 
+Computing imputation 1 of 1 for tejonM307 
+Run 13 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 14 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 15 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 16 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 7 for tejonF02_F12 
+Computing imputation 1 of 1 for tejonF02_F12 
+Run 17 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Finished CTMC for tejonM307 
+Beginning CTMC for tejonF06 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonF06 
+Run 18 for tejonF16 
+Computing imputation 1 of 1 for tejonF06 
+Computing imputation 1 of 1 for tejonF16 
+Run 19 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 20 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Run 21 for tejonF16 
+Computing imputation 1 of 1 for tejonF16 
+Finished CTMC for tejonF02_F12 
+Beginning CTMC for tejonM301 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonM301 
+Computing imputation 1 of 1 for tejonM301 
+Finished CTMC for tejonM301 
+Beginning CTMC for tejonM401 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonM401 
+Computing imputation 1 of 1 for tejonM401 
+Run 2 for tejonM401 
+Computing imputation 1 of 1 for tejonM401 
+Run 3 for tejonM401 
+Computing imputation 1 of 1 for tejonM401 
+Run 4 for tejonM401 
+Computing imputation 1 of 1 for tejonM401 
+Run 5 for tejonM401 
+Computing imputation 1 of 1 for tejonM401 
+Finished CTMC for tejonM401 
+Beginning CTMC for tejonF07 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonF07 
+Computing imputation 1 of 1 for tejonF07 
+Finished CTMC for tejonF07 
+Finished CTMC for tejonF06 
+Finished CTMC for tejonF16 
+Beginning CTMC for tejonM302 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonM302 
+Computing imputation 1 of 1 for tejonM302 
+Finished CTMC for tejonM302 
+Beginning CTMC for tejonF04 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for tejonF04 
+Computing imputation 1 of 1 for tejonF04 
+Finished CTMC for tejonF04 
+Adding post-processing covariates for tejon 
+Completed analysis for tejon 
 Beginning analysis for txcamp 
 Computing continuous path for txcamp20125 
-Computing continuous path for txcamp20126 
-Computing continuous path for txcamp20127 
-Computing continuous path for txcamp20130 
+Computing continuous path for Computing continuous path fortxcamp20126 
+ Computing continuous path for txcamp20127 
+txcamp20130 
 Computing continuous path for txcamp20133 
-Computing continuous path for txcamp20132 
 Computing continuous path for txcamp20135 
+Computing continuous path for txcamp20132 
 Computing continuous path for txcamp20134 
 Computing continuous path for txcamp20136 
 Computing continuous path for txcamp20139 
 Computing continuous path for txcamp20143 
+Computing continuous path for txcamp20147 
 Computing continuous path for txcamp20138 
 Computing continuous path for txcamp20140 
-Computing continuous path for txcamp20147 
 Computing continuous path for txcamp20153 
 Computing continuous path for txcamp20157 
-Computing continuous path for txcamp20144 
 Computing continuous path for txcamp20142 
+Computing continuous path for txcamp20144 
+Computing continuous path for Computing continuous path fortxcamp20161  txcamp20146
+ 
 Computing continuous path for txcamp20149 
-Computing continuous path for txcamp20161 
-Computing continuous path for txcamp20146 
 Computing continuous path for txcamp20168 
 Computing continuous path for txcamp20154 
+Computing continuous path for txcamp20151 
 Computing continuous path for txcamp20158 
 Computing continuous path for txcamp20163 
-Computing continuous path for txcamp20151 
 Computing continuous path for txcamp20169 
 Computing continuous path for txcamp20156 
 Computing continuous path for txcamp20160 
@@ -39,9 +304,9 @@ Computing continuous path for txcamp20159
 Computing continuous path for txcamp20165 
 Computing continuous path for txcamp20426 
 Beginning CTMC for txcamp20125 
-Beginning CTMC for txcamp20126 
-Beginning CTMC for txcamp20127 
 Beginning CTMC for txcamp20130 
+Beginning CTMC for txcamp20127 
+Beginning CTMC for txcamp20126 
 Processing gradient for cereals 
 Processing gradient for cereals 
 Processing gradient for cereals 
@@ -58,72 +323,79 @@ Processing gradient for grasses
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
-Processing gradient for fruit_and_nuts 
 Processing gradient for root_and_tuber 
-Processing gradient for grasses 
 Processing gradient for wetland 
 Run 1 for txcamp20130 
 Computing imputation 1 of 1 for txcamp20130 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
 Run 1 for txcamp20126 
 Computing imputation 1 of 1 for txcamp20126 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20125 
+Computing imputation 1 of 1 for txcamp20125 
+Finished CTMC for txcamp20126 
+Beginning CTMC for txcamp20133 
+Processing gradient for cereals 
 Run 2 for txcamp20127 
 Computing imputation 1 of 1 for txcamp20127 
 Run 3 for txcamp20127 
 Computing imputation 1 of 1 for txcamp20127 
 Run 4 for txcamp20127 
 Computing imputation 1 of 1 for txcamp20127 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20125 
-Computing imputation 1 of 1 for txcamp20125 
 Run 5 for txcamp20127 
 Computing imputation 1 of 1 for txcamp20127 
-Finished CTMC for txcamp20126 
-Beginning CTMC for txcamp20133 
-Processing gradient for cereals 
-Finished CTMC for txcamp20127 
-Beginning CTMC for txcamp20134 
 Finished CTMC for txcamp20130 
 Beginning CTMC for txcamp20135 
 Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20135 
+Computing imputation 1 of 1 for txcamp20135 
+Run 2 for txcamp20135 
+Computing imputation 1 of 1 for txcamp20135 
+Finished CTMC for txcamp20127 
+Beginning CTMC for txcamp20134 
 Processing gradient for cereals 
+Run 3 for txcamp20135 
+Computing imputation 1 of 1 for txcamp20135 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
 Run 1 for txcamp20134 
+Run 4 for txcamp20135 
 Computing imputation 1 of 1 for txcamp20134 
-Run 2 for txcamp20134 
-Computing imputation 1 of 1 for txcamp20134 
-Run 3 for txcamp20134 
+Computing imputation 1 of 1 for txcamp20135 
 Processing gradient for fruit_and_nuts 
-Computing imputation 1 of 1 for txcamp20134 
 Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Run 2 for txcamp20134 
+Processing gradient for wetland 
+Run 1 for txcamp20133 
+Computing imputation 1 of 1 for txcamp20134 
+Computing imputation 1 of 1 for txcamp20133 
+Run 3 for txcamp20134 
+Computing imputation 1 of 1 for txcamp20134 
 Run 4 for txcamp20134 
 Computing imputation 1 of 1 for txcamp20134 
 Run 5 for txcamp20134 
 Computing imputation 1 of 1 for txcamp20134 
 Run 6 for txcamp20134 
 Computing imputation 1 of 1 for txcamp20134 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20135 
-Computing imputation 1 of 1 for txcamp20135 
 Finished CTMC for txcamp20134 
 Beginning CTMC for txcamp20138 
-Run 2 for txcamp20135 
-Computing imputation 1 of 1 for txcamp20135 
 Processing gradient for cereals 
-Run 3 for txcamp20135 
-Computing imputation 1 of 1 for txcamp20135 
-Run 4 for txcamp20135 
-Computing imputation 1 of 1 for txcamp20135 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
@@ -134,6 +406,23 @@ Computing imputation 1 of 1 for txcamp20138
 Finished CTMC for txcamp20125 
 Beginning CTMC for txcamp20132 
 Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20132 
+Computing imputation 1 of 1 for txcamp20132 
+Finished CTMC for txcamp20135 
+Beginning CTMC for txcamp20139 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20139 
+Computing imputation 1 of 1 for txcamp20139 
 Run 2 for txcamp20138 
 Computing imputation 1 of 1 for txcamp20138 
 Run 3 for txcamp20138 
@@ -142,56 +431,33 @@ Run 4 for txcamp20138
 Computing imputation 1 of 1 for txcamp20138 
 Run 5 for txcamp20138 
 Computing imputation 1 of 1 for txcamp20138 
-Finished CTMC for txcamp20135 
-Beginning CTMC for txcamp20139 
-Processing gradient for cereals 
 Run 6 for txcamp20138 
 Computing imputation 1 of 1 for txcamp20138 
 Run 7 for txcamp20138 
 Computing imputation 1 of 1 for txcamp20138 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20139 
-Computing imputation 1 of 1 for txcamp20139 
-Finished CTMC for txcamp20138 
-Beginning CTMC for txcamp20142 
-Processing gradient for cereals 
 Finished CTMC for txcamp20139 
 Beginning CTMC for txcamp20143 
 Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
 Processing gradient for grasses 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
-Processing gradient for fruit_and_nuts 
 Run 1 for txcamp20143 
-Processing gradient for grasses 
 Computing imputation 1 of 1 for txcamp20143 
+Finished CTMC for txcamp20138 
+Beginning CTMC for txcamp20142 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
 Processing gradient for leguminous 
+Finished CTMC for txcamp20143 
+Beginning CTMC for txcamp20147 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
 Run 1 for txcamp20142 
 Computing imputation 1 of 1 for txcamp20142 
-Finished CTMC for txcamp20143 
-Beginning CTMC for txcamp20147 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
 Processing gradient for cereals 
-Run 1 for txcamp20132 
-Computing imputation 1 of 1 for txcamp20132 
-Run 2 for txcamp20142 
-Computing imputation 1 of 1 for txcamp20142 
-Run 3 for txcamp20142 
-Computing imputation 1 of 1 for txcamp20142 
-Run 4 for txcamp20142 
-Computing imputation 1 of 1 for txcamp20142 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
@@ -199,39 +465,55 @@ Processing gradient for root_and_tuber
 Processing gradient for wetland 
 Run 1 for txcamp20147 
 Computing imputation 1 of 1 for txcamp20147 
-Finished CTMC for txcamp20142 
-Beginning CTMC for txcamp20146 
-Processing gradient for cereals 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
+Run 2 for txcamp20142 
+Computing imputation 1 of 1 for txcamp20142 
+Run 3 for txcamp20142 
+Computing imputation 1 of 1 for txcamp20142 
+Run 4 for txcamp20142 
+Computing imputation 1 of 1 for txcamp20142 
 Finished CTMC for txcamp20132 
 Beginning CTMC for txcamp20136 
 Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
-Finished CTMC for txcamp20147 
-Beginning CTMC for txcamp20153 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20133 
-Computing imputation 1 of 1 for txcamp20133 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
 Run 1 for txcamp20136 
 Computing imputation 1 of 1 for txcamp20136 
-Processing gradient for cereals 
+Finished CTMC for txcamp20133 
+Beginning CTMC for txcamp20137 
 Run 2 for txcamp20136 
 Computing imputation 1 of 1 for txcamp20136 
+Finished CTMC for txcamp20142 
+Beginning CTMC for txcamp20146 
+Processing gradient for cereals 
 Run 3 for txcamp20136 
 Computing imputation 1 of 1 for txcamp20136 
+Processing gradient for cereals 
 Run 4 for txcamp20136 
 Computing imputation 1 of 1 for txcamp20136 
 Run 5 for txcamp20136 
 Computing imputation 1 of 1 for txcamp20136 
 Run 6 for txcamp20136 
 Computing imputation 1 of 1 for txcamp20136 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20137 
+Computing imputation 1 of 1 for txcamp20137 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Finished CTMC for txcamp20147 
+Beginning CTMC for txcamp20153 
+Processing gradient for cereals 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
@@ -244,14 +526,13 @@ Beginning CTMC for txcamp20140
 Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
-Finished CTMC for txcamp20133 
-Beginning CTMC for txcamp20137 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
 Run 1 for txcamp20140 
 Computing imputation 1 of 1 for txcamp20140 
-Processing gradient for cereals 
+Run 2 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
 Run 2 for txcamp20140 
 Computing imputation 1 of 1 for txcamp20140 
 Run 3 for txcamp20140 
@@ -270,19 +551,12 @@ Run 9 for txcamp20140
 Computing imputation 1 of 1 for txcamp20140 
 Run 10 for txcamp20140 
 Computing imputation 1 of 1 for txcamp20140 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
 Run 11 for txcamp20140 
 Computing imputation 1 of 1 for txcamp20140 
 Run 12 for txcamp20140 
 Computing imputation 1 of 1 for txcamp20140 
 Finished CTMC for txcamp20140 
 Beginning CTMC for txcamp20144 
-Finished CTMC for txcamp20153 
-Beginning CTMC for txcamp20157 
-Processing gradient for cereals 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
 Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
@@ -291,6 +565,49 @@ Processing gradient for root_and_tuber
 Processing gradient for wetland 
 Run 1 for txcamp20144 
 Computing imputation 1 of 1 for txcamp20144 
+Finished CTMC for txcamp20144 
+Beginning CTMC for txcamp20149 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20149 
+Computing imputation 1 of 1 for txcamp20149 
+Finished CTMC for txcamp20137 
+Beginning CTMC for txcamp20141 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20141 
+Computing imputation 1 of 1 for txcamp20141 
+Run 2 for txcamp20149 
+Computing imputation 1 of 1 for txcamp20149 
+Run 3 for txcamp20149 
+Computing imputation 1 of 1 for txcamp20149 
+Finished CTMC for txcamp20149 
+Beginning CTMC for txcamp20154 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Run 3 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20154 
+Computing imputation 1 of 1 for txcamp20154 
+Run 4 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Finished CTMC for txcamp20153 
+Beginning CTMC for txcamp20157 
+Processing gradient for cereals 
+Run 5 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
@@ -298,11 +615,12 @@ Processing gradient for root_and_tuber
 Processing gradient for wetland 
 Run 1 for txcamp20157 
 Computing imputation 1 of 1 for txcamp20157 
-Finished CTMC for txcamp20144 
-Beginning CTMC for txcamp20149 
 Run 2 for txcamp20157 
 Computing imputation 1 of 1 for txcamp20157 
-Processing gradient for cereals 
+Run 6 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
+Run 7 for txcamp20146 
+Computing imputation 1 of 1 for txcamp20146 
 Run 3 for txcamp20157 
 Computing imputation 1 of 1 for txcamp20157 
 Run 4 for txcamp20157 
@@ -311,63 +629,9 @@ Run 5 for txcamp20157
 Computing imputation 1 of 1 for txcamp20157 
 Run 6 for txcamp20157 
 Computing imputation 1 of 1 for txcamp20157 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20137 
-Computing imputation 1 of 1 for txcamp20137 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20146 
-Computing imputation 1 of 1 for txcamp20146 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
-Finished CTMC for txcamp20157 
-Beginning CTMC for txcamp20161 
-Run 2 for txcamp20146 
-Computing imputation 1 of 1 for txcamp20146 
-Processing gradient for cereals 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20161 
-Computing imputation 1 of 1 for txcamp20161 
-Finished CTMC for txcamp20161 
-Beginning CTMC for txcamp20168 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20149 
-Computing imputation 1 of 1 for txcamp20149 
-Processing gradient for cereals 
-Finished CTMC for txcamp20137 
-Beginning CTMC for txcamp20141 
-Run 2 for txcamp20149 
-Computing imputation 1 of 1 for txcamp20149 
-Processing gradient for cereals 
-Run 3 for txcamp20149 
-Computing imputation 1 of 1 for txcamp20149 
-Run 3 for txcamp20146 
-Computing imputation 1 of 1 for txcamp20146 
-Run 4 for txcamp20146 
-Computing imputation 1 of 1 for txcamp20146 
-Finished CTMC for txcamp20149 
-Beginning CTMC for txcamp20154 
-Run 5 for txcamp20146 
-Computing imputation 1 of 1 for txcamp20146 
-Run 6 for txcamp20146 
-Computing imputation 1 of 1 for txcamp20146 
-Run 7 for txcamp20146 
-Computing imputation 1 of 1 for txcamp20146 
-Processing gradient for cereals 
 Finished CTMC for txcamp20146 
 Beginning CTMC for txcamp20151 
 Processing gradient for cereals 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
@@ -377,15 +641,23 @@ Run 1 for txcamp20151
 Computing imputation 1 of 1 for txcamp20151 
 Run 2 for txcamp20151 
 Computing imputation 1 of 1 for txcamp20151 
-Run 3 for txcamp20151 
-Computing imputation 1 of 1 for txcamp20151 
+Finished CTMC for txcamp20157 
+Beginning CTMC for txcamp20161 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
-Run 4 for txcamp20151 
-Run 1 for txcamp20154 
-Computing imputation 1 of 1 for txcamp20154 
+Run 1 for txcamp20161 
+Computing imputation 1 of 1 for txcamp20161 
+Run 3 for txcamp20151 
 Computing imputation 1 of 1 for txcamp20151 
+Run 4 for txcamp20151 
+Computing imputation 1 of 1 for txcamp20151 
+Finished CTMC for txcamp20161 
+Beginning CTMC for txcamp20168 
+Processing gradient for cereals 
 Run 5 for txcamp20151 
 Computing imputation 1 of 1 for txcamp20151 
 Run 6 for txcamp20151 
@@ -406,11 +678,8 @@ Run 1 for txcamp20156
 Computing imputation 1 of 1 for txcamp20156 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
-Finished CTMC for txcamp20156 
-Beginning CTMC for txcamp20160 
 Finished CTMC for txcamp20154 
 Beginning CTMC for txcamp20158 
-Processing gradient for cereals 
 Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
@@ -419,65 +688,49 @@ Processing gradient for root_and_tuber
 Processing gradient for wetland 
 Run 1 for txcamp20158 
 Computing imputation 1 of 1 for txcamp20158 
-Finished CTMC for txcamp20158 
-Beginning CTMC for txcamp20163 
-Processing gradient for leguminous 
-Processing gradient for cereals 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20141 
-Computing imputation 1 of 1 for txcamp20141 
-Processing gradient for fruit_and_nuts 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
-Processing gradient for leguminous 
-Processing gradient for grasses 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20163 
-Computing imputation 1 of 1 for txcamp20163 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
 Run 1 for txcamp20168 
 Computing imputation 1 of 1 for txcamp20168 
-Finished CTMC for txcamp20141 
-Beginning CTMC for txcamp20145 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20160 
-Computing imputation 1 of 1 for txcamp20160 
+Finished CTMC for txcamp20158 
+Beginning CTMC for txcamp20163 
+Finished CTMC for txcamp20156 
+Beginning CTMC for txcamp20160 
+Processing gradient for cereals 
 Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
-Finished CTMC for txcamp20163 
-Beginning CTMC for txcamp20169 
-Finished CTMC for txcamp20168 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20163 
+Computing imputation 1 of 1 for txcamp20163 
+Finished CTMC for txcamp20141 
+Beginning CTMC for txcamp20145 
 Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
 Run 1 for txcamp20145 
-Computing imputation 1 of 1 for txcamp20145 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
 Processing gradient for leguminous 
+Computing imputation 1 of 1 for txcamp20145 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
-Run 1 for txcamp20169 
-Computing imputation 1 of 1 for txcamp20169 
+Run 1 for txcamp20160 
+Computing imputation 1 of 1 for txcamp20160 
 Finished CTMC for txcamp20145 
 Beginning CTMC for txcamp20150 
 Processing gradient for cereals 
-Finished CTMC for txcamp20160 
-Beginning CTMC for txcamp20167 
+Finished CTMC for txcamp20163 
+Beginning CTMC for txcamp20169 
+Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
-Processing gradient for cereals 
-Finished CTMC for txcamp20169 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
@@ -488,23 +741,30 @@ Processing gradient for grasses
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
+Run 1 for txcamp20169 
+Computing imputation 1 of 1 for txcamp20169 
+Finished CTMC for txcamp20168 
+Finished CTMC for txcamp20160 
+Beginning CTMC for txcamp20167 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
 Run 1 for txcamp20167 
 Computing imputation 1 of 1 for txcamp20167 
+Finished CTMC for txcamp20169 
 Finished CTMC for txcamp20150 
 Beginning CTMC for txcamp20155 
 Processing gradient for cereals 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
-Finished CTMC for txcamp20167 
-Beginning CTMC for txcamp20427 
 Processing gradient for leguminous 
 Processing gradient for root_and_tuber 
 Processing gradient for wetland 
-Processing gradient for cereals 
 Run 1 for txcamp20155 
 Computing imputation 1 of 1 for txcamp20155 
-Processing gradient for fruit_and_nuts 
-Processing gradient for grasses 
 Run 2 for txcamp20155 
 Computing imputation 1 of 1 for txcamp20155 
 Run 3 for txcamp20155 
@@ -517,16 +777,7 @@ Run 6 for txcamp20155
 Computing imputation 1 of 1 for txcamp20155 
 Finished CTMC for txcamp20155 
 Beginning CTMC for txcamp20159 
-Processing gradient for leguminous 
-Processing gradient for root_and_tuber 
-Processing gradient for wetland 
-Run 1 for txcamp20427 
-Computing imputation 1 of 1 for txcamp20427 
 Processing gradient for cereals 
-Run 2 for txcamp20427 
-Computing imputation 1 of 1 for txcamp20427 
-Run 3 for txcamp20427 
-Computing imputation 1 of 1 for txcamp20427 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
@@ -534,7 +785,6 @@ Processing gradient for root_and_tuber
 Processing gradient for wetland 
 Run 1 for txcamp20159 
 Computing imputation 1 of 1 for txcamp20159 
-Finished CTMC for txcamp20427 
 Finished CTMC for txcamp20159 
 Beginning CTMC for txcamp20165 
 Processing gradient for cereals 
@@ -545,9 +795,19 @@ Processing gradient for root_and_tuber
 Processing gradient for wetland 
 Run 1 for txcamp20165 
 Computing imputation 1 of 1 for txcamp20165 
+Finished CTMC for txcamp20167 
+Beginning CTMC for txcamp20427 
+Processing gradient for cereals 
+Processing gradient for fruit_and_nuts 
+Processing gradient for grasses 
 Finished CTMC for txcamp20165 
 Beginning CTMC for txcamp20426 
 Processing gradient for cereals 
+Processing gradient for leguminous 
+Processing gradient for root_and_tuber 
+Processing gradient for wetland 
+Run 1 for txcamp20427 
+Computing imputation 1 of 1 for txcamp20427 
 Processing gradient for fruit_and_nuts 
 Processing gradient for grasses 
 Processing gradient for leguminous 
@@ -557,6 +817,11 @@ Run 1 for txcamp20426
 Computing imputation 1 of 1 for txcamp20426 
 Run 2 for txcamp20426 
 Computing imputation 1 of 1 for txcamp20426 
+Run 2 for txcamp20427 
+Computing imputation 1 of 1 for txcamp20427 
+Run 3 for txcamp20427 
+Computing imputation 1 of 1 for txcamp20427 
 Finished CTMC for txcamp20426 
+Finished CTMC for txcamp20427 
 Adding post-processing covariates for txcamp 
-Written 20.7% of 3614424 rows in 2 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 7 secs.      Written 31.3% of 3614424 rows in 3 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 6 secs.      Written 42.2% of 3614424 rows in 4 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 5 secs.      Written 52.9% of 3614424 rows in 5 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 4 secs.      Written 63.8% of 3614424 rows in 6 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 3 secs.      Written 74.1% of 3614424 rows in 7 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 2 secs.      Written 84.1% of 3614424 rows in 8 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 1 secs.      Written 95.1% of 3614424 rows in 9 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=48%. Finished in 0 secs.                                                                                                                                           Completed analysis for txcamp 
+Written 16.1% of 3622356 rows in 2 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 10 secs.      Written 25.8% of 3622356 rows in 3 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 8 secs.      Written 36.2% of 3622356 rows in 4 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 7 secs.      Written 47.1% of 3622356 rows in 5 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 5 secs.      Written 57.4% of 3622356 rows in 6 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 4 secs.      Written 68.4% of 3622356 rows in 7 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 3 secs.      Written 79.0% of 3622356 rows in 8 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 2 secs.      Written 88.7% of 3622356 rows in 9 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 1 secs.      Written 99.1% of 3622356 rows in 10 secs using 1 thread. anyBufferGrown=no; maxBuffUsed=46%. Finished in 0 secs.                                                                                                                                           Completed analysis for txcamp 

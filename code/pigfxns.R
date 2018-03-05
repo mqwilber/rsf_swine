@@ -593,6 +593,7 @@ process_covariates = function(locvars, studynm, baseras,
           landcovertypes=c("barren_land", "canopycover", "deciduous_forest", 
                            "developed", "evergreen_forest", "mixed_forest", 
                            "wetland"),
+          nngrad=FALSE,
           distgrad=FALSE, distgrad_types=numeric(), decay=1, 
           projectionMethod="bilinear"){
 	# Compiles lists of rasters to be used as location and gradient covariates
@@ -619,22 +620,28 @@ process_covariates = function(locvars, studynm, baseras,
   #   To be appended to rasters. Either "loc" (location covariates) or "grad" 
   #   (gradient covariates)
   # distgrad : bool
-  #   If True, for croptype variables the distance gradient is computed.
+  #   If True, for croptype variables the distance-to-gradient is computed. This
+  #   is a global distance measure that simultaneously accounts for 
+  #   the distance between all patch types
+  # nngrad : bool
+  #   If True, extracts the nearest-neighbor gradient raster.  Only applicable
+  #   for landcover and croplayer types.
   # distgrad_types : vector
   #   Include croptypes for which you DO want a gradient computed.
   # croptypes : vector
   #   Categories within croplayer locvar.
   # landcovertypes: vector
   #   Categories within landcover locvar.
+  # projectionMethod : string
+  #   Either "bilinear" or "ngb" as described in projectRaster fxn.
+  # decay : float
+  #   For distgrad, the level of distance to decay to include when computing 
+  #   distance-to-resource gradient.
   #
   # Returns
   # -------
   # : list of rasters
-  #
-  # Notes
-  # -----
-  # While all the rasters are cropped in the same way, they are not projected 
-  # identically in this function. This can be done easily outside of the function.
+  #   All rasters are projected in the same way
 
 
   loclist = list()
@@ -653,21 +660,32 @@ process_covariates = function(locvars, studynm, baseras,
       for(yr in minyear:maxyear){
         for(ctype in croptypes){
 
-          fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", ctype, 
-                                                        "_", yr, ".grd", sep=""))
-          tras = raster(fp)
+          if(!nngrad){
 
-          # Compute distance2 gradients for croptypes
-          if(distgrad){ 
-            if(ctype %in% distgrad_types){
-              cat("Processing gradient for", ctype, "\n")
+            fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", ctype, 
+                                                        "_", yr, ".tif", sep=""))
+            tras = raster(fp)
+
+            # Compute distance2 gradients for croptypes. 
+            if(distgrad){ 
+              if(ctype %in% distgrad_types){
+                cat("Processing gradient for", ctype, "\n")
+                loclist[[paste(ctype, yr, ext, sep="_")]] = 
+                          get_distance_to_gradient(projectRaster(tras, baseras, 
+                              method=projectionMethod), decay=decay)
+              }
+            } else
               loclist[[paste(ctype, yr, ext, sep="_")]] = 
-                        get_distance_to_gradient(projectRaster(tras, baseras, 
-                            method=projectionMethod), decay=decay)
-            }
-          } else
+                            projectRaster(tras, baseras, method=projectionMethod)
+          } else{
+
+            fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", ctype, 
+                                              "_", yr, "_nndistance.tif", sep=""))
+            tras = raster(fp)
             loclist[[paste(ctype, yr, ext, sep="_")]] = 
                             projectRaster(tras, baseras, method=projectionMethod)
+
+          }
 
         }
       }
@@ -684,9 +702,11 @@ process_covariates = function(locvars, studynm, baseras,
       for(j in 1:length(months)){
 
         fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", loccov, 
-                                  "_", months[j], "_", years[j], ".grd", sep=""))
+                                  "_", months[j], "_", years[j], ".tif", sep=""))
         tras = raster(fp)
-        loclist[[paste(loccov, months[j], years[j], ext, sep="_")]] = projectRaster(tras, baseras, method=projectionMethod)
+        loclist[[paste(loccov, months[j], years[j], ext, sep="_")]] = 
+                                              projectRaster(tras, baseras,
+                                                         method=projectionMethod)
       }
 
     } else {
@@ -695,25 +715,36 @@ process_covariates = function(locvars, studynm, baseras,
       if(loccov == "landcover"){
 
         for(ltype in landcovertypes){
-          tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", 
-                                                         ltype, ".grd", sep="")))
 
-          if(distgrad){ 
+          if(!nngrad){
 
-            if(ltype %in% distgrad_types){
-              cat("Processing gradient for", ltype, "\n")
-              loclist[[paste(ltype, ext, sep="_")]] = 
-                        get_distance_to_gradient(projectRaster(tras, baseras, method=projectionMethod), decay=decay)
-            } 
-          } else
-            loclist[[paste(ltype, ext, sep="_")]] = projectRaster(tras, baseras, method=projectionMethod)
+            tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", 
+                                                           ltype, ".tif", sep="")))
 
+            if(distgrad){ 
+
+              if(ltype %in% distgrad_types){
+                cat("Processing gradient for", ltype, "\n")
+                loclist[[paste(ltype, ext, sep="_")]] = 
+                          get_distance_to_gradient(projectRaster(tras, baseras, 
+                                            method=projectionMethod), decay=decay)
+              } 
+            } else
+              loclist[[paste(ltype, ext, sep="_")]] = projectRaster(tras, baseras, 
+                                                          method=projectionMethod)
+          } else{
+            tras = raster(file.path(cov_path, loccov, studynm, 
+                      paste(studynm, "_", ltype, "_nndistance.tif", sep="")))
+            loclist[[paste(ltype, ext, sep="_")]] = projectRaster(tras, baseras, 
+                                                        method=projectionMethod)
+          }
         } # End for loop
       } else {
 
         tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", 
-                                                        loccov, ".grd", sep="")))
-        loclist[[paste(loccov, ext, sep="_")]] = projectRaster(tras, baseras, method=projectionMethod)
+                                                        loccov, ".tif", sep="")))
+        loclist[[paste(loccov, ext, sep="_")]] = projectRaster(tras, baseras, 
+                                                        method=projectionMethod)
       } # End else
     } # End else
   } # End for loop

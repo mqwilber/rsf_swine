@@ -7,7 +7,8 @@ minlength : 200 # Runs of maxtime diffs must be longer than this.
 
 timestep : "15 mins" # Time step at which to predict with the continuous time model.
 method : "interp" # The method for fitting the continuous time model
-path2ctmcMethod : "LinearInterp" # "LinearInterp" or "ShortestPath"
+path2ctmcMethod : "ShortestPath" # "LinearInterp" # "LinearInterp" or "ShortestPath"
+
 
 buffer : 0.003 # Buffer to add to the cropped raster.
 
@@ -27,6 +28,7 @@ yearlyvars : ["croplayer"]
 default_cols : ['imputeID', 'crw', 'x.current', 'y.current', 'x.adj', 'y.adj', 
                                           'tau', 't', 'datetime', 'z', 'pigID']
 post_covariates : ['drought']
+decay : 1 # The scale of distance decay for a resource
 
 
 cores : 4

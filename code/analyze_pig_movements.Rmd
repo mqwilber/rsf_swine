@@ -1,0 +1,132 @@
+---
+title: "Analyzing pig movement across populations"
+author: Mark Wilber and Sarah Chinn
+output:
+  html_notebook: default
+  pdf_document: default
+bibliography: /Users/mqwilber/Dropbox/Documents/Bibfiles/Projects_and_Permits-feral_swine.bib
+---
+
+Load in the two processed data files
+
+
+```{r}
+library(data.table)
+
+tejondat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/tejon.csv")
+txdat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/txcamp.csv")
+
+# Drop the few ndvi that are Nan
+tejondat = tejondat[complete.cases(tejondat)]
+txdat = txdat[complete.cases(txdat)]
+
+hist(scale(tejondat$fruit_and_nuts_grad))
+```
+
+Only one Tejonn pig actually interacts with crops at all.  It will probably be useful to perform a crop specific analysis for pigs that do interact with crops across 
+studies to see how those interactions vary. But for now, let's just include variables that vary across all pigs.
+
+```{r}
+tejondat[, lapply(.SD, function(x) all(x == x[1])), by=pigID]
+```
+
+```{r}
+tfs = tejondat[, lapply(.SD, function(x) all(x == x[1])), by=pigID][, lapply(.SD, function(x) all(x == FALSE))]
+tfs[, tfs[1, ] == TRUE, with=F]
+```
+
+
+```{r}
+## Perform a preliminary comparison between txcamp and tejon based on fitting
+## each study individually.
+
+library(glmnet)
+library(foreach)
+
+stddat = tejondat
+
+form1 = formula(z ~ scale(crw) + 
+             			  scale(canopycover_loc)*scale(temperature_loc)*scale(precipitation_loc) +
+             			  scale(canopycover_grad)*scale(temperature_loc)*scale(precipitation_loc) +
+             			  scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) +
+             			  scale(ndvi_grad)*scale(temperature_loc)*scale(precipitation_loc) + 
+                    scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc) +
+                    scale(masting_grad)*scale(temperature_loc)*scale(precipitation_loc))
+
+fit1 = glm(form1, offset=log(tau), family="poisson", data=stddat)
+
+fit2reg = glmnet(x=model.matrix(form1, data=stddat), y=stddat$z, 
+                    offset=log(stddat$tau),  family="poisson",
+                    alpha=1, nlambda=30)
+
+require(doMC)
+registerDoMC(cores=4)
+fitcv = cv.glmnet(x=model.matrix(form1, data=stddat), y=stddat$z, 
+                    offset=log(stddat$tau), family="poisson",
+                    alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
+
+summary(fit1)
+```
+
+Explore the best fitting tejon models
+
+```{r}
+plot(fitcv)
+fitcv$glmnet.fit$beta[, fitcv$glmnet.fit$df == 8, drop=F]
+```
+
+After strongly regularizing, we see that
+
+1. Pigs tend to move in the same direction they were moving previously
+2. The pigs slow down as canopycover increases
+3. The pigs slow down as NDVI increases
+4. Temperature and precipitation interact to affect overall movement rate
+5. Increasing temperature decreases the rate at which pigs leave regions of high productivity.
+6. Pigs tend to stay in areas with a high density of masting trees
+7. Increasing precipitation increases the amount of time a pig stays in a masting layer 
+
+
+---
+
+For txcamp, similar to tejon, not all pigs interact with crops so we can't look at an overall crop effect.  Again, a later analysis will extract that pigs that 
+do interact
+
+```{r}
+tfs =  txdat[, lapply(.SD, function(x) all(x == x[1])), by=pigID][, lapply(.SD, function(x) all(x == FALSE))]
+tfs[, tfs[1, ] == TRUE, with=F]
+```
+
+```{r}
+library(glmnet)
+library(foreach)
+
+stddat = txdat
+
+form1 = formula(z ~ scale(crw) + 
+             			  scale(canopycover_loc)*scale(temperature_loc)*scale(precipitation_loc) +
+             			  scale(canopycover_grad)*scale(temperature_loc)*scale(precipitation_loc) +
+             			  scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) +
+             			  scale(ndvi_grad)*scale(temperature_loc)*scale(precipitation_loc) + 
+                    scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc) +
+                    scale(masting_grad)*scale(temperature_loc)*scale(precipitation_loc))
+
+fit1tx = glm(form1, offset=log(tau), family="poisson", data=stddat)
+
+fit2regtx = glmnet(x=model.matrix(form1, data=stddat), y=stddat$z, 
+                    offset=log(stddat$tau),  family="poisson",
+                    alpha=1, nlambda=30)
+
+require(doMC)
+registerDoMC(cores=4)
+fitcvtx = cv.glmnet(x=model.matrix(form1, data=stddat), y=stddat$z, 
+                    offset=log(stddat$tau), family="poisson",
+                    alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
+
+```
+
+```{r}
+plot(fit2regtx$df, fit2regtx$dev.ratio)
+fit2regtx$beta[, fit2regtx$df == 7, drop=F]
+```
+
+In the txcamp study, we again see canopy cover emerging as an important variable with the same directional effect as tejon: pigs tend to move slower in more covered areas. The effect of masting is minimal in the texas study, though increasing temperature + increasing masting does tend to slow pigs down.  There also is a directional effect of gradient in which pigs tend to move up the canopy cover gradient (move toward more canopy cover).

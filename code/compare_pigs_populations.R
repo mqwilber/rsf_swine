@@ -47,7 +47,7 @@ sink("log_ctmc.txt") # log file
 ## Step 1: Clean individual studies for outliers
 ###########################################################
 
-for(studynm in c("txcamp")){
+for(studynm in c("tejon", "txcamp")){
 
   #studynm = "tejon"
   cat("Beginning analysis for", studynm, "\n")
@@ -143,7 +143,7 @@ for(studynm in c("txcamp")){
 
     # Get the base raster on which to project all other rasters
     basefiles = Sys.glob(file.path(anal_params$covariate_dir, "croplayer", studynm,
-                paste(studynm, anal_params$baserastype, "*.grd", sep="")))
+                paste(studynm, anal_params$baserastype, "*.tif", sep="")))
     baseras = crop(raster(basefiles[1]), extobj)
     # plot(baseras)
 
@@ -163,25 +163,11 @@ for(studynm in c("txcamp")){
                                    ext="grad", croptypes=croptypes, 
                                    landcovertypes = landcovertypes, 
                                    distgrad = TRUE, distgrad_types=distgrad_types,
-                                   projectionMethod="bilinear")
+                                   projectionMethod="bilinear", 
+                                   decay=anal_params$decay)
     
     gradx_stackproj = stack(lapply(gradxy_stackproj, function(m) m$xgrad))
     grady_stackproj = stack(lapply(gradxy_stackproj, function(m) m$ygrad))
-    
-    # # Ensure projections are the same...lose some edge values this way
-    # baseras = loc_stack[[paste('cereals_', year(min(tdat$datetime)), "_loc", sep="")]]
-    # loc_stackproj = stack(lapply(loc_stack, 
-    # 															function(x) 
-    # 																projectRaster(x, baseras, method="ngb")))
-    # grad_stackproj = stack(lapply(grad_stack, 
-    # 															function(x) 
-    # 																projectRaster(x, baseras, method="bilinear")))
-    # gradx_stackproj = stack(lapply(gradx_stack, 
-    # 															function(x) 
-    # 																projectRaster(x, baseras, method="ngb")))
-    # grady_stackproj = stack(lapply(grady_stack, 
-    # 															function(x) 
-    # 																projectRaster(x, baseras, method="ngb")))
     
     # Compute the CTMC for each run and then combine them
     pigpaths = allpaths[[pignm]]

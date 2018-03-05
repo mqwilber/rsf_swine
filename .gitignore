@@ -8,3 +8,4 @@ code/.Rdata
 code/*.csv
 data/
 results/*
+docs/presentations/*

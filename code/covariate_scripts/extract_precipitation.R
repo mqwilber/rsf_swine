@@ -107,8 +107,8 @@ for(studynm in unique(study_sum$study)){
 		dir.create(tfp, showWarnings = FALSE)
 
 		fnm = paste(studynm, "_precipitation_", month(dates)[j], "_", year(dates)[j], 
-												".grd", sep="")
-		writeRaster(cras, file.path(tfp, fnm), format="raster", overwrite=TRUE)
+												".tif", sep="")
+		writeRaster(cras, file.path(tfp, fnm), format="GTiff", overwrite=TRUE)
 
 	}
 

@@ -25,7 +25,7 @@ densproj = projectRaster(dens, crs="+proj=longlat +datum=WGS84 +ellps=WGS84")
 for(studynm in study_sum$study){
 
 	cat("Working on", studynm, "\n")
-	ind = study == studynm
+	ind = study_sum$study == studynm
 	minlon = study_sum$longitude_min[ind]
 	maxlon = study_sum$longitude_max[ind]
 	minlat = study_sum$latitude_min[ind]
@@ -39,7 +39,7 @@ for(studynm in study_sum$study){
 	tfp = file.path("../../data/covariate_data/masting", studynm) 
 	dir.create(tfp, showWarnings=FALSE)
 
-	rasname = paste(studynm, "_masting.grd", sep="")
-	writeRaster(tras, file.path(tfp, rasname), format="raster", overwrite=TRUE)
+	rasname = paste(studynm, "_masting.tif", sep="")
+	writeRaster(tras, file.path(tfp, rasname), format="GTiff", overwrite=TRUE)
 
 }

@@ -62,8 +62,11 @@ for(studynm in study_sum$study){
 
 		ind = study_sum$study == studynm
 
-		extobj = extent(study_sum$longitude_min[ind], study_sum$longitude_max[ind], 
-											study_sum$latitude_min[ind], study_sum$latitude_max[ind])
+		buffer = 0.005
+		extobj = extent(c(xmin=study_sum$longitude_min[ind] - buffer, 
+											xmax=study_sum$longitude_max[ind] + buffer, 
+											ymin=study_sum$latitude_min[ind] - buffer, 
+											ymax=study_sum$latitude_max[ind] + buffer))
 
 		# Crop and project the landcover groupings
 		cras_extent = projectExtent(crop(nlcdTrans, extobj), crs(nlcd))
@@ -85,12 +88,13 @@ for(studynm in study_sum$study){
 			writeRaster(tempras, filename=fname, format="GTiff", overwrite=TRUE)
 
 			if(ctype %in% c("wetland", "developed", "barren_land")){
+
 				fnameshp = paste(strsplit(fname, ".", fixed=TRUE)[[1]][1], ".shp", sep="")
 				system(paste("gdal_polygonize.py ", fname, " -f 'ESRI Shapefile' ", fnameshp, sep=""))
 
 				distras = dist_nearest_neighbor(tempras, fnameshp)
 				writeRaster(distras, filename=file.path(ftp, 
-									paste(studynm, "_", ctype, "_", yr, "_nndistance.tif", sep="")), 
+									paste(studynm, "_", ctype, "_nndistance.tif", sep="")), 
 									format="GTiff", overwrite=TRUE)
 			}
 

@@ -650,7 +650,7 @@ process_covariates = function(locvars, studynm, baseras,
   for(i in 1:length(locvars)){
 
     loccov = locvars[i]
-
+    cat("Processing", loccov, "\n")
     if(loccov == "croplayer"){
       # This is a special covariate as it is broken into four covariates and is 
       # is on the yearly scale
@@ -664,6 +664,7 @@ process_covariates = function(locvars, studynm, baseras,
 
             fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", ctype, 
                                                         "_", yr, ".tif", sep=""))
+            cat(fp, "\n")
             tras = raster(fp)
 
             # Compute distance2 gradients for croptypes. 
@@ -681,9 +682,11 @@ process_covariates = function(locvars, studynm, baseras,
 
             fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", ctype, 
                                               "_", yr, "_nndistance.tif", sep=""))
+            cat(fp, "\n")
             tras = raster(fp)
             loclist[[paste(ctype, yr, ext, sep="_")]] = 
                             projectRaster(tras, baseras, method=projectionMethod)
+            
 
           }
 
@@ -703,6 +706,7 @@ process_covariates = function(locvars, studynm, baseras,
 
         fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", loccov, 
                                   "_", months[j], "_", years[j], ".tif", sep=""))
+        cat(fp, "\n")
         tras = raster(fp)
         loclist[[paste(loccov, months[j], years[j], ext, sep="_")]] = 
                                               projectRaster(tras, baseras,
@@ -718,8 +722,10 @@ process_covariates = function(locvars, studynm, baseras,
 
           if(!nngrad){
 
-            tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", 
-                                                           ltype, ".tif", sep="")))
+            fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", 
+                                                          ltype, ".tif", sep=""))
+            cat(fp, "\n")
+            tras = raster(fp)
 
             if(distgrad){ 
 
@@ -733,16 +739,32 @@ process_covariates = function(locvars, studynm, baseras,
               loclist[[paste(ltype, ext, sep="_")]] = projectRaster(tras, baseras, 
                                                           method=projectionMethod)
           } else{
-            tras = raster(file.path(cov_path, loccov, studynm, 
-                      paste(studynm, "_", ltype, "_nndistance.tif", sep="")))
-            loclist[[paste(ltype, ext, sep="_")]] = projectRaster(tras, baseras, 
-                                                        method=projectionMethod)
+
+            if(ltype != "canopycover"){
+
+              fp = file.path(cov_path, loccov, studynm, 
+                        paste(studynm, "_", ltype, "_nndistance.tif", sep=""))
+              cat(fp, "\n")
+              tras = raster(fp)
+              loclist[[paste(ltype, ext, sep="_")]] = projectRaster(tras, baseras, 
+                                                          method=projectionMethod)
+            } else{
+
+              fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", 
+                                                           ltype, ".tif", sep=""))
+              cat(fp, "\n")
+              tras = raster(fp)
+              loclist[[paste(ltype, ext, sep="_")]] = projectRaster(tras, baseras, 
+                                                          method=projectionMethod)
+            }
           }
         } # End for loop
       } else {
 
-        tras = raster(file.path(cov_path, loccov, studynm, paste(studynm, "_", 
-                                                        loccov, ".tif", sep="")))
+        fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", 
+                                                        loccov, ".tif", sep=""))
+        cat(fp, "\n")
+        tras = raster(fp)
         loclist[[paste(loccov, ext, sep="_")]] = projectRaster(tras, baseras, 
                                                         method=projectionMethod)
       } # End else

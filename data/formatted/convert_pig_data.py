@@ -24,7 +24,13 @@ GPS locations.
 2. Michigan pigs that were sampled in the year 2000 are removed as there are no
 H:M:S fixes on the GPS dates.
 
+2.1. Errant txcamp points are removed.
+
 3. Data are cleaned and IDs are changed to match with pig attributes file
+
+NOTE
+----
+Must be run with Python 2.7
 
 """
 
@@ -174,6 +180,10 @@ full_dat = pd.concat(dfs)
 # daily times
 full_dat.loc[:, "year"] = [a.year for a in full_dat.datetime] 
 full_dat = full_dat[~((full_dat.year == 2000) & (full_dat.study == "michigan"))]
+
+# For the txcamp study, remove all points < -98.8 longitude and > 29.80 lat.
+full_dat = full_dat[~((full_dat.study == "txcamp") & 
+                    ((full_dat.longitude < -98.8) | (full_dat.latitude > 29.80)))]
 
 print("Done")
 

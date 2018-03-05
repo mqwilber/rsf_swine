@@ -50,8 +50,10 @@ for(studynm in unique(study_sum$study)){
 	ind = study_sum$study == studynm
 
 	cellsize = 0
-	extobj = extent(study_sum$longitude_min[ind] - cellsize, study_sum$longitu de_max[ind] + cellsize,
-					 study_sum$latitude_min[ind] - cellsize, study_sum$latitude_max[ind] + cellsize)
+	extobj = extent(c(xmin=study_sum$longitude_min[ind] - cellsize, 
+										xmax=study_sum$longitude_max[ind] + cellsize,
+					 					ymin=study_sum$latitude_min[ind] - cellsize, 
+					 					ymax=study_sum$latitude_max[ind] + cellsize))
 
 	res = ncdf_to_raster(nc, timeinds, "air", extobj)
 
@@ -63,8 +65,8 @@ for(studynm in unique(study_sum$study)){
 	for(i in 1:length(res)){
 
 		monthyear = paste(timedf[timeinds[i], month], timedf[timeinds[i], year], sep="_")
-		fname = paste(studynm, "_temperature_", monthyear, ".grd", sep="")
-		writeRaster(res[[i]], file.path(tfp, fname), format="raster", overwrite=TRUE)
+		fname = paste(studynm, "_temperature_", monthyear, ".tif", sep="")
+		writeRaster(res[[i]], file.path(tfp, fname), format="GTiff", overwrite=TRUE)
 
 	}
 }	

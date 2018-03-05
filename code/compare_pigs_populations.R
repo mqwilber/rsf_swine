@@ -155,19 +155,20 @@ for(studynm in c("tejon", "txcamp")){
     
     grad_stackproj = stack(process_covariates(gradvars, studynm, baseras,
                                    min(tdat$datetime), max(tdat$datetime), 
-                                   ext="grad", landcovertypes = landcovertypes[landcovertypes != "wetland"],
+                                   ext="grad", landcovertypes = landcovertypes,
+                                   nngrad=TRUE, croptypes=croptypes,
                                    projectionMethod="bilinear"))
     
-    gradxy_stackproj = process_covariates(gradxyvar, studynm, baseras,
-                                   min(tdat$datetime), max(tdat$datetime),
-                                   ext="grad", croptypes=croptypes, 
-                                   landcovertypes = landcovertypes, 
-                                   distgrad = TRUE, distgrad_types=distgrad_types,
-                                   projectionMethod="bilinear", 
-                                   decay=anal_params$decay)
+    # gradxy_stackproj = process_covariates(gradxyvar, studynm, baseras,
+    #                                min(tdat$datetime), max(tdat$datetime),
+    #                                ext="grad", croptypes=croptypes, 
+    #                                landcovertypes = landcovertypes, 
+    #                                distgrad = TRUE, distgrad_types=distgrad_types,
+    #                                projectionMethod="bilinear", 
+    #                                decay=anal_params$decay)
     
-    gradx_stackproj = stack(lapply(gradxy_stackproj, function(m) m$xgrad))
-    grady_stackproj = stack(lapply(gradxy_stackproj, function(m) m$ygrad))
+    # gradx_stackproj = stack(lapply(gradxy_stackproj, function(m) m$xgrad))
+    # grady_stackproj = stack(lapply(gradxy_stackproj, function(m) m$ygrad))
     
     # Compute the CTMC for each run and then combine them
     pigpaths = allpaths[[pignm]]
@@ -184,10 +185,15 @@ for(studynm in c("tejon", "txcamp")){
       smallextobj = extent(c(xmin=minll[1] - buffer, xmax=maxll[1] + buffer, 
       											 ymin=minll[2] - buffer, ymax=maxll[2] + buffer))
       
+      # tglmdat = fit_ctmcmodel(tdat, pignm, crop(loc_stackproj, smallextobj), 
+      # 												crop(grad_stackproj, smallextobj), xygrad=TRUE, 
+      #                         xgrad.stack=crop(gradx_stackproj, smallextobj), 
+      #                         ygrad.stack = crop(grady_stackproj, smallextobj),
+      #                         predPath=smallpath, 
+      #                         path2ctmcMethod=anal_params$path2ctmcMethod)
+
       tglmdat = fit_ctmcmodel(tdat, pignm, crop(loc_stackproj, smallextobj), 
-      												crop(grad_stackproj, smallextobj), xygrad=TRUE, 
-                              xgrad.stack=crop(gradx_stackproj, smallextobj), 
-                              ygrad.stack = crop(grady_stackproj, smallextobj),
+                              crop(grad_stackproj, smallextobj), xygrad=FALSE, 
                               predPath=smallpath, 
                               path2ctmcMethod=anal_params$path2ctmcMethod)
       runglmdat[[j]] = tglmdat
@@ -210,7 +216,7 @@ for(studynm in c("tejon", "txcamp")){
   # Format columns and combine all data.tables
   locvars = anal_params$locvars
   gradvars = anal_params$gradvars
-  gradxyvar = anal_params$gradxyvar
+  # gradxyvar = anal_params$gradxyvar
   landcovertypes = anal_params$landcovertypes
   distgrad_types = anal_params$distgrad_types
   croptypes = anal_params$croptypes
@@ -221,9 +227,9 @@ for(studynm in c("tejon", "txcamp")){
 
   # A bit ugly, but dropping wetland and canopycover so we don't get duplicates. Will probably want to make this cleaner
   regexcols_locs = unlist(get_regex_columns(locvars, croptypes, landcovertypes, "loc"))
-  regexcols_grad = unlist(get_regex_columns(gradvars, c(), landcovertypes[landcovertypes != "wetland"], "grad"))
-  regexcols_gradxy = unlist(get_regex_columns(gradxyvar, distgrad_types, landcovertypes[landcovertypes != "canopycover"], "grad"))
-  allregexcols = c(regexcols_locs, regexcols_grad, regexcols_gradxy)
+  regexcols_grad = unlist(get_regex_columns(gradvars, croptypes, landcovertypes, "grad"))
+  #regexcols_gradxy = unlist(get_regex_columns(gradxyvar, distgrad_types, landcovertypes[landcovertypes != "canopycover"], "grad"))
+  allregexcols = c(regexcols_locs, regexcols_grad)#, regexcols_gradxy)
   cleancols = sapply(strsplit(allregexcols, ".*", fixed=T), function(x) paste(x[1], x[2], sep="_"))
   timevar_vect = get_timevar_status(allregexcols, croptypes, monthlyvars)
 

@@ -17,6 +17,7 @@ for(studynm in unique(study_sum$study)){
 	
 	if(studynm %in% c("txcamp", "tejon")) {
 
+		cat("Working on", studynm, "\n")
 		dir.create(file.path("../../data/covariate_data/ndvi/", studynm))
 		sind = study_sum$study == studynm
 
@@ -60,8 +61,9 @@ for(studynm in unique(study_sum$study)){
 																				study_sum[sind]$latitude_min, study_sum[sind]$latitude_max))
 					# monthndvi[[mn]] = rascrop
 
-					fname = file.path("../../data/covariate_data/ndvi/", studynm, paste(studynm, "_ndvi", "_", mn, "_", yr, ".grd", sep=""))
-					writeRaster(rascrop, fname, format="raster", overwrite=TRUE)
+					fname = file.path("../../data/covariate_data/ndvi/", studynm, 
+											paste(studynm, "_ndvi", "_", mn, "_", yr, ".tif", sep=""))
+					writeRaster(rascrop, fname, format="GTiff", overwrite=TRUE)
 
 				}
 			}

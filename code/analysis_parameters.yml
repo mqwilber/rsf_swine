@@ -10,12 +10,12 @@ method : "interp" # The method for fitting the continuous time model
 path2ctmcMethod : "ShortestPath" # "LinearInterp" # "LinearInterp" or "ShortestPath"
 
 
-buffer : 0.003 # Buffer to add to the cropped raster.
+buffer : 0.003 # Buffer to add to the cropped raster. Helps prevent points outside the range.
 
 locvars : ["temperature", "precipitation", "ndvi", "croplayer", "landcover", "masting"] # Location-based covariates
-gradvars : ["ndvi", "landcover", "masting"] # Gradient-based covariates
+gradvars : ["ndvi", "landcover", "masting", "croplayer"] # Gradient-based covariates
 gradxyvar : ["croplayer", "landcover"] # Distance-to-gradient-based covariates
-landcovertypes : ["wetland", "canopycover"]
+landcovertypes : ["wetland", "canopycover", "developed"]
 distgrad_types : ["root_and_tuber", "fruit_and_nuts", "wetland", "cereals", 
                   "grasses", "leguminous"]
 croptypes : ["beverage_and_spice", "cereals", "oilseed", "other", 

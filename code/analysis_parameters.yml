@@ -1,13 +1,13 @@
 # Analysis parameters used in feral swine RSF study
 
-maxtime : 200 # The length in minutes between collaring times.  
+maxtime : 130 # The length in minutes between collaring times.  
               # Time diffs must be less than or equal to this to be included
 minlength : 200 # Runs of maxtime diffs must be longer than this. 
                 # e.g. 200 fixes that are less than or equal to 200 minutes apart
 
 timestep : "15 mins" # Time step at which to predict with the continuous time model.
 method : "interp" # The method for fitting the continuous time model
-path2ctmcMethod : "ShortestPath" # "LinearInterp" # "LinearInterp" or "ShortestPath"
+path2ctmcMethod : "ShortestPath" # "LinearInterp" or "ShortestPath"
 
 
 buffer : 0.003 # Buffer to add to the cropped raster. Helps prevent points outside the range.

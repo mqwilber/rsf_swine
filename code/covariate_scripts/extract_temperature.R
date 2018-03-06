@@ -18,19 +18,17 @@ study_sum$datetime_mindate = as.POSIXct(study_sum$datetime_mindate)
 study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)
 
 # Load in netcdf temperature file
-nc = nc_open("../../data/covariate_data/temperature/air.mon.mean.nc")
+# nc = nc_open("../../data/covariate_data/temperature/air.mon.mean.nc")
+bftemp = unstack(brick("../../data/covariate_data/temperature/air.mon.mean.nc", 
+											varname="air"))
+		
+startdate = as.POSIXct("1948-01-01 GMT", tz="GMT")
+enddate = as.POSIXct("2017-12-01 GMT", tz="GMT")
+nmdates = seq(startdate, enddate, by="months")
 
-# Time units: hours since hours since 1800-01-01 00:00:0.0
-hourvals = ncvar_get(nc, "time")
-secondvals = hourvals * 60 * 60 # Convert to seconds
-datevals = as.POSIXct(secondvals, origin="1800-01-01 00:00:00", tz="GMT")
-timedf = data.table(date=datevals, month=month(datevals), year=year(datevals))
-
-#raster_convert = function(studynm, nc, study_sum, timedf){
 
 for(studynm in unique(study_sum$study)){
 	#studynm = "ga_steve"
-
 
 	print(paste("Extracting temperature data for", studynm))
 
@@ -40,35 +38,34 @@ for(studynm in unique(study_sum$study)){
 									 	      maxmonth=month(datetime_maxdate),
 									 	      maxyear=year(datetime_maxdate))]
 
-	#  Find the time-dependent indexes
-	timeinds = which(((timedf$year >= minmax$minyear) & (timedf$year <= minmax$maxyear)) & 
-					  !((timedf$year == minmax$minyear) & (timedf$month < minmax$minmonth)) &
-					  !((timedf$year == minmax$maxyear) & (timedf$month > minmax$maxmonth)))
+	mindate = strptime(paste(minmax$minyear, minmax$minmonth, "01", sep="-"), format="%Y-%m-%d", tz="GMT")
+	maxdate = strptime(paste(minmax$maxyear, minmax$maxmonth, "01", sep="-"), format="%Y-%m-%d", tz="GMT")
+	dates = seq(mindate, maxdate, by="months")
 
-	print(nrow(timedf[timeinds, ]))
+	tempras = bftemp[nmdates %in% dates]
 
 	ind = study_sum$study == studynm
 
-	cellsize = 0
+	cellsize = 0.07
 	extobj = extent(c(xmin=study_sum$longitude_min[ind] - cellsize, 
 										xmax=study_sum$longitude_max[ind] + cellsize,
 					 					ymin=study_sum$latitude_min[ind] - cellsize, 
 					 					ymax=study_sum$latitude_max[ind] + cellsize))
 
-	res = ncdf_to_raster(nc, timeinds, "air", extobj)
+	for(i in 1:length(dates)){
 
-	# Write temperature rasters
-	tfp = file.path("../../data/covariate_data/temperature", studynm)
-	dir.create(tfp, showWarnings = F)
+		tras = tempras[[i]]
+		tras_agg = disaggregate(tras, fact=c(8, 8)) # Dissaggregate data to help cropping
+		cras = crop(rotate(tras_agg), extobj)
 
+		tfp = file.path("../../data/covariate_data/temperature", studynm)
+		dir.create(tfp, showWarnings = FALSE)
 
-	for(i in 1:length(res)){
-
-		monthyear = paste(timedf[timeinds[i], month], timedf[timeinds[i], year], sep="_")
-		fname = paste(studynm, "_temperature_", monthyear, ".tif", sep="")
-		writeRaster(res[[i]], file.path(tfp, fname), format="GTiff", overwrite=TRUE)
-
+		fnm = paste(studynm, "_temperature_", month(dates)[i], "_", year(dates)[i], 
+												".tif", sep="")
+		writeRaster(cras, file.path(tfp, fnm), format="GTiff", overwrite=TRUE)
 	}
+
 }	
 
 #mclapply(unique(study_sum$study), raster_convert, nc, study_sum, timedf, mc.cores=4)

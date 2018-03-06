@@ -17,17 +17,30 @@ tejondat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/tejon
 txdat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/txcamp.csv")
 
 # Drop the few ndvi that are Nan
-tejondat = tejondat[complete.cases(tejondat)]
-txdat = txdat[complete.cases(txdat)]
+# tejondat = tejondat[complete.cases(tejondat)]
 
-hist(scale(tejondat$fruit_and_nuts_grad))
+# txdat = txdat[complete.cases(txdat)]
+
+# hist(scale(tejondat$fruit_and_nuts_grad))
 ```
 
 Only one Tejonn pig actually interacts with crops at all.  It will probably be useful to perform a crop specific analysis for pigs that do interact with crops across 
 studies to see how those interactions vary. But for now, let's just include variables that vary across all pigs.
 
 ```{r}
+# Check which columns have NAs.  A few should
+tejondat[, lapply(.SD, function(x) any(is.na(x)))]
+```
+
+How many temperature values are NA?
+
+```{r}
+sum(is.na(tejondat$ndvi_grad))
+```
+
+```{r}
 tejondat[, lapply(.SD, function(x) all(x == x[1])), by=pigID]
+hist(tejondat$wetland_grad)
 ```
 
 ```{r}

@@ -33,7 +33,7 @@ cropvals = lapply(1:length(unqgroups), function(x) csmeta[group_name == unqgroup
 # Loop through different studies to format croplayer covariates
 for(studynm in study_sum$study){
 
-	if(studynm %in% c("txcamp")) { # Just process txcamp and tejon 
+	if(studynm %in% c("tejon", "txcamp")) { # Just process txcamp and tejon 
 
 		cat("Processing", studynm, "\n")
 
@@ -58,30 +58,35 @@ for(studynm in study_sum$study){
 				tempras = cras
 				ctype = unqgroups[j]
 
-				# Nothing in non-agricultural land. Don't make raster for this type
 				if(ctype != "nothing"){
-
 					ctypeind = (values(cras) %in% cropvals[[j]]) # Indicator TRUE if values match ctype
-					values(tempras)[ctypeind] = 1 # ctype habitat
-					values(tempras)[!ctypeind] = 0 # Not ctype forest
-
-					# Used in the following script to create distance to nearest raster
-					fname = file.path(base, "data/covariate_data/croplayer", 
-												studynm, paste(studynm, "_", ctype, "_", yr, ".tif", sep=""))
-					writeRaster(tempras, filename=fname, 
-												format="GTiff", overwrite=TRUE)
-
-					# Must have GDAL on your PATH
-					fnameshp = paste(strsplit(fname, ".", fixed=TRUE)[[1]][1], ".shp", sep="")
-					system(paste("gdal_polygonize.py ", fname, " -f 'ESRI Shapefile' ", fnameshp, sep=""))
-
-					# Calculate distance to nearest neighbor
-					distras = dist_nearest_neighbor(tempras, fnameshp)
-					writeRaster(distras, filename=file.path(base, "data/covariate_data/croplayer", 
-												studynm, paste(studynm, "_", ctype, "_", yr, "_nndistance.tif", sep="")), 
-												format="GTiff", overwrite=TRUE)
-
+				} else{
+					# If nothing, make a generic crop layer
+					nothing_ind = which(unqgroups == "nothing")
+					allcrop_inds = do.call(c, cropvals[-nothing_ind])
+					ctypeind = (values(cras) %in% allcrop_inds)
+					ctype = "crop"
 				}
+				values(tempras)[ctypeind] = 1 # ctype habitat
+				values(tempras)[!ctypeind] = 0 # Not ctype forest
+
+				# Save a raster with ctype 
+				fname = file.path(base, "data/covariate_data/croplayer", 
+											studynm, paste(studynm, "_", ctype, "_", yr, ".tif", sep=""))
+				writeRaster(tempras, filename=fname, 
+											format="GTiff", overwrite=TRUE)
+
+				# Must have GDAL on your PATH
+				fnameshp = paste(strsplit(fname, ".", fixed=TRUE)[[1]][1], ".shp", sep="")
+				system(paste("gdal_polygonize.py ", fname, " -f 'ESRI Shapefile' ", fnameshp, sep=""))
+
+				# Calculate distance to nearest neighbor
+				shp = shapefile(fnameshp)
+				shp = shp[shp$DN == 1, ]
+				distras = dist_nearest_neighbor(tempras, shp)
+				writeRaster(distras, filename=file.path(base, "data/covariate_data/croplayer", 
+											studynm, paste(studynm, "_", ctype, "_", yr, "_nndistance.tif", sep="")), 
+											format="GTiff", overwrite=TRUE)
 
 			} # End croptype
 		} # End if

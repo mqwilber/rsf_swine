@@ -57,8 +57,11 @@ for(studynm in unique(study_sum$study)){
 					# Monthly average of NDVI for biweekly NDVI measures
 					rasstack = stack(flnames[ind])
 					raslay = mean(rasstack)
-					rascrop = crop(raslay, extent(study_sum[sind]$longitude_min, study_sum[sind]$longitude_max, 
-																				study_sum[sind]$latitude_min, study_sum[sind]$latitude_max))
+					buffer = 0.003
+					rascrop = crop(raslay, extent(c(xmin=study_sum[sind]$longitude_min - buffer, 
+																					xmax=study_sum[sind]$longitude_max + buffer, 
+																					ymin=study_sum[sind]$latitude_min - buffer, 
+																					ymax=study_sum[sind]$latitude_max + buffer)))
 					# monthndvi[[mn]] = rascrop
 
 					fname = file.path("../../data/covariate_data/ndvi/", studynm, 

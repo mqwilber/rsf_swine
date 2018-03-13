@@ -82,10 +82,16 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 
 }
 
-dist_nearest_neighbor = function(ras, shpfile){
+dist_nearest_neighbor = function(ras, shp){
+	# For each cell in the given raster, computes distance to the nearest polygon
+	# in the shapefile
+	#
+	# Parameters
+	# ----------
+	# ras : RasterLayer
+	# shp : SpatialPolygonsDataFrame 
 
-	shp = shapefile(shpfile)
-	polys = shp[shp$DN == 1, ]
+	polys = shp
 	tras = ras
 
 	# Polygons are present

@@ -195,7 +195,8 @@ for(studynm in c("tejon", "txcamp")){
       tglmdat = fit_ctmcmodel(tdat, pignm, crop(loc_stackproj, smallextobj), 
                               crop(grad_stackproj, smallextobj), xygrad=FALSE, 
                               predPath=smallpath, 
-                              path2ctmcMethod=anal_params$path2ctmcMethod)
+                              path2ctmcMethod=anal_params$path2ctmcMethod,
+                              directions=anal_params$directions)
       runglmdat[[j]] = tglmdat
        
     }

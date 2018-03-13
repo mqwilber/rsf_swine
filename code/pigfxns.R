@@ -16,7 +16,7 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
                                   xygrad=FALSE, xgrad.stack=NULL, 
                                   ygrad.stack=NULL,
                                   grad.point.decreasing=FALSE, 
-                                  predPath=NULL){
+                                  predPath=NULL, directions=4){
   # Fits a continuous movement path and generates glm data
   #
   # Parameters
@@ -105,10 +105,13 @@ fit_ctmcmodel = function(pigdata, pigID, loc.stack, grad.stack, timestep="15 min
 
     if(xygrad){
       tglm_data = ctmc2glm_wgrad(ctmc, loc.stack, grad.stack, xgrad.stack, ygrad.stack, 
-                        grad.point.decreasing=grad.point.decreasing)
+                        grad.point.decreasing=grad.point.decreasing,
+                        directions=directions)
     }
     else{
-      tglm_data = ctmc2glm(ctmc, loc.stack, grad.stack, grad.point.decreasing=grad.point.decreasing)
+      tglm_data = ctmc2glm(ctmc, loc.stack, grad.stack, 
+                          grad.point.decreasing=grad.point.decreasing,
+                          directions=directions)
     }
 
     tglm_data$pigID = pigID
@@ -761,8 +764,20 @@ process_covariates = function(locvars, studynm, baseras,
         } # End for loop
       } else {
 
+       
         fp = file.path(cov_path, loccov, studynm, paste(studynm, "_", 
                                                         loccov, ".tif", sep=""))
+
+        # Check it a nearest neighbor distance raster exists. If so, use it.
+        # If not use the base file.
+        if(nngrad){
+          fnnp = file.path(cov_path, loccov, studynm, paste(studynm, "_", 
+                                              loccov, "_nndistance.tif", sep=""))
+          if(file.exists(fnnp)){
+            fp = fnnp
+          }
+        }
+
         cat(fp, "\n")
         tras = raster(fp)
         loclist[[paste(loccov, ext, sep="_")]] = projectRaster(tras, baseras, 

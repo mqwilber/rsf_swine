@@ -1,0 +1,773 @@
+2 + 2
+library(raster)
+2 + 2
+2^2
+2 + 3
+2 + 2
+getwd()
+list.files()
+getwd()
+read.csv("/Users/mqwilber/Desktop/data/inflammation-01.csv")
+data = read.csv("/Users/mqwilber/Desktop/data/inflammation-01.csv")
+data
+weight_kg  = 55
+weight_kg
+weight_kg * 2.2
+3weightkg = 55
+# Converting kg to pounds
+weight_kg = 57.5
+weight_kg
+weight_lb = weight_kg * 2.2
+weight_lb
+weight_kg = 60
+weight_lb
+class(weight_kg)
+class(data)
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_eag_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_bev_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_joe_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_stym_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_tyler_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_pete_data_for_model.Rdata")
+head(final_bev_data_for_model[final_bev_data_for_model$interaction == 0, ])
+duplicated(final_bev_data_for_model)
+sum(duplicated(final_bev_data_for_model))
+final_bev_data_for_model[duplicated(final_bev_data_for_model), ]
+head(final_bev_data_for_model[duplicated(final_bev_data_for_model), ])
+?duplicated
+final_bev_data_for_model_no_duplicates <- final_bev_data_for_model[!duplicated(final_bev_data_for_model[,c("fence","interaction","season","pairID")]),]
+clear
+final_bev_data_for_model_no_duplicates
+dim(final_bev_data_for_model_no_duplicates)
+unique(final_bev_data_for_model_no_duplicates$pairID)
+sort(unique(final_bev_data_for_model_no_duplicates$pairID))
+??duplicated
+?duplicated
+table(final_bev_data_for_model_no_duplicates$interaction)
+table(final_bev_data_for_model_no_duplicates$pairID)
+library(data.table)
+bev = as.data.table(final_bev_data_for_model_no_duplicates)
+bev[, list(season=season), by=pairID]
+bev[, list(season=season, interaction), by=pairID]
+head(bev[, list(season=season, interaction), by=pairID])
+head(bev[, list(season=season, interaction), by=pairID], n=10)
+library(data.table)#
+library(lubridate)#
+library(ncdf4)#
+library(raster)#
+library(parallel)#
+source("covariate_fxns.R")#
+#
+# Formatted summary of the studies#
+study_sum = fread("../../data/formatted/study_summary.csv")#
+study_sum$datetime_mindate = as.POSIXct(study_sum$datetime_mindate)#
+study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)#
+#
+# Load in netcdf temperature file#
+nc = nc_open("../../data/covariate_data/temperature/air.mon.mean.nc")
+require(ggplot2)#
+require(reshape2)#
+library(MCMCglmm)#
+# require(scapeMCMC)#
+library(dplyr)#
+#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/tatiana_data/final_eag_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/tatiana_data/final_bev_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/tatiana_data/final_joe_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/tatiana_data/final_stym_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/tatiana_data/final_tyler_data_for_model.Rdata")#
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/tatiana_data/final_pete_data_for_model.Rdata")
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/tatiana_data/final_eag_data_for_model.Rdata")
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_eag_data_for_model.Rdata")
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_bev_data_for_model.Rdata")
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_joe_data_for_model.Rdata")
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_stym_data_for_model.Rdata")
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_tyler_data_for_model.Rdata")
+load(file="~/Dropbox/CSU_postdoc/networkmodels/MI_data/MI_tatiana_data/final_pete_data_for_model.Rdata")
+dim(final_bev_data_for_model)
+head(final_bev_data_for_model)
+dat = read.csv("/Users/mqwilber/Dropbox/CSU_postdoc/networkmodels/MI_data/AllFarms_cleaned.csv")
+dim(dat)
+dat = fread("/Users/mqwilber/Dropbox/CSU_postdoc/networkmodels/MI_data/AllFarms_cleaned.csv")
+library(data.table)
+dat = fread("/Users/mqwilber/Dropbox/CSU_postdoc/networkmodels/MI_data/AllFarms_cleaned.csv")
+dat
+table(dat$farm)
+dim(dat[elength > 1])
+dim(dat)
+library(raster)#
+library(data.table)#
+library(lubridate)#
+library(XML)
+study_sum = fread("../../data/formatted/study_summary.csv")#
+study_sum$datetime_mindate = as.POSIXct(study_sum$datetime_mindate)#
+study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)
+setwd("~/Repos/rsf_swine/code/covariate_scripts/")
+study_sum = fread("../../data/formatted/study_summary.csv")#
+study_sum$datetime_mindate = as.POSIXct(study_sum$datetime_mindate)#
+study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)
+crstring = "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0"#
+#
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+    fp = file.path("../../data/covariate_data/elevation", studynm, "raw", "*.xml")#
+    xmlfiles = Sys.glob(fp)#
+  }#
+}
+xmlfiles
+xf = xmlParse(xmlfiles[1])
+xf
+xf = xmlParse(file=xmlfiles[1])
+xf
+xmlRoot(xf)
+?xmlParse
+xfile = xmlParse(xmlfiles[2])
+xfile
+xmlTreeParse(xmlfiles[1], useInternal=T)
+system.file(xmlfile[1])
+system.file(xmlfiles[1])
+system.file(xmlfiles[1], package="XML")
+system.file(xmlfiles[1], package="XML")
+?system.file
+rasname = paste(studynm, "_masting.tif", sep="")
+xmlfiles
+library(xml2)
+x = read_xml(xmlfiles[1])
+x
+xml_name(x)
+xml_children(x)
+xml_children(x)[[1]]
+info = xml_children(x)[[1]]
+info
+xml_children(info)
+xml_children(info)[[5]]
+spdom = xml_children(info)[[5]]
+xml_text(spdom)
+for(child in spdom) xml_text(child)
+spdom
+for(child in spdom) xml_text(child)
+spdom
+xml_attr(spdom)
+spdom[[1]]
+xml_children(spdom)[[1]]
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    fp = file.path("../../data/covariate_data/elevation", studynm, "raw", "*.xml")#
+    xmlfiles = Sys.glob(fp)#
+#
+    xmldoc = read_xml(xmlfiles[1])[[1]]#
+    spdom = xml_children(xml_children(xmldoc)[[1]])[[5]]#
+#
+  }#
+}
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    fp = file.path("../../data/covariate_data/elevation", studynm, "raw", "*.xml")#
+    xmlfiles = Sys.glob(fp)#
+#
+    xmldoc = read_xml(xmlfiles[1])[[1]]#
+    spdom = xml_children(xml_children(xmldoc)[[1]])[[5]]#
+#
+  }#
+}
+xmldoc
+xmldoc = read_xml(xmlfiles[1])
+spdom = xml_children(xml_children(xmldoc)[[1]])[[5]]
+spdom
+spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]
+spdom
+spdom = xml_text(xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]])
+spdom
+?xmltext
+?xml_text
+spdom = xml_text(xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]], trim=F)
+spdom
+spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+    for(child in xml_children(spdom)){#
+      print(xml_text(child))#
+    }
+child
+xml_name(child)
+bbox = list()#
+    for(child in xml_children(spdom)){#
+      list[[xml_name(child)]] = xml_text(child)#
+    }
+bbox = list()#
+    for(child in xml_children(spdom)){#
+      bbox[[xml_name(child)]] = xml_text(child)#
+    }
+bbox
+unlist(bbox)
+library(plyr)
+?revalue
+names(bbox)
+newname = list("westbc"="xmin"  "eastbc"="xmax"  "northbc"="ymax", "southbc"="ymin")
+newname = list("westbc"="xmin",  "eastbc"="xmax", "northbc"="ymax", "southbc"="ymin")
+revalue(names(bbox), newname)
+?revalue
+newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                "northbc"="ymax", "southbc"="ymin")#
+    names(bbox) = revalue(names(bbox), newname)
+bbox
+bbox = list()#
+    for(child in xml_children(spdom)){#
+      bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+    }#
+#
+    newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                "northbc"="ymax", "southbc"="ymin")
+bbox = list()#
+    for(child in xml_children(spdom)){#
+      bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+    }#
+#
+    newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                "northbc"="ymax", "southbc"="ymin")#
+    names(bbox) = revalue(names(bbox), newname)
+bbox
+unlist(bbox)
+jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))
+jpgfls
+basename(jpgfls)
+substring(basename(jpgfls), 4, 10)
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+#
+    for(jpg in jpgfls){#
+#
+      metaroot = substring(basename(jpg), 4, 12)#
+      # Extract metadata#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "northbc"="ymax", "southbc"="ymin")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)#
+#
+  }#
+}
+}
+metaroot
+fp
+bbox
+tudynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+#
+    for(jpg in jpgfls){#
+#
+      metaroot = substring(basename(jpg), 4, 12)#
+      # Extract metadata#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "northbc"="ymax", "southbc"="ymin")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)#
+#
+      tras = raster(jpg)#
+      crs(tras) = crsstring#
+      extent(tras) = extobj#
+#
+    }#
+  }#
+}
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "northbc"="ymax", "southbc"="ymin")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crsstring#
+      extent(tras) = extobj#
+#
+    }#
+  }#
+}
+crs_string = "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0"#
+#
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "northbc"="ymax", "southbc"="ymin")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extobj#
+#
+    }#
+  }#
+}
+crs_string = "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0"#
+#
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "northbc"="ymax", "southbc"="ymin")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+#
+    }#
+  }#
+}
+bbox
+?extent
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "southbc"="ymin", "northbc"="ymax")#
+      names(bbox) = revalue(names(bbox), newname)#
+      #bbox[c("xmin", "xmax", "ymin", "ymax")]#
+      bbox = unlist(bbox)#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+#
+    }#
+  }#
+}
+bbox
+bbox[c("xmin", "xmax", "ymin", "ymax")]
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "southbc"="ymin", "northbc"="ymax")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)[c("xmin", "xmax", "ymin", "ymax")]#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+#
+    }#
+  }#
+}
+tras
+plot(tras)
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+    ras_list = list()#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "southbc"="ymin", "northbc"="ymax")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)[c("xmin", "xmax", "ymin", "ymax")]#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+      ras_list[[metaroot]] = tras#
+    }#
+  }#
+}
+ras_list
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+    ras_list = list()#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "southbc"="ymin", "northbc"="ymax")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)[c("xmin", "xmax", "ymin", "ymax")]#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+      ras_list[[metaroot]] = tras#
+    }#
+#
+    # If necessary merge the elevation rasters#
+    if(length(ras_list) > 1){#
+      ras_list = lapply(ras_list, function(x) {#
+                                    origin(x) = origin(ras_list[[1]])#
+                                    return(x)})#
+      fullras = merge(ras_list[[1]], ras_list[[2]])#
+    } else{#
+      fullras = ras_list[[1]]#
+    }#
+  }#
+}
+fullras
+plot(fullras)
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+    ras_list = list()#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "southbc"="ymin", "northbc"="ymax")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)[c("xmin", "xmax", "ymin", "ymax")]#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+      ras_list[[metaroot]] = tras#
+    }#
+#
+    # If necessary merge the elevation rasters#
+    if(length(ras_list) > 1){#
+      ras_list = lapply(ras_list, function(x) {#
+                                    origin(x) = origin(ras_list[[1]])#
+                                    return(x)})#
+      fullras = merge(ras_list[[1]], ras_list[[2]])#
+    } else{#
+      fullras = ras_list[[1]]#
+    }#
+#
+    raspath = file.path("../../data/covariate_data/elevation", studynm, #
+                              paste(studynm, "_elevation.tif"))#
+    writeraster(fullras, raspath, formt="GTiff")#
+  }#
+}
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+    ras_list = list()#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "southbc"="ymin", "northbc"="ymax")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)[c("xmin", "xmax", "ymin", "ymax")]#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+      ras_list[[metaroot]] = tras#
+    }#
+#
+    # If necessary merge the elevation rasters#
+    if(length(ras_list) > 1){#
+      ras_list = lapply(ras_list, function(x) {#
+                                    origin(x) = origin(ras_list[[1]])#
+                                    return(x)})#
+      fullras = merge(ras_list[[1]], ras_list[[2]])#
+    } else{#
+      fullras = ras_list[[1]]#
+    }#
+#
+    raspath = file.path("../../data/covariate_data/elevation", studynm, #
+                              paste(studynm, "_elevation.tif"))#
+    writeRaster(fullras, raspath, formt="GTiff")#
+  }#
+}
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'tejon'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+    ras_list = list()#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "southbc"="ymin", "northbc"="ymax")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)[c("xmin", "xmax", "ymin", "ymax")]#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+      ras_list[[metaroot]] = tras#
+    }#
+#
+    # If necessary merge the elevation rasters#
+    if(length(ras_list) > 1){#
+      ras_list = lapply(ras_list, function(x) {#
+                                    origin(x) = origin(ras_list[[1]])#
+                                    return(x)})#
+      fullras = merge(ras_list[[1]], ras_list[[2]])#
+    } else{#
+      fullras = ras_list[[1]]#
+    }#
+#
+    raspath = file.path("../../data/covariate_data/elevation", studynm, #
+                              paste(studynm, "_elevation.tif", sep=""))#
+    writeRaster(fullras, raspath, formt="GTiff")#
+  }#
+}
+for(studynm in unique(study_sum$study)){#
+#
+  if(studynm == 'txcamp'){#
+#
+    jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", #
+                                                    studynm, "raw", "*.jpg"))#
+    ras_list = list()#
+    for(jpg in jpgfls){#
+#
+      # Extract associated metadata#
+      metaroot = substring(basename(jpg), 4, 12)#
+      fp = file.path("../../data/covariate_data/elevation", studynm, "raw",#
+                      paste(metaroot, "_meta.xml", sep=""))#
+#
+      xmldoc = read_xml(fp)#
+      spdom = xml_children(xml_children(xml_children(xmldoc)[[1]])[[5]])[[1]]#
+#
+      bbox = list()#
+      for(child in xml_children(spdom)){#
+        bbox[[xml_name(child)]] = as.numeric(xml_text(child))#
+      }#
+#
+      newname = c("westbc"="xmin",  "eastbc"="xmax", #
+                  "southbc"="ymin", "northbc"="ymax")#
+      names(bbox) = revalue(names(bbox), newname)#
+      bbox = unlist(bbox)[c("xmin", "xmax", "ymin", "ymax")]#
+#
+      # Load raster and set spatial extent#
+      tras = raster(jpg)#
+      crs(tras) = crs_string#
+      extent(tras) = extent(bbox)#
+      ras_list[[metaroot]] = tras#
+    }#
+#
+    # If necessary merge the elevation rasters#
+    if(length(ras_list) > 1){#
+      ras_list = lapply(ras_list, function(x) {#
+                                    origin(x) = origin(ras_list[[1]])#
+                                    return(x)})#
+      fullras = merge(ras_list[[1]], ras_list[[2]])#
+    } else{#
+      fullras = ras_list[[1]]#
+    }#
+#
+    raspath = file.path("../../data/covariate_data/elevation", studynm, #
+                              paste(studynm, "_elevation2.tif", sep=""))#
+    writeRaster(fullras, raspath, formt="GTiff")#
+  }#
+}
+source("extract_elevation.R")
+source("extract_elevation.R")
+source("extract_elevation.R")

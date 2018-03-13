@@ -8,12 +8,12 @@ minlength : 200 # Runs of maxtime diffs must be longer than this.
 timestep : "15 mins" # Time step at which to predict with the continuous time model.
 method : "interp" # The method for fitting the continuous time model
 path2ctmcMethod : "ShortestPath" # "LinearInterp" or "ShortestPath"
-
+directions : 4 # Only consider rook neighbors
 
 buffer : 0.003 # Buffer to add to the cropped raster. Helps prevent points outside the range.
 
-locvars : ["temperature", "precipitation", "ndvi", "croplayer", "landcover", "masting"] # Location-based covariates
-gradvars : ["ndvi", "landcover", "masting", "croplayer"] # Gradient-based covariates
+locvars : ["temperature", "precipitation", "ndvi", "croplayer", "landcover", "masting", "elevation"] # Location-based covariates
+gradvars : ["ndvi", "landcover", "masting", "croplayer", "elevation", "water"] # Gradient-based covariates
 gradxyvar : ["croplayer", "landcover"] # Distance-to-gradient-based covariates
 landcovertypes : ["wetland", "canopycover", "developed"]
 distgrad_types : ["root_and_tuber", "fruit_and_nuts", "wetland", "cereals", 
@@ -21,8 +21,8 @@ distgrad_types : ["root_and_tuber", "fruit_and_nuts", "wetland", "cereals",
 croptypes : ["beverage_and_spice", "cereals", "oilseed", "other", 
                       "fruit_and_nuts", "grasses", "leguminous",
                       "root_and_tuber", "sugar", "tobacco", 
-                      "vegetables_and_melons"]
-fixedtimevars : ["landcover", "masting"]
+                      "vegetables_and_melons", "crop"]
+fixedtimevars : ["landcover", "masting", "elevation", "water"]
 monthlyvars : ["temperature", "precipitation", "ndvi"]
 yearlyvars : ["croplayer"]
 default_cols : ['imputeID', 'crw', 'x.current', 'y.current', 'x.adj', 'y.adj', 
@@ -34,4 +34,5 @@ decay : 1 # The scale of distance decay for a resource
 cores : 4
 covariate_dir : "/Users/mqwilber/Repos/rsf_swine/data/covariate_data"
 baserastype : "_cereals_"
+
 

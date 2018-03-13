@@ -327,6 +327,50 @@ A number of our layers will come in as shapefiles (i.e. wetland layers). We are 
 5. Stop with covariates and focus on literature review.
 6. Drought Index update.
 
+## March 8, 2018
+
+1. Compute distance to perennial wetland metric
+2. Extract elevation gradients [DONE]
+
+## March 9, 2018
+
+1. Read Cross paper on SSF [Done]
+2. Re-run data generation with elevation covariate.
+3. Explore Hydrology metrics a bit more. See if you can extract for tejon and txcamp and compute distance to nearest perennial water source.
+4. Look at snow cover data and extract for tejon and txcamp
+5. Run a time-varying analysis with a cyclic spline for tejon and txcamp.
+
+
+Some notes after meeting with Kim
+----
+
+Try the Queen's neighbor analysis as well as the rook's neighbor analysis? Yeah, maybe, but I am going to stick what has been done by Buderman and Hanks for now.  Also think about how pig sex is affecting movement...that will be important to consider. 
+
+
+## March 12
+
+**Meeting with Sara**
+
+1. Update on distance to road and distance to water metrics
+	- Have these been calculated?
+	- NWI -> using these really big files
+	- NWI layers: Riverine, Lake, Fresh water Pond, 
+	- Downloaded data and clipped it to the surrounding counties.
+	- All of these layers will be loaded onto the website
+2. Update on pitching analysis in terms of how other resources affect crop use
+	- Too many variables to analyze without a clearer question.
+	- How does the availability of other food resources on the landscape affect 
+3. Pig meeting 
+4. Snow cover variables?
+
+TODO
+----
+
+1. Look at Sara's errant points see if they match with the ones that I notes.
+2. Wetland layers.
+	- Use Sara's data on Camp Bullis to make the Distance to Wetland and Distance to Road rasters.
+3. Incorporate Sara's changes to the covariate table.
+
 
 
 

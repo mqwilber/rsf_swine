@@ -47,7 +47,7 @@ sink("log_ctmc.txt") # log file
 ## Step 1: Clean individual studies for outliers
 ###########################################################
 
-for(studynm in c("tejon", "txcamp")){
+for(studynm in c("txcamp")){
 
   #studynm = "tejon"
   cat("Beginning analysis for", studynm, "\n")
@@ -251,7 +251,7 @@ for(studynm in c("tejon", "txcamp")){
   ## Step 7: Write the file to disk
   ###########################################################
 
-  fwrite(fullglm, file=paste("../results/glmdata_by_study/", studynm, ".csv", sep=""))
+  fwrite(fullglm, file=paste("../results/glmdata_by_study/", studynm, "2.csv", sep=""))
   cat("Completed analysis for", studynm, "\n")
 
 }

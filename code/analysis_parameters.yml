@@ -12,7 +12,7 @@ directions : 4 # Only consider rook neighbors
 
 buffer : 0.003 # Buffer to add to the cropped raster. Helps prevent points outside the range.
 
-locvars : ["temperature", "precipitation", "ndvi", "croplayer", "landcover", "masting", "elevation"] # Location-based covariates
+locvars : ["temperature", "precipitation", "ndvi", "croplayer", "landcover", "masting", "elevation", "water"] # Location-based covariates
 gradvars : ["ndvi", "landcover", "masting", "croplayer", "elevation", "water"] # Gradient-based covariates
 gradxyvar : ["croplayer", "landcover"] # Distance-to-gradient-based covariates
 landcovertypes : ["wetland", "canopycover", "developed"]

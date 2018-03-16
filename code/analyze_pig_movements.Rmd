@@ -11,36 +11,12 @@ bibliography: /Users/mqwilber/Dropbox/Documents/Bibfiles/Projects_and_Permits-fe
 
 **How is the crop use of feral swine affected by the availability of other food resources on the landscape?**
 
-The goal of this analysis is **not** to build the best possible model of pig movement on a landscape.  Rather, it is to understand how food resources interact to influence a pig's use of crops.  To this end, we are going to consider more specific questions
+The goal of this analysis is **not** to build the best possible model of pig movement on a landscape.  Rather, it is to understand how forage resources interact to influence a pig's use of crops.  To this end, we are going to consider more specific questions
 
 1. Given that a pig is in a crop field, how does the gradient of other food resources on the landscape (other crops, NDVI, and masting trees) affect the time that the pig stays in the crop field?
 2. Given a pig is not in a crop field, how do the food resources where the pig currently is and the gradient of other food resources affect the tendency of a pig to move toward or away from a given crop?
 
 To answer these two questions, we are going to use the framework of continuous time-discrete-space movement movels described in the previous summary I sent around.  This allows us to leverage the entire GPS movement trajectory of individual pigs in order to answer these questions.
-
-In particular, we end up making inference on the rate of a pig moving from cell i to j and how this is influenced by the resources in the present cell and the available cells (location-based covariates) and the gradient of the resources on the landscape. Turns out that we can actually represent this as a Poisson regression
-
-$$\log(\lambda_{ij}) = \beta X$$
-Where $\lambda_{ij}$ is the rate of moving from cell $i$ to cell $j$ and $\beta X$ defines a linear model which describes the resources/covariates that affect this rate. In order to asnwer our aforementioned questions, we first consider that there are three general factors that affect pig movement: Cover, Water, and Food.  While in this study we are asking questions about a **food** resource, we will need to account for *cover* and *water*, though these will act primiarly as "controlling" factors in our analysis. This means that while we will control for these factors, our specific questions will not be about them.  Therefore, we will include general relationships for these variables that have been reported elsewhere, but will not specfically explore the nature of these relationships.
-
-Consider following model where (for notational simplicity) we only consider a single crop type (crop location and crop gradient) and two other covariate proxies for food resources: NDVI (time-varying) and the density of masting trees.  What we want to know is, after controlling for the effects of canopy and water (and a couple important individual-level factors), how are the propensity of a pig to remain in a crop field once it is there and the tendency of a pig to move toward a crop field when it is not there affected by the presence of other resources on a landscape? Note that this can also include additional crop types, but we are justing showing one here for simplicity.  The following model can be written as
-
-$$\begin{align}
-  \log(\lambda_{ij}) = &\beta_0 + \beta_1 \text{CRW} + \beta_2 \text{Male  } \text{   (Individual-level effects, CRW is correlated random walk)} \\
-  & + \beta_{3}(h) \text{canopy cover} + \beta_{4}(m) \text{canopy cover  } \text{    (Time-varying effect of canopy cover by day and month)} \\
-  & + \beta_5(m) \text{distance to water  } \text{    (Time-varying effect of water by month)} \\
-  & + \text{crop location} \times (\beta_6 + \beta_7 \text{NDVI gradient} + \beta_8(m) \text{Masting gradient)  } \text{  (Given that a pig is in a crop field, how other resources affect its time in the field)} \\
-  & + \text{crop gradient} \times (\beta_9 + \beta_{10} \text{NDVI location} + \beta_{11} \text{NDVI gradient} + \beta_{12}(m) \text{Masting location} + \beta_{13}(m) \text{Masting gradient)  } \text{  (Given a pig is not in a crop field, how do factors influence the tendency of pigs to move toward crops)} \\
-  & + \beta_{14} \text{NDVI location} + \beta_{15} \text{NDVI gradient} + \beta_{16}(m) \text{Masting location} + \beta_{17}(m) \text{Masting gradient  } \text{  (Main-effects of other food resources)}
-\end{align}$$
-
-
-$\beta_k{h}$ means the effect varies cyclicly by the hour of the day and $\beta_k{m}$ means the effect varies cyclicly by month of year. This model looks a little intense, but our questions are focused on the interactive effects of between crop gradient/location and other resources and the other covariates will be included as controlling variables. Note that we can replace the monthly effects of canopy cover with an interaction between temperature and precipitation to account for seasonal effects, for example.
-
-
-## Comparing pig movement and resource selection across two populations
-
-The goal of this analysis is to compare the movement patterns in pigs at Camp Bullis, Texas and at Tejon Ranch, California.  This analysis is intended show how we plan to compare resource selection and movement across pig populations.
 
 ## Data summary
 
@@ -48,49 +24,22 @@ Looking at the median location of a pig over the course of a study as well as th
 
 ```{r}
 library(data.table)
+library(glmnet)
+library(foreach)
 
-tejondat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/tejon.csv")
-txdat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/txcamp.csv")
+tejondat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/tejon2.csv")
+txdat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/txcamp2.csv")
 
 # Add in sex data
 pigattrib = fread("~/Repos/rsf_swine/data/formatted/pig_attributes.csv")[, list(pigID, sex)]
 
-# Check NA values
-tejondat[, lapply(.SD, function(x) any(is.na(x)))]
-txdat[, lapply(.SD, function(x) any(is.na(x)))]
+# Check NA values, should have some in the crop values
+tejondat[, lapply(.SD, function(x) any(is.na(x)))][1,] == FALSE
+txdat[, lapply(.SD, function(x) any(is.na(x)))][1, ] == FALSE
 
 # Merge the pig attributes to the data
 tejondat = merge(tejondat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
 txdat = merge(txdat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
-```
-
-```{r}
-library(rstan)
-data = list(N=nrow(tejondat),
-            p=2,
-            X=as.matrix(tejondat[, list(scale(crw), scale(canopycover_loc))]),
-            z=tejondat$z,
-            tau=tejondat$tau)
-
-smodel = stan_model("stan_files/poisson_glm.stan")
-fitstan = vb(smodel, data=data, output_samples=2000, seed=123)
-```
-
-```{r}
-head(data$X, n=20)
-```
-
-```{r}
-fitstan
-```
-
-```{r}
-fit = glm.fit(x=cbind(data$X), y=data$z, offset=log(data$tau), family=poisson(link = "log"))
-fit$coefficients
-```
-
-```{r}
-data$tau
 ```
 
 ```{r}
@@ -111,577 +60,411 @@ ggplot(meantx) + geom_bar(aes(x=sex)) + theme_bw()
 ```
 
 
-## Analyzing how interacting resources affect crop use in Tejon pigs
+# Analyzing the influence of different foraging resources on the movement patterns of pigs
 
-First, which crop types are pigs actually in during the course of the study?
+A four step analysis
 
-```{r}
-croptypes = c("beverage_and_spice", "cereals", "oilseed", "other", 
-                      "fruit_and_nuts", "grasses", "leguminous",
-                      "root_and_tuber", "sugar", "tobacco", 
-                      "vegetables_and_melons")
-locvars = paste0(croptypes, "_loc")
-gradvars = paste0(croptypes, "_grad")
+1. Analyze a simple main effect model with no interactions
+2. Analyze a time varying GAM model with no interactions
+3. Analyze a main effect model with resource interactions and temp/precip interactions
+4. Potentially analyze a time-varying GAM model with resource interactions...
 
-# Used location variables
-locpres = tejondat[, locvars, with=F][, lapply(.SD, function(x) any(x !=0))]
-used_croplocs = names(locpres[1, locpres[1, ] == TRUE, with=F])
-used_croplocs
+**Key assumptions**
 
-# Used gradient variables
-gradpres = tejondat[, gradvars, with=F][, lapply(.SD, function(x) any(x !=0))]
-used_cropgrads = names(gradpres[1, gradpres[1, ] == TRUE, with=F])
-used_cropgrads
+1. After accounting for sex, pigs in a population are similar enough that multiple replicates per pig can be considered similar to multiple replicates across pigs at a given time.  
 
-# For the crop variables that any pigs were in, build an indicator to indicate which pigs were in it.  Only going to perform inference for those pigs.
-pigincrop = tejondat[, c(used_croplocs, "pigID"), with=F][, lapply(.SD, function(x) as.numeric(any(x != 0))), by=pigID]
-names(pigincrop) = c("pigID", paste0("in_", names(pigincrop)[-1]))
-tejondat = merge(tejondat, pigincrop, by="pigID")
-head(tejondat)
-```
+### Step 1: Simple main effects model for Tejon and Camp Bullis
 
 Build a design matrix with the appropriate resources.  
 
 ```{r}
 
-# Scale the appropriate covariates
-scaledvars = c("crw", "canopycover_loc", "canopycover_grad", "masting_loc", "masting_grad", 
-               "ndvi_loc", "ndvi_grad", "temperature_loc", "precipitation_loc", 
-               used_croplocs, used_cropgrads)
-tejon_sc = tejondat[, scaledvars, with=F][, lapply(.SD, function(x) scale(x))]
-names(tejon_sc) = paste0(scaledvars, "_z")
-tejondat = cbind(tejondat, tejon_sc)
-
-
-# Build the formula string
-base = "z ~ crw_z + canopycover_loc_z + canopycover_grad_z + ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z + masting_loc_z:temperature_loc_z + masting_loc_z:precipitation_loc_z + masting_loc_z:temperature_loc_z:precipitation_loc_z +  masting_grad_z:temperature_loc_z + masting_grad_z:precipitation_loc_z + masting_grad_z:temperature_loc_z:precipitation_loc_z"
-
-## Location effects
-
-croploc_formlist = list()
-used_croplocs_z = paste0(used_croplocs, "_z")
-used_cropgrads_z = paste0(used_cropgrads, "_z")
-
-for(cl in used_croplocs_z){
-  
-  cform = paste(cl, " + ", cl, ":ndvi_grad_z + ", cl, ":masting_grad_z", sep="")
-  
-  cl_grad = paste(strsplit(cl, "_loc_z")[[1]][1], "_grad_z", sep="")
-  
-  for(cgrad in used_cropgrads_z[-which(used_cropgrads_z == cl_grad)]){
-    cform = paste(cform, " + ", cl, ":", cgrad, sep="")
-  }
-  croploc_formlist[[cl]] = cform
-}
-
-croploc_formlist[["sep"]] = " + "
-croploc_formula = do.call(paste, croploc_formlist)
-
-## Gradient effects
-
-cropgrad_formlist = list()
-
-for(cl in used_cropgrads_z){
-  
-  cform = paste(cl, " + ", cl, ":ndvi_loc_z + ", cl, ":masting_loc_z", sep="")
-  
-  cl_loc = paste(strsplit(cl, "_grad_z")[[1]][1], "_loc_z", sep="")
-  
-  for(cloc in used_croplocs_z[-which(used_croplocs_z == cl_loc)]){
-    
-    cform = paste(cform, " + ", cl, ":", cloc, sep="")
-    
-  }
-  cropgrad_formlist[[cl]] = cform
-}
-
-cropgrad_formlist[["sep"]] = " + "
-cropgrad_formula = do.call(paste, cropgrad_formlist)
-
-fullform = paste("formula(", paste(base, croploc_formula, cropgrad_formula, sep=" + "), ")", sep="")
-evalform = eval(parse(text=fullform))
-
+# Build the standardized design matrix. See pigfxns.R
+source("pigfxns.R")
+res = build_design_matrix(tejondat, c("crop"), modeltype="main_effects")
+tejondat = res$data
+evalform = res$evalform
 ```
 
 From the formula, extract the design matrix
 
 ```{r}
 Xmat = model.matrix(evalform, data=tejondat)
+# fwrite(as.data.table(Xmat), "../results/temp_tejon.csv")
 ```
 
+
 ```{r}
-library(glmnet)
-library(foreach)
 require(doMC)
 registerDoMC(cores=4)
-
-penalty = rep(1, ncol(Xmat))
-zeroind = c(1, 2, 3, 4, 5, 6, 7, 8, 20, 21, 22, 23, 70, 71) # 23, 24, 25, 26, 27, 74, 75) # Variables to always include
-penalty[zeroind] = 0
-
-# Loop over all pigs and save the best variables
-bestcoef = list()
-
-for(pignm in unique(tejondat$pigID)){
-  
-  ind = tejondat$pigID == pignm
-  Xmat_trun = Xmat[ind, ]
-  
-  # Less than 1 minute to run...
-  cat("Fitting", pignm, "of", length(unique(tejondat$pigID)), "\n")
-  fittejon = cv.glmnet(Xmat_trun, y=tejondat$z[ind], offset=log(tejondat$tau[ind]), family="poisson", 
-                       alpha=1, nlambda=20, nfolds=4, parallel=TRUE)#, penalty.factor=penalty)
-  bestcoef[[pignm]] = fittejon$glmnet.fit$beta[, which(fittejon$lambda == fittejon$lambda.min), drop=F]
-}
-
-```
-
-After fitting all pigs what do the coefficients tell us? 
-
-```{r}
-allcoefs = do.call(cbind, bestcoef)
-meancoefs = apply(allcoefs, 1, median)
-stdcoefs = apply(allcoefs, 1, sd)
-dt = as.data.table(data.frame(nms = names(meancoefs), means=meancoefs, stds=stdcoefs))
-dt = dt[order(dt$means), ]
-dt$nms = factor(dt$nms, levels=dt$nms, ordered = T)
-ggplot(dt) + geom_point(aes(x=nms, y=means)) + 
-            #geom_errorbar(aes(x=nms, ymin=means - stds, ymax=means + stds)) +
-                  theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=6)) + 
-                  xlab("Coefficient Name") + ylab("Coefficient value")
-```
-
-
-
-```{r}
-plot(fittejon)
-fittejon$lambda
-fittejon$glmnet.fit$beta[, which(fittejon$lambda == fittejon$lambda.min), drop=F]
+# Fit overall model with GLM LASSO
+fittejon_full = cv.glmnet(Xmat, y=tejondat$z, offset=log(tejondat$tau), family="poisson", 
+                       alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
 ```
 
 ```{r}
-head(tejondat)
+plot(fittejon_full)
+fittejon_full$lambda
+fittejon_full$glmnet.fit$beta[, which(fittejon_full$lambda == fittejon_full$lambda.1se), drop=F]
+tejonbetas = fittejon_full$glmnet.fit$beta[, which(fittejon_full$lambda == fittejon_full$lambda.min)]
 ```
 
+At the population-level and with the LASSO, we see
 
+1. Pigs slow down in cells with higher canopy cover
+2. Pigs slow down in cells with higher NDVI
+3. Pigs slow down in cells with higher masting trees
+4. Pigs tend to move faster as the get nearer to crops
+4. Pigs move faster near water sources
+5. Males move faster/more than females
 
-
-
-
-
-## Exploratory analysis movement patterns in Tejon Ranch pigs
-
-Only one Tejon pig (M302) is actually ever "in" cropland.  We could look at gradient effects of crops on all pigs, but that doesn't seem to have much relevance if the pigs are never actually in a crop field.  Because of that we are going to exclude the croplayers for now and then perform another analysis on how croptype affects pig movement for those pigs that have used crops.
-
-```{r}
-# Check which columns have NAs.  A few should
-tejondat[, lapply(.SD, function(x) any(is.na(x)))]
-
-# How many NDVI values are NA?  **NOTE**: Added an additional buffer on the covariates so hopefully this will change.
-sum(is.na(tejondat$ndvi_loc))
-
-# Which columns only have the a single value? These will obviously not be very useful to analyze.
-tejondat[, lapply(.SD, function(x) all(x == x[1])), by=pigID]
-
-# Which columns vary across all pigs?
-tfs = tejondat[, lapply(.SD, function(x) all(x == x[1])), by=pigID][, lapply(.SD, function(x) all(x == FALSE))]
-tfs[, tfs[1, ] == TRUE, with=F]
-```
-
-To start, we are going to consider the following variables
-
-**Pig Attributes**
-
-1. **Correlated random walk**: Does a pig tend to move in the direction it was moving previously?
-2. **Sex**: Set to affect overall pig movement rate
-
-**Landscape-level covariates**
-
-1. **Canopy cover**: The percent canopy cover of a 30 x 30 m grid cell.
-  - *Location* and *Gradient* effects
-2. **NDVI**: Yes, NDVI, not EVI.  We are working on compiling EVI from MODIS, but NDIV is currently much easier to obtain. 
-  - *Location* and *Gradient* effects
-3. **Masting layer**: The density of masting trees in a 1 km by 1 km cell.
-  - *Location* and *Gradient*
-4. **Distance to nearest developed land**: Developed land as defined by the NLCD
-  - *Gradient*
-5. **Elevation**: Re-run data tables to include
-
-**Abiotic covariates**
-
-1. **Temperature**: Monthly mean temperature values at a 50 km by 50 km scale
-  - *Location*. Potentially interacts with all other variables
-2. **Precipation**: Monthly cumulative precipitation at a 50 km by 50 km scale
-  - *Location*. Potentially interacts with all other variables.
-3. **Drought Index**: The weekly Drought Serverity Index for a given pig location (at the county scale)
-
-Let's look at potential correlation between the various predictor variables
-
-```{r}
-cormat = cor(tejondat[, list(canopycover_loc, canopycover_grad, ndvi_loc, ndvi_grad, masting_loc, masting_grad, developed_grad, precipitation_loc, temperature_loc)])
-cormat
-```
-
-As we'd except, the density of masting trees is positively correlated with NDVI at a location and canopy cover. This isn't a strong enough correlation to preclude includling these variables in the model.  Temperature and precip are really strongly correlated in Tejon.  This is because most of the precip is coming in the winter when temperatures are cooler.  Might not make sense to include both of these variables, but using the McElreath rule of thumb of 0.8 > let's go ahead and include them for now. 
-
-### Population-level analysis of Tejon pigs with no time-varying covariates
-
-To get an understanding of how various covariates/resources are affecting pig movement, we are going to start by fitting a GLM LASSO model to 
-
-```{r}
-library(glmnet)
-library(foreach)
-require(doMC)
-registerDoMC(cores=4)
-
-stddat = tejondat
-
-# Full model
-form1 = formula(z ~ scale(crw) + 
-                    sex +
-                    scale(developed_grad)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(canopycover_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(canopycover_grad)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(ndvi_grad)*scale(temperature_loc)*scale(precipitation_loc) + 
-                    scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-                    scale(masting_grad)*scale(temperature_loc)*scale(precipitation_loc))
-
-fitcv = cv.glmnet(x=model.matrix(form1, data=stddat), y=stddat$z, 
-                    offset=log(stddat$tau), family="poisson",
-                    alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
-```
-
-Explore the best fitting tejon models
-
-```{r}
-plot(fitcv)
-fitcv$glmnet.fit$df
-tejoncoef = fitcv$glmnet.fit$beta[, fitcv$glmnet.fit$df == 16, drop=F]
-tejoncoef
-```
-
-
-```{r}
-dt = tejoncoef[, 1]
-ggplot(data=NULL) + geom_point(aes(x=names(dt), y=dt)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=7)) + xlab("Coefficient Name") + ylab("Coefficient value")
-```
-
-After strongly regularizing, we see that
-
-1. Pigs tend to move in the same direction they were moving previously
-2. Male pigs generally move more than female pigs
-3. The pigs slow down as canopycover increases
-4. The pigs slow down as NDVI increases
-4. Temperature and precipitation interact to affect overall movement rate
-5. Increasing temperature decreases the rate at which pigs leave regions of high productivity (high NDVI).
-6. Pigs tend to stay in areas with a high density of masting trees (i.e. move slower out of these areas)
-7. Increasing precipitation increases the amount of time pigs stays in a masting layer 
+The only direction bias effect that remains is CRW.  Though there is a weak effect to move toward crops.
 
 ---
 
-### Population-level analysis of Camp Bullis pigs with no time-varying covariates
+Population-level LASSO for txcamp pigs.  First get the design matrix
 
 ```{r}
-cormat = cor(txdat[, list(canopycover_loc, canopycover_grad, ndvi_loc, ndvi_grad, masting_loc, masting_grad, developed_grad, precipitation_loc, temperature_loc)])
-cormat
+txres = build_design_matrix(txdat, c("crop"), modeltype="main_effects")
+txdat = txres$data
+evalform_tx = txres$evalform
 ```
 
-Much weaker correlations between covariates in Texas Camp Bullis pigs.
+Compute the design matrix
 
 ```{r}
-library(glmnet)
-library(foreach)
+Xmat_tx = model.matrix(evalform_tx, data=txdat)
+```
+
+Fit the GLM LASSO
+
+```{r}
 require(doMC)
 registerDoMC(cores=4)
-
-stddat = txdat
-
-# Full model
-form1 = formula(z ~ scale(crw) + 
-                    sex +
-                    scale(developed_grad)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(canopycover_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(canopycover_grad)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(ndvi_grad)*scale(temperature_loc)*scale(precipitation_loc) + 
-                    scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-                    scale(masting_grad)*scale(temperature_loc)*scale(precipitation_loc))
-
-fitcv_txdat = cv.glmnet(x=model.matrix(form1, data=stddat), y=stddat$z, 
-                    offset=log(stddat$tau), family="poisson",
-                    alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
-
-```
-
-
-```{r}
-plot(fitcv_txdat)
-fitcv_txdat$glmnet.fit$df
-txcampcoef = fitcv_txdat$glmnet.fit$beta[, fitcv_txdat$glmnet.fit$df == 16, drop=F]
-txcampcoef
+# Fit overall model with GLM LASSO
+fittxcamp_full = cv.glmnet(Xmat_tx, y=txdat$z, offset=log(txdat$tau), family="poisson", 
+                       alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
 ```
 
 ```{r}
-dt = data.frame(nm=names(tejoncoef[, 1]), tejon=tejoncoef[, 1], txcamp=txcampcoef[, 1])
-ggplot(dt) + geom_point(aes(x=nm, y=tejon, color="tejon")) + geom_point(aes(x=nm, y=txcamp, color="txcamp")) + 
-                  theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=7)) + 
-                  xlab("Coefficient Name") + ylab("Coefficient value")
+plot(fittxcamp_full)
+fittxcamp_full$lambda
+fittxcamp_full$glmnet.fit$beta[, which(fittxcamp_full$lambda == fittxcamp_full$lambda.1se), drop=F]
 ```
 
+Results are different than Tejon
 
-In the txcamp study, the results are largely consistent in direction, though vary in magnitude. This could partly due to having different ranges of these covariates across different populations and having some
-non-linearities.
+1. Strong direction persistence in movement
+2. Males move faster than females
+3. Pigs tend to move slower in canopy cover
+4. Pigs tend to move toward canopy cover
+5. Pigs move slower closer to water.
+6. Pigs move quicker in higher NDVI
+7. Week effects of masting layer
+8. Pigs move faster near crops
 
 ---
 
-Combining txcamp and and tejon together, and exploring the same model as above. Do we see differences between studies? 
-
-```{r}
-fulldat = rbind(tejondat, txdat)
-
-form1 = formula(z ~ scale(crw) + 
-                    sex:study +
-             			  scale(canopycover_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-                    scale(canopycover_loc):study +
-             			  scale(canopycover_grad)*scale(temperature_loc)*scale(precipitation_loc) +
-             			  scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-                    scale(ndvi_loc):study +
-             			  scale(ndvi_grad)*scale(temperature_loc)*scale(precipitation_loc) + 
-                    scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-                    scale(masting_loc):study +
-                    scale(masting_grad)*scale(temperature_loc)*scale(precipitation_loc))
-
-# Fit models
-require(doMC)
-registerDoMC(cores=4)
-fitcvcomb = cv.glmnet(x=model.matrix(form1, data=fulldat), y=fulldat$z, 
-                    offset=log(fulldat$tau), family="poisson",
-                    alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
-
-```
+## Step 2: Time-varying analysis for Tejon and Camp Bullis
 
 
-```{r}
-plot(fitcvcomb)
-fitcvcomb$glmnet.fit$df
-fitcvcomb$glmnet.fit$beta[, fitcvcomb$glmnet.fit$df == 21, drop=F]
-```
+**Question:** Do we detect a a seasonal effect resource use on pig-movement? 
 
-The model agrees that pigs slow down "less" in NDVI and masting layers in the texas population relative to the tejon population.
-
-## Temporal patterns of resource use in Tejon and Camp Bullis
-
-In thei portion of the analysis, we are looking at diel temporal variation in patterns of resource selection. From the previous analyses (and a lot of previous work), forest cover has a large effect on pig movement. We would expect that this effect would change over the course of the day.  Similarly, the tendendacy to move foraging resources (masting trees, region with high NDVI) might also vary over the course of the day, with a greater tendency to move toward resources during the certain portions of the day.
-
-### Daily variation in the influence of canopy cover on Tejon pigs
+- Not including interactions between resources
+- Not including monthly precipitation and tempurature variables as the montly time variation in resource use should account for this
+- Explore daily and montly changes in resource use.
+  *Daily effects*: General movement and canopy cover
+  *Monthly efects*: Forage resources and water
 
 ```{r}
 # Extract hour of day for spline fitting
 tejondat[,datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
 tejondat[ , hourofday:=hour(datetime)]
-```
-
-Incorporate a basis effect of canopy cover by time into the minimal model for tejon that was identified via the LASSO analysis
-
-```{r}
-require(splines)
-require(fda)
-require(mgcv)
-df = 6
-
-stddat = tejondat
-
-# Build time-dependent design matrix for a cyclic cubic spline
-splinedef = s(hourofday, bs="cc", k=df)
-bs_hours = smooth.construct2(splinedef, stddat, NULL)$X # B-spline basis for time effect
-bs_hours_covereffect = scale(stddat$canopycover_loc)[, 1] * bs_hours # Allows the effect of canopy cover to vary with time of day
-
-form_basis = formula(z ~ scale(crw) +
-                    sex +
-             			  scale(canopycover_grad) +
-             			  scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-                    scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc))
-
-# form_basis = formula(z ~ scale(crw) + 
-#              			  scale(canopycover_grad)*scale(temperature_loc)*scale(precipitation_loc) +
-#              			  scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-#              			  scale(ndvi_grad)*scale(temperature_loc)*scale(precipitation_loc) + 
-#                     scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-#                     scale(masting_grad)*scale(temperature_loc)*scale(precipitation_loc))
-
-
-Xtejon = model.matrix(form_basis, data=stddat)
-num = ncol(Xtejon) + 1
-Xtejon = cbind(Xtejon, bs_hours, bs_hours_covereffect)
-
-colnames(Xtejon)
-colnames(Xtejon)[num:(num + (2*(df - 1) - 1))] = c(paste0("cch_", 1:(df - 1)), paste0("h_", 1:(df - 1)))
-
-
-
-require(doMC)
-registerDoMC(cores=4)
-
-# Regularize the fit
-fitvar_cc = cv.glmnet(x=Xtejon, y=stddat$z, offset=log(stddat$tau), 
-                    family="poisson", alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
-
-
-```
-
-```{r}
-# Extract and plot the coefficients
-plot(fitvar_cc)
-fitvar_cc$glmnet.fit$df
-best_betas = fitvar_cc$glmnet.fit$beta[, which(fitvar_cc$lambda == fitvar_cc$lambda.min), drop=T]
-best_betas
-```
-
-Plot what the time-varying effect of canopy cover looks like
-
-```{r}
-library(ggplot2)
-ccbetas_tejon = best_betas[num:(num + (df - 1) - 1)]
-cceffect_tejon = bs_hours %*% t(t(ccbetas_tejon))
-ccdt_tejon = as.data.table(data.frame(hour=stddat$hourofday, canopy=cceffect_tejon))[order(hour)]
-ccdt_tejon = ccdt_tejon[!duplicated(ccdt_tejon)]
-
-ggplot(ccdt_tejon) + geom_line(aes(x=hour, y=canopy)) + theme_bw() + xlab("Hour of day") + ylab("Canopy Effect")
-```
-
-
-As we'd expect based on pig biology, there is a strong signature of daily variation in the effect of canopy cover.  Particularly with pigs showing a strong tendency to slow down with increasing canopy cover midday compared to in the early morning or evening.
-
-### Daily variation in the influence of canopy cover on Texas Camp pigs
-
-```{r}
-txdat[,datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
-txdat[ , hourofday:=hour(datetime)]
-```
-
-```{r}
-
-require(splines)
-require(fda)
-require(mgcv)
-df = 6
-
-stddat = txdat
-# Build time-dependent design matrix for a cyclic cubic spline
-splinedef = s(hourofday, bs="cc", k=df)
-bs_hours = smooth.construct2(splinedef, stddat, NULL)$X # B-spline basis for time effect
-bs_hours_covereffect = scale(stddat$canopycover_loc)[, 1] * bs_hours # Allows the effect of canopy cover to vary with time of day
-
-form_basis = formula(z ~ scale(crw) + 
-             			  scale(canopycover_grad) +
-             			  scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) +
-                    scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc))
-
-Xtxcamp = model.matrix(form_basis, data=stddat)
-num = ncol(Xtxcamp) + 1
-Xtxcamp = cbind(Xtxcamp, bs_hours, bs_hours_covereffect)
-
-colnames(Xtxcamp)
-colnames(Xtxcamp)[num:(num + (2*(df - 1) - 1))] = c(paste0("cch_", 1:(df - 1)), paste0("h_", 1:(df - 1)))
-
-require(doMC)
-registerDoMC(cores=4)
-
-# Regularize the fit
-fitvar_txcamp = cv.glmnet(x=Xtxcamp, y=stddat$z, offset=log(stddat$tau), 
-                    family="poisson", alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
-
-```
-
-```{r}
-# Extract and plot the coefficients
-plot(fitvar_txcamp)
-fitvar_txcamp$glmnet.fit$df
-best_betas_txcamp = fitvar_txcamp$glmnet.fit$beta[, which(fitvar_txcamp$lambda == fitvar_txcamp$lambda.min), drop=T]
-best_betas_txcamp
-```
-
-```{r}
-ccbetas_txcamp = best_betas_txcamp[num:(num + (df - 1) - 1)]
-cceffect_txcamp = bs_hours %*% t(t(ccbetas_txcamp))
-ccdt_txcamp = as.data.table(data.frame(hour=stddat$hourofday, canopy=cceffect_txcamp))[order(hour)]
-
-# Extract unique hours
-ccdt_txcamp = ccdt_txcamp[!duplicated(ccdt_txcamp)]
-
-
-ggplot(ccdt_txcamp) + geom_line(aes(x=hour, y=canopy, color="txcamp")) + theme_bw() + 
-              geom_line(data=ccdt_tejon, aes(x=hour, y=canopy, color="tejon")) + xlab("Hour of day") + ylab("Canopy Effect")
-```
-
-The diel variation in canopy use is quite consistent across Tejon pigs and Texas pigs. This is a nice confirmatory result of this approach, as it is what we would expect given what is known about pig behavior and animal behavior in general.  Pigs are utilizing cover midday, likely for resting purposes.
-
-### Daily variation in resource use
-
-Does the "attraction" of potential resources vary over the course of the season in these populations?  Depending on the month of year, we might expect masting layer or NDVI to provide more resources and thus influence pig movement more.
-
-```{r}
 tejondat[, monthofyear:=month(datetime)]
-hist(tejondat$monthofyear)
 ```
 
-Let's look for a time-varying effect of the gradient toward masting layers and NDVI across the course of the year.
+Build the GAM design matrix for time-varying coefficients
 
 ```{r}
-library(glmnet)
-library(mgcv)
 
-df=4
-txdat[, datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
-txdat[, monthofyear:=month(datetime)]
-stddat = txdat
-
-splinedef = s(monthofyear, bs="cc", k=df)
-bs_months = smooth.construct2(splinedef, stddat, NULL)$X # B-spline basis for time effect
-bs_months_ndvieffect = scale(stddat$ndvi_grad)[, 1] * bs_months
-bs_months_mastingeffect = scale(stddat$masting_grad)[, 1] * bs_months
-
-form_base = formula(z ~ scale(crw) + 
-                    scale(canopycover_loc)*scale(temperature_loc)*scale(precipitation_loc) + 
-                    scale(ndvi_loc)*scale(temperature_loc)*scale(precipitation_loc) + 
-                    scale(masting_loc)*scale(temperature_loc)*scale(precipitation_loc))
-
-# Build design matrix
-Xmat = model.matrix(form_base, data=stddat)
-num = ncol(Xmat) + 1
-Xmat = cbind(Xmat, bs_months_ndvieffect, bs_months_mastingeffect, bs_months)
-colnames(Xmat)[num:(num + (3*(df - 1) - 1))] = c(paste0("ndvim_", 1:(df - 1)), paste0("mastingm_", 1:(df - 1)), paste0("m_", 1:(df - 1)))
+source("pigfxns.R")
+Xgam_tej  = build_gam_design_matrix(Xmat, tejondat, c("(Intercept)", "crw_z", "sexM"), df=6)
 
 require(doMC)
 registerDoMC(cores=4)
-fitmonth_tejon = cv.glmnet(x=Xmat, y=stddat$z, offset=log(stddat$tau), 
+
+# Regularize the fit
+fittejon_gam = cv.glmnet(x=Xgam_tej, y=tejondat$z, offset=log(tejondat$tau), 
                     family="poisson", alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
+
 ```
 
+Explore the nature of the time-varying effects after LASSO regularization
+
 ```{r}
-plot(fitmonth_tejon)
-fitmonth_tejon$glmnet.fit$df
-monthbetas = fitmonth_tejon$glmnet.fit$beta[, which(fitmonth_tejon$lambda == fitmonth_tejon$lambda.1se), drop=F]
-monthbetas
+plot(fittejon_gam)
+tej_gambetas = fittejon_gam$glmnet.fit$beta[, which(fittejon_gam$lambda == fittejon_gam$lambda.1se), drop=T]
+tej_gambetas
+```
+
+After strong regularization, how do these effects vary with time?
+
+```{r}
+library(ggplot2)
+splinehour = s(hourofday, bs="cc", k=6)
+pred_hours = Predict.matrix(smooth.construct2(splinehour, tejondat, NULL), data.frame(hourofday=1:24)) # B-spline basis for hour effect
+
+dailyres = list()
+for(pattern in c("hour_*")){
+  
+  coverloc_eff = pred_hours %*% t(t(tej_gambetas[names(tej_gambetas) %like% pattern]))
+  coverlocdt = data.frame(hour=1:24, beta=coverloc_eff, coef=pattern)
+  dailyres[[pattern]] = coverlocdt
+}
+
+dailyres = do.call(rbind, dailyres)
+ggplot(dailyres) + geom_line(aes(x=hour, y=beta)) + xlab("Hour of day") + ylab("Daily Rate") + theme_bw() + facet_wrap(~coef)
 ```
 
 ```{r}
 library(ggplot2)
-ndvibetas = monthbetas[num:(num + (df - 1) - 1)]
-mastingbetas = monthbetas[(num + df - 1):((num + df - 1) + (df - 1) - 1)]
+splinemonth = s(monthofyear, bs="cc", k=6)
+pred_months = Predict.matrix(smooth.construct2(splinemonth, tejondat, NULL), data.frame(monthofyear=seq(1, 12, len=50))) # B-spline basis for month effect
 
-ndvieffect = bs_months %*% t(t(ndvibetas))
-mastingeffect = bs_months %*% t(t(mastingbetas))
+monthlyres = list()
+for(pattern in c("cover_loc_*", "cover_grad_*", "crop_grad_*", "crop_loc_*", "water_loc_*", "water_grad_*",
+                 "month_*", "masting_loc_*", "masting_grad_*", "ndvi_loc_*", "ndvi_grad_*")){
+  
+  eff = pred_months %*% t(t(tej_gambetas[names(tej_gambetas) %like% pattern]))
+  coverlocdt = data.frame(month=seq(1, 12, len=50), beta=eff, coef=pattern)
+  monthlyres[[pattern]] = coverlocdt
+}
 
-monthdt = as.data.table(data.frame(month=txdat$monthofyear, ndvi=ndvieffect, masting=mastingeffect))[order(month)]
+monthlyres = do.call(rbind, monthlyres)
+ggplot(monthlyres) + geom_line(aes(x=month, y=beta)) + xlab("Month of year") + ylab("Monthly Rate") + theme_bw() + facet_wrap(~coef, scales="free")
+```
 
-# Extract unique hours
-monthdt = monthdt[!duplicated(monthdt)]
-ggplot(monthdt) + geom_line(aes(x=month, y=ndvi, color="ndvi")) + geom_line(aes(x=month, y=masting, color="masting"))
+
+Some interesting results in terms of the time varying effects of resource. 
+
+1. In July, there is an increased tendency to move toward crops, where the rest of the year there is little effect of of crop on the direction of movement
+  - Note not sure how much of this is a genearl population-level response versus a strong response of a well-sampled individual.
+2. Moreover, pigs tend to move faster nearer crops in the summer and fall months than in the spring
+3. In general, pigs move faster nearer water.
+4. More movement in general in the fall and winter than in the summer.
+5. Less time spent in the higher masting cells in the summer months compared to the winter months
+6. The major effect of NDVI on movement is in July through august. This correlated with when pigs are spending more time in higher covered cells and their movement is baised towards these cells.
+
+---
+
+Same analysis now for Camp Bullis pigs.  The only difference is that because pigs are not sampled over an entire year, we will not use a cyclic spline. 
+
+```{r}
+source("pigfxns.R")
+# Extract hour of day for spline fitting
+txdat[ , datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
+txdat[ , hourofday:=hour(datetime)]
+txdat[ , monthofyear:=month(datetime)]
+
+# Since these pigs were not sampled over a full year, do not use a cyclic spline for the month effects. 
+Xgam_tx = build_gam_design_matrix(Xmat_tx, txdat, c("(Intercept)", "crw_z", "sexM"), df=6, cyclic_year=FALSE)
+```
+
+```{r}
+require(doMC)
+registerDoMC(cores=4)
+
+# Regularize the fit
+fittxcamp_gam = cv.glmnet(x=Xgam_tx, y=txdat$z, offset=log(txdat$tau), 
+                    family="poisson", alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
+```
+
+```{r}
+plot(fittxcamp_gam)
+tx_gambetas = fittxcamp_gam$glmnet.fit$beta[, which(fittxcamp_gam$lambda == fittxcamp_gam$lambda.1se), drop=T]
+tx_gambetas
+```
+
+```{r}
+library(ggplot2)
+splinehour = s(hourofday, bs="cc", k=6)
+pred_hours = Predict.matrix(smooth.construct2(splinehour, txdat, NULL), data.frame(hourofday=1:24)) # B-spline basis for hour effect
+
+dailyres_tx = list()
+for(pattern in c("hour_*")){
+  
+  eff = pred_hours %*% t(t(tx_gambetas[names(tx_gambetas) %like% pattern]))
+  effdt = data.frame(hour=1:24, beta=eff, coef=pattern)
+  dailyres_tx[[pattern]] = effdt
+}
+
+dailyres_tx = do.call(rbind, dailyres_tx)
+ggplot(dailyres_tx) + geom_line(aes(x=hour, y=beta)) + xlab("Hour of day") + ylab("Daily Rate") + theme_bw() + facet_wrap(~coef)
+```
+
+```{r}
+library(ggplot2)
+splinemonth = s(monthofyear, bs="cr", k=5)
+pred_months = Predict.matrix(smooth.construct2(splinemonth, txdat, NULL), data.frame(monthofyear=seq(1, 8, len=50))) # B-spline basis for month effect
+
+monthlyres_tx = list()
+for(pattern in c("cover_loc_*", "cover_grad_*", "crop_grad_*", "crop_loc_*", "water_loc_*", "water_grad_*",
+                 "month_*", "masting_loc_*", "masting_grad_*", "ndvi_loc_*", "ndvi_grad_*")){
+  
+  eff = pred_months %*% t(t(tx_gambetas[names(tx_gambetas) %like% pattern]))
+  effdt = data.frame(month=seq(1, 8, len=50), beta=eff, coef=pattern)
+  monthlyres_tx[[pattern]] = effdt
+}
+
+monthlyres_tx = do.call(rbind, monthlyres_tx)
+ggplot(monthlyres_tx) + geom_line(aes(x=month, y=beta)) + xlab("Month of year") + ylab("Monthly Rate") + theme_bw() + facet_wrap(~coef, scales="free")
+```
+
+
+Plot the effects simultaneously for both sites
+
+```{r}
+
+dailyres$study = "tejon"
+dailyres_tx$study = "txcamp"
+fulldaily = rbind(dailyres, dailyres_tx)
+ggplot(fulldaily) + geom_line(aes(x=hour, y=beta, color=study)) + xlab("Hour of day") + ylab("Effect on movement rate") + theme_bw() + facet_wrap(~coef)
+```
+
+```{r}
+monthlyres$study = "tejon"
+monthlyres_tx$study = "txcamp"
+fullmonthly = rbind(monthlyres, monthlyres_tx)
+ggplot(fullmonthly) + geom_line(aes(x=month, y=beta, color=study)) + xlab("Month of year") + ylab("Effect on rate") + theme_bw() + facet_wrap(~coef, scales="free")
 
 ```
 
-There is minimal effect of the ndvi gradient or masting gradient on pig movement and this also doesn't really change much over the course of the year (note the scale on these axises). 
+## Step 3: Interactive effects of resources on pig movement
 
-## Look at the pig(s) that are using crops
+This a more complicated model because now we are looking at how different foraging resources interact to affect pig movement.  In others words, given a pig is in or near a natural or agricultural resource, how does the presence of another resource (or distance to that resource) affect the time the pigs spends in the current resource.
+
+For this analysis, we are going to keep the strong effects of hour and month on general movement patterns, but only consider interactions between static forage resources (i.e. the effects of resources are not time varying).  
+
+For Tejon first:
+
+```{r}
+# Use the preexisting matricies to compute the new design matrix
+source("pigfxns.R")
+inttej = build_design_matrix(tejondat, c("crop"), modeltype = "interactions")
+tejondat = inttej$data
+
+Xint_tej = cbind(model.matrix(inttej$evalform, inttej$data), Xgam_tej[, c(paste0("hour_", 1:5), paste0("month_", 1:5))])
+fwrite(as.data.table(Xint_tej), "../results/temp_Xgam_tej.csv")
+```
+
+```{r}
+fittej_int = cv.glmnet(Xint_tej, y=tejondat$z, offset=log(tejondat$tau), 
+                    family="poisson", alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
+```
+
+```{r}
+plot(fittej_int)
+fittej_int$glmnet.fit$beta[, which(fittej_int$lambda == fittej_int$lambda.1se), drop=F]
+```
+
+I am not totally sure how to interpret this, but this is saying that if a pig is far from crops, they spend a decreasing about of time in patches with high NDVI compared to when they are closer to crops.  Weird.  Maybe this is driven by a single pig? 
+
+---
+
+Same analysis for Camp Bullis
+
+```{r}
+# Use the preexisting matricies to compute the new design matrix
+source("pigfxns.R")
+inttxcamp = build_design_matrix(txdat, c("crop"), modeltype = "interactions")
+
+Xint_tx = cbind(model.matrix(inttxcamp$evalform, inttxcamp$data), Xgam_tx[, c(paste0("hour_", 1:5), paste0("month_", 1:5))])
+```
+
+```{r}
+fittx_int = cv.glmnet(Xint_tx, y=txdat$z, offset=log(txdat$tau), 
+                    family="poisson", alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
+```
+
+```{r}
+plot(fittx_int)
+fittx_int$glmnet.fit$beta[, which(fittx_int$lambda == fittx_int$lambda.1se), drop=F]
+```
+
+Not really any "significant" interactions between agricultural forage resources and natural resources in the Camp Bullis population. 
+
+## Step 4: Replacing time-varying parameters with temperature and precipitation interactions
+
+This will be similar to model 2, but instead of basis functions that vary by month (we will keep the daily basis function), we will replace these effect by interactions with temperature and precipitation. 
+
+```{r}
+source("pigfxns.R")
+temp_tej = build_design_matrix(tejondat, c("crop"), modeltype = "full")
+tejondat = temp_tej$data
+
+Xtemp_tej = cbind(model.matrix(temp_tej$evalform, temp_tej$data), Xgam_tej[, paste0("hour_", 1:5)])
+```
+
+```{r}
+fittej_temp = cv.glmnet(Xtemp_tej, y=tejondat$z, offset=log(tejondat$tau), 
+                    family="poisson", alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
+```
+
+```{r}
+plot(fittej_temp)
+fittej_temp$glmnet.fit$beta[, which(fittej_temp$lambda == fittej_temp$lambda.1se), drop=F]
+```
+
+What do the temperature, precipitation, and NDVI cruves look like?
+
+```{r}
+meanvals = tejondat[, list(meantemp=mean(temperature_loc), meanprecip=mean(precipitation_loc), meanndvi=mean(ndvi_loc)), by=monthofyear]
+ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meanndvi)) + theme_bw()
+ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meantemp)) + theme_bw()
+ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meanprecip)) + theme_bw()
+
+```
+
+---
+
+Similar analysis for Camp Bullis
+
+```{r}
+source("pigfxns.R")
+temp_tx = build_design_matrix(txdat, c("crop"), modeltype = "full")
+txdat = temp_tx$data
+
+Xtemp_tx = cbind(model.matrix(temp_tx$evalform, temp_tx$data), Xgam_tx[, paste0("hour_", 1:5)])
+```
+
+```{r}
+fittx_temp = cv.glmnet(Xtemp_tx, y=txdat$z, offset=log(txdat$tau), 
+                    family="poisson", alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
+```
+
+```{r}
+plot(fittx_temp)
+fittx_temp$glmnet.fit$beta[, which(fittx_temp$lambda == fittx_temp$lambda.1se), drop=F]
+```
+
+```{r}
+meanvals = txdat[, list(meantemp=mean(temperature_loc), meanprecip=mean(precipitation_loc), meanndvi=mean(ndvi_loc)), by=monthofyear]
+ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meanndvi)) + theme_bw()
+ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meantemp)) + theme_bw()
+ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meanprecip)) + theme_bw()
+
+```
+
+Similar to the temporal analysis, there do not seem to be strong effects of temperature and precipitation on resource use in the Camp Bullis population. Would we expect less signature of resource availability on movement when resources are fairly ubiquitously distributed over a landscape?  I would expect so.  
+
+Let's look at the coefficient of variation in the three forage resources in both Camp Bullis and Tejon
+
+```{r}
+tejoncv = tejondat[, list(cvcrop= sd(crop_loc) / mean(crop_loc), cvndvi=sd(ndvi_loc) / mean(ndvi_loc), cvmasting=sd(masting_loc) / mean(masting_loc))]
+txcampcv = txdat[, list(cvcrop= sd(crop_loc) / mean(crop_loc), cvndvi=sd(ndvi_loc) / mean(ndvi_loc), cvmasting=sd(masting_loc) / mean(masting_loc))]
+
+
+rbind(tejoncv, txcampcv)
+```
+
+There is less spatial variability in "natural" forage resources in Camp Bullis than in Tejon, which could diminish the effect on movement. Could be an interesting population-level predictor to consider for why the the role of natural vs crop resources on pig movement varies between population. The hypothesis is that with more homogeneous resource distributions (at what scale?), there is less signature of resource selection as pigs can wander more freely without worrying about getting to or staying in a particular resource patch. In general, the effects of all resources seem to be less in Camp Bullis, and I would suspect that has to do with the generally availability of resource (water and forage), though it would be nice to confirm this.  If each chosen cell is "as good as" the next, then resource selection should have little effect on pig movement and movement should be dominated by a random walk or other biological factors (escape from predation?). 

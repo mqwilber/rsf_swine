@@ -9,3 +9,12 @@ code/*.csv
 data/
 results/*
 docs/presentations/*
+docs/manuscript/*.aux
+docs/manuscript/*.bbl
+docs/manuscript/*.blg
+docs/manuscript/*.fdb_latexmk
+docs/manuscript/*.fls
+docs/manuscript/*.log
+docs/manuscript/*.out
+docs/manuscript/*.synctex.gz
+docs/manuscript/*.xdv

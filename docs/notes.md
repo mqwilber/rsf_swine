@@ -366,11 +366,26 @@ Try the Queen's neighbor analysis as well as the rook's neighbor analysis? Yeah,
 TODO
 ----
 
-1. Look at Sara's errant points see if they match with the ones that I notes.
+1. Look at Sara's errant points see if they match with the ones that I noted.
 2. Wetland layers.
-	- Use Sara's data on Camp Bullis to make the Distance to Wetland and Distance to Road rasters.
-3. Incorporate Sara's changes to the covariate table.
+	- Use Sara's data on Camp Bullis to make the Distance to Wetland and Distance to Road rasters. [DONE]
+3. Incorporate Sara's changes to the covariate table. [Done]
 
+
+## March 13
+
+Some items TODO for tomorrow March 14
+
+1. Re-build GLM files with the new Nearest Neighbor Distances
+2. Rerun the population-level GLMs with the new GLM files. Add in interactions 
+between crop_loc:NDVI_loc/Masting_loc. 
+3. Continue writing up the methods.
+4. Edit what you have already written
+5. Implement the ADVI mixed effect models in PyMC3 and extract population-level 
+effects.
+	- Save these population-level effects so we can start comparing them across
+	populations.
+6. Consider implementing time-varying Canopy cover in the base model. 
 
 
 

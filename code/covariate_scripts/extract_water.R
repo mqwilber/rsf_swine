@@ -7,7 +7,7 @@ library(raster)
 source("covariate_fxns.R")
 
 
-summarydat = fread("~/Repos/rsf_swine/data/formatted/study_summary.csv")
+summarydat = fread("/Users/mqwilber/Repos/rsf_swine/data/formatted/study_summary.csv")
 base = "/Users/mqwilber/Repos/rsf_swine/data/covariate_data/water"
 
 ## STEP 1: Crop the state-level wetland shape files
@@ -17,11 +17,12 @@ nwi_shpfiles = list("tejon"=file.path(base, "downloaded/CA_Wetlands_South.shp"),
 										"txcamp"=file.path(base, "downloaded/TX_Wetlands_Central.shp"),
 										"fl_raoul"=file.path(base, "downloaded/FL_Wetlands.shp"),
 										"tx_tyler_w2"=file.path(base, "downloaded/TX_Wetlands_Central.shp"),
-										"srel_contact"=file.path(base, "downloaded/SC_Wetlands.shp"))
+										"srel_contact"=file.path(base, "downloaded/SC_Wetlands.shp"),
+										"tx_tyler_w1"=file.path(base, "downloaded/TX_Wetlands_Central.shp"))
 
 for(studynm in summarydat$study){
 
-	if(studynm %in% c("tejon", "txcamp", "fl_raoul", "tx_tyler_w2", "srel_contact")){
+	if(studynm %in% c("tx_tyler_w1")) {
 
 		## STEP 1: Crop the state-level wetland shape files
 

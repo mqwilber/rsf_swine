@@ -1,14 +1,19 @@
-# Make and save an extent shape file for each study 
+# Make and save an extent shapefiles for each study.
+#
+# Shape files are saved in the ndvi/downloaded covariate folder
+#
+# Author: Mark Wilber
 
 library(raster)
 library(data.table)
 
-base = "/Users/mqwilber/Repos/rsf_swine/data/covariate_data/ndvi/downloaded"
+base = "../data/covariate_data/ndvi/downloaded"
 
 studysum = fread("../data/formatted/study_summary.csv")
 
 for(studynm in studysum$study){
 
+	# Make extent object
 	tstud = studysum[study == studynm]
 	buffer = 0.007
 	extobj = extent(c(xmin=tstud$longitude_min - buffer, xmax=tstud$longitude_max + buffer,

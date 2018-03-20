@@ -12,7 +12,7 @@ library(raster)
 library(parallel)
 source("covariate_fxns.R")
 
-base = "/Users/mqwilber/Repos/rsf_swine/data/covariate_data/precipitation"
+base = "../../data/covariate_data/precipitation"
 rasfolder = "raster_precip_data"
 
 # Formatted summary of the studies

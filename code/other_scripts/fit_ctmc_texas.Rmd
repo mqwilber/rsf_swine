@@ -1,0 +1,718 @@
+---
+title: "Example of modeling framework for RSF in feral swine"
+author: Mark Wilber and Sarah Chinn
+output:
+  html_notebook: default
+  pdf_document: default
+bibliography: /Users/mqwilber/Dropbox/Documents/Bibfiles/Projects_and_Permits-feral_swine.bib
+---
+
+```{r, echo=FALSE, include=FALSE}
+library(data.table)
+library(raster)
+library(ggplot2)
+library(lubridate)
+library(sp)
+library(rgdal)
+library(rgeos)
+library(ctmcmove)
+library(splines)
+library(fda)
+source('/Users/mqwilber/Repos/rsf_swine/code/pigfxns.R')
+```
+
+
+## Summary
+
+This document contains a description and example of the modeling framework we are proposing to use to analyze the feral swine GPS data in order to understand resource selection.
+
+**Any input you have on the data, the modeling approach, the questions we can ask, the covariates to use, etc. are very much appreciated.**
+
+## The questions
+
+Using the GPS movement data compiled for this study, we can ask the following questions 
+
+What can individual movement trajectories of feral swine can tell us about
+
+1. Resource use at the *individual-level* and how this resource use varies with time (e.g. by day or by month)? 
+2. Resource use at the *population-level* and how resource use varies between indivuduals in a population?
+3. Resource use *across populations* and how varying factors (temperature, snow cover, ecoregion, etc.) interact resource use to lead to differences in resource use across populations?
+
+The immediate goals of this analysis will be to 
+
+1. Build a dynamic model of pig movement to predict long-term resource selection at the scale of an individual and the population.
+2. Understand how the effects of covariates driving movement and resource selection vary temporally and across pig populations in the US.
+3. Use the model to generalize (if possible) what we can say about how pigs in different locations move in response to temporally varying resource availability. 
+
+## The modeling framework
+
+To illustrate how we propose to answer the aforementioned questions, we apply a simplified version of the modeling framework to understand resource selection in feral swine in Camp Bullis, Texas.
+
+### The Camp Bullis data
+
+```{r, echo=FALSE, include=FALSE}
+
+## Clean the Camp Bullis Data
+
+# For each pig, remove unrealistic observations
+dat = fread("../data/formatted/full_pig_data.csv")
+tcdat = dat[study == "txcamp"]
+rm(dat) # Free up some space
+
+# At least three pigs have some errant movements
+tplot = ggplot(tcdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
+
+# There are a few pigs where we seem to have errant movements: txcamp20141, txcamp20150, txcamp20169.  For these pigs, let's identify potential outliers in movement
+
+badpigs =c("txcamp20141", "txcamp20150", "txcamp20169")
+
+badout = array(NA, dim=3)
+fullind = array(NA, dim=3)
+
+for(i in 1:length(badpigs)){
+  
+  bp = badpigs[i]
+  bpdat = tcdat[pigID == bp, list(longitude, latitude)]
+  kmeans.result = kmeans(bpdat, 1)
+  centers = kmeans.result$centers[kmeans.result$cluster, ]
+  distances <- sqrt(rowSums((bpdat - centers)^2))
+  
+  outliers <- order(distances, decreasing=T)[1:5]
+
+  # print(outliers) 
+  badout[i] = outliers[1]
+  fullind[i] = which((tcdat$pigID == bp) & (tcdat$longitude == bpdat$longitude[outliers[1]]) & (tcdat$latitude == bpdat$latitude[outliers[1]]))
+  
+  #plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1)
+  #points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
+  #points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
+
+  
+}
+
+
+# Remove the substantial outliers.
+
+trimdat = tcdat[-fullind, ]
+tp = ggplot(trimdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
+
+# Now, given that behavior can change over the course of the season, we likely want to make inference over consistent time intervals. Let's look at a plot of collaring times.
+
+trimdat$datetime = as.POSIXct(trimdat$datetime, tz="GMT")
+collarDur = trimdat[, list(mindate=min(datetime), maxdate=max(datetime)), by=pigID]
+tp = ggplot(data=collarDur) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=3)) + 
+          scale_y_datetime(breaks = seq(min(collarDur$mindate), max(collarDur$maxdate), by="month"))
+
+
+# Which pigs are between have at least `clength` consecutive fixes of `ctime` minutes or less?
+
+lrdat = trimdat[, list(lr=runs(datetime, ctime=200, clength=5000)), by=pigID]
+longdat = merge(trimdat, lrdat, by="pigID")[lr == TRUE]
+
+collarDur2 = longdat[, list(mindate=min(datetime), maxdate=max(datetime)), by=pigID]
+tp = ggplot(data=collarDur2) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=10)) + 
+          scale_y_datetime(breaks = seq(min(collarDur2$mindate), max(collarDur2$maxdate), by="month"))
+
+n = nrow(longdat)
+deltas = longdat[order(pigID, datetime), list(deltat=diff(datetime)),  by=pigID]
+#deltas[, list(units=units(deltat)), by=pigID]
+#max(deltas$deltat)
+#min(deltas$deltat)
+tplot = ggplot(deltas) + geom_boxplot(aes(x="pig", y=deltat)) + facet_wrap(~pigID)
+
+for(pid in unique(longdat$pigID)){
+
+  tp = longdat[pigID == pid, ]
+  #plot(tp$datetime, main=pid, type="l")
+  
+  if(pid == "txcamp20154"){
+    imax = which.max(deltas[pigID == pid, deltat])
+    # print(tp[c(imax, imax + 1), datetime])
+    exdate = tp[c(imax + 1), datetime]
+    
+  }
+  
+}
+  
+
+# Exclude everything before "2016-06-20 00:00:09 GMT" for "txcamp20154" as there is a large time gap.  This looks to be the same individual pig though based on the data.
+
+longdat2 = longdat[!(pigID == "txcamp20154" & datetime < exdate), ]
+
+collarDur3 = longdat2[, list(mindate=min(datetime), maxdate=max(datetime)), by=pigID]
+tp = ggplot(data=collarDur3) + geom_linerange(aes(x=pigID, ymin=mindate, ymax=maxdate)) + 
+          theme(axis.text.x = element_text(angle = 90, hjust = 1,  size=10)) + 
+          scale_y_datetime(breaks = seq(min(collarDur3$mindate), max(collarDur3$maxdate), by="month"))
+
+# A total of 26 pigs to consider
+
+for(pid in unique(longdat2$pigID)){
+  tp = longdat2[pigID == pid, ]
+  # plot(tp$datetime, type="l")
+}
+
+# longdat2[, list(maxdelta=max(diff(datetime)), mindelta=min(diff(datetime)), meddelta=median(diff(datetime))), by=pigID]
+
+# The largest time gap we have is around 24 hours. It might be useful to clean that data further, but for now we will use imputation to account for the uncertainty around these trajectories.  Will be important to assess the sensitivity of the analysis to some of these gaps.
+```
+
+The Camp Bullis study occurred slightly north of San Antonio, Texas.  There are a total of 32 pigs with movement trajectories shown below.  The data has been cleaned to remove obviously errant movements, and pruned to eliminate long times between fixes (e.g. > 12 hours).
+
+```{r, echo=FALSE}
+ggplot(longdat2[pigID %in% unique(pigID)[1:16]]) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID) + 
+                theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(longdat2[pigID %in% unique(pigID)[16:32]]) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID) + 
+                theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+#ggplot(longdat2[pigID %in% unique(pigID)[16:32]]) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
+
+```
+
+The questions we can ask from this data are 
+
+1. How do covariates (i.e. resources) affect the movement dynamics of these pigs and how does that drive long-term resource selection? 
+2. How does resource selection vary temporally?
+3. How does this resource selection vary among individuals in the population?
+
+The approach described below is based of the methods of @Hanks2015, @Buderman2016, and @Wilson2018 .
+
+## Choosing covariates that affect movement and resource use
+
+### General note on covariates
+
+In the files we sent around there is a table of potential covariates that we are considering using in the broader analysis.  **Please suggest other covariates and/or sources for covariates that you think would be useful to include**. 
+
+Ideally, we want to find covariates that are biologically meanginful and consistent across the various studies so that they are comparable across pig populations (e.g. temperature or NDVI).  
+
+### Covariates for Camp Bullis
+
+For this example, we are going to choose a realistic subset of covariates that we think are important for resource selection and illustrate the proposed modeling framework.
+
+**Covariates used in Camp Bullis example**
+
+The smallest scale at which we have covariates is at the 30m by 30m scale. 
+
+1. *Forest cover*: A binary coviarate, 0 = non-forested habitat and 1 = forested habitat
+  - Time-varying by year
+  - From NLCS
+  - 30m scale
+  - Biological relevance: Potentially important for cover and foraging [@McClure2015]
+2. *NDVI*: Standard NDVI index from VegScape
+  - Time-varying by month
+  - 30m scale
+  - Biological relevance: A proxy for forage availability or cover.  Potentially correlated with forest cover, but this variable varies monthly. 
+3. *NDVI gradient*: The gradient of NDVI at any given location.
+  - Derived from NDVI
+  - 30 m scale.
+3. *Temperature*: Temperature of a given area 
+  - Time-varying by month
+  - ~50 km scale
+  - Biologial relevance: Important for pig thermoregulation [e.g. @McClure2015; @Kay2017]
+4. *Distance to cropland*: A gradient measuring 'pull' a given location feels from cropland in the spatial neighborhood. The "pull" at a location is weighted by the distance and size of a cropland.
+  - Derived from CropScapes definition of "Crops". 
+5. *Distance to grains, hay, and seeds*: A gradient measuring the weighted-by-distance "pull" of grains, hay, and seeds in an area at the current location.
+  - Derived from CropScapes definition of "Grains, hay, and seeds"
+  - 30 m scale
+6. *Distance to open water*: Same as above, but a water-based gradient
+  - Derived from CropScapes definition of open water.  There are better hydrological layers that we plan to use.
+  - 30 m scale
+
+## Single-pig analysis
+
+Focusing on a single pig from the Texas Camp Study (e.g. pig \# 20125)
+
+```{r, echo=FALSE}
+pig1 = longdat2[pigID == "txcamp20125"]
+ggplot(data=pig1) + geom_path(aes(x=longitude, y=latitude)) + theme_bw()
+```
+Below are some example visualizations of the covariates in the region over which this pig moved
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+source("pigfxns.R")
+source("covariate_scripts/covariate_fxns.R")
+pig1 = longdat2[pigID == "txcamp20125"] # "txcamp20125"
+buffer = 0.0005
+extobj = extent(min(pig1$longitude) - buffer, max(pig1$longitude) + buffer, min(pig1$latitude) - buffer, max(pig1$latitude) + buffer)
+
+loc_stack = process_covariates(c("temperature", "croplayer", "ndvi"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="loc")
+grad_stack = process_covariates(c("ndvi", "elevation"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="grad")
+
+# Compute the distance2item gradients
+gradxy_stack = process_covariates(c("croplayer"), "txcamp", extobj, min(pig1$datetime), max(pig1$datetime), ext="grad", distgrad=TRUE, decay=1)
+gradx_stack = stack(lapply(gradxy_stack, function(x) x$xgrad))
+grady_stack = stack(lapply(gradxy_stack, function(x) x$ygrad))
+
+# Ensure projections are the same
+locnames = names(loc_stack)
+loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, loc_stack[['crops_2016_loc']], method="bilinear")))
+grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack[['crops_2016_loc']], method="bilinear")))
+```
+
+```{r, echo=FALSE}
+plot(stack(unstack(loc_stackproj)[9]), main="Forest Cover (forest is green)")
+plot(stack(unstack(loc_stackproj)[10]), main="Open water (open water is green)")
+plot(stack(unstack(loc_stackproj)[8]), main="Grains, hay, and seeds (presence is green)")
+plot(stack(unstack(loc_stackproj)[7]), main="Crops (presence is green)")
+ndvi = stack(unstack(loc_stackproj)[11:16])
+plot(ndvi)#, col=rev( rainbow(50, start=0,end=1 ) ), breaks=seq(min(minValue(ndvi)),max(maxValue(ndvi)),len=50))
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, loc_stack[['crops_2016_loc']], method="ngb")))
+```
+Keep in mind the colorbars are on different scales for the NDVI variable and each NDVI plot shows NDVI for a given month in 2016.
+
+---
+
+**Given we have an individual movement trajectory and environmental covariates, how do these covariates affect movement and how does this in turn affect resource selection?** 
+
+Combining the approach of @Hanks2015 and @Buderman2016, we can break this into three steps
+
+1. Fitting a continuous-time movement model to the pig trajectory so that we can account for the fact that not all fix times are equal.
+  - Following @Buderman2016, a basis function approach provides a fast and easy way to do this.
+
+2. Use this *continuous-time* movement trajectory to convert to a *discrete-space* movement path.  
+
+3. Use this "continuous-time and discrete-space" model formulation to explore how covariates/resources affect movement and long-term resource selection.
+
+### Step 1: Fit a continuous-time movement model to pig data
+
+Using a basis function approach [e.g. B-splines, @Buderman2016], it is straight-forward to fit a continuous-time movement model that accounts for measurement error.  Generally, this simplifies to fitting the following multivariate regression to the movement data
+
+$$\mathbf{y} \sim \text{MVN}(\mathbf{X} \beta, \mathbf{\Sigma})$$
+where $\mathbf{y}$ is a n x 2 vector of longitude and latitude, $\mathbf{X}$ is the $n \times p$ desired basis expansion of time (i.e. the design matrix), $\beta$ is a $p \times 2$ matrix of coeficients, and $\Sigma$ is the covariance matrix. This is fast to implement in either a frequentist or Bayesian framework, which is important for fitting the large amount of movement data we have in the larger study (\~2 million fixes).
+
+Fitting a continuous-time basis function model, we can then simulate movement trajectories at any time step.  For example, the plot below shows three simulations at 15 minute intervals (the colored lines) of the best-fit movement model to the first 1000 fixes from pig 20125 from Camp Bullis (black lines + dots are the first 1000 fixes).
+
+```{r, echo=FALSE, include=FALSE}
+dat  = pig1[1:1000, list(x=longitude, y=latitude, datetime=datetime)]
+predinterp = continuous_path(dat, "15 mins", "interp")
+
+#plot(dat[, list(x, y)], type="b")
+#points(predinterp$paths[[1]], cex=0.1, col="red")
+
+predbfreq = continuous_path(dat, "15 mins", "bspline_freq", impute=3, df=800, sigma.fixed = 0.001)
+```
+
+```{r, echo=FALSE}
+plot(dat[, list(x, y)], type="b",  ylab="Latitude", xlab="Longitude")
+points(predbfreq$paths[[1]], type="l", col="red")
+points(predbfreq$paths[[2]], type="l", col="blue")
+points(predbfreq$paths[[3]], type="l", col="green")
+```
+Obviously, we are skipping over a lot of detials here that we'd be happy to chat about (e.g. appropriately accounting for measurement error, overfitting, etc.), but the gist is that fitting a continuous time model will
+
+1. Allow us to account for unequal fix times across individuals within a study and across studies
+2. Allow us to account of uncertainty in the movement trajectory
+3. Allow us to sync up the time scale of inference across studies (i.e. ensure we are making inference on movement dynamics and resource selection at the same time scale across studies)
+
+<!-- Three options here: -->
+
+<!-- 1. Use simple interpolation -->
+<!--   - **Advantage**: Because this approach assumes perfect data, we will recover the observed locations when we ``simulate'' the the movement path. -->
+<!--                    Fast and easy to calculate trajectories. -->
+<!--   - **Disadvatanges**:  Does not propoerly account for uncertainty in movement.  Particularly if there is a long time (e.g. 3 hours) between fixes, -->
+<!--                    this approach just interpolates a straight-line between points which might be very wrong. -->
+<!-- 2. Use a b-spline approach in a frequentist framework -->
+<!--   - **Advantages**: Captures uncertainty in movement path and can propagate this uncertainty through to parameter estimates of resource selection.  -->
+<!--   - **Disadvantages**: While quite fast for small to medium data, both fitting and uncertainty estimation are pretty slow for large data (e.g. 100,000 predictions). -->
+<!-- 2. Use a b-spline approach in a Bayesian framework (`mcmc.fmove`) -->
+<!--   - **Advantages**:  Same advantages as above. But also regularlizations is baked into this approach which is quite useful. -->
+<!--   - **Disadvatanges**:  Will need to check convergence of MCMC chains for each site, which could be time consuming across populations. Moreover, long MCMC runs may take awhile, but preliminary simulations suggest that these might not be too much slower than the frequentist fit (seems strange...). -->
+
+
+```{r, echo=FALSE}
+source("pigfxns.R")
+
+dat  = pig1[1:1000, list(x=longitude, y=latitude, datetime=datetime)]
+predinterp = continuous_path(dat, "15 mins", "interp")
+
+# plot(dat[, list(x, y)], type="b")
+# points(predinterp$paths[[1]], cex=0.1, col="red")
+
+predbfreq = continuous_path(dat, "15 mins", "bspline_freq", impute=3, df=500, sigma.fixed = 0.001)
+
+# plot(dat[, list(x, y)], type="b")
+# points(predbfreq$paths[[1]], type="l", col="red")
+# points(predbfreq$paths[[2]], type="l", col="blue")
+# points(predbfreq$paths[[3]], type="l", col="green")
+
+predbbayes = continuous_path(dat, "15 mins", "bspline_bayes", impute=3, sigma.fixed = NA, df=500)
+
+# plot(dat[, list(x, y)], type="b")
+# points(predbbayes$paths[[1]], type="l", col="red")
+# points(predbbayes$paths[[2]], type="l", col="blue")
+# points(predbbayes$paths[[3]], type="l", col="green")
+```
+
+### Step 2: Convert to a continuous-time, discrete-space model
+
+Because the covariates on the landscape are discrete (e.g. forest cover is measured on a 30m by 30m scale), we can discretize the "state" of our continuous-time movement trajectory such that we are modeling a continuous-time, discrete-state process. The following figure from @Hooten2010 illusrates the the concept of discretizing in space
+
+![](hooten.png)
+
+@Hanks2015 describe how to analyze this continuous-time Markov Chain (CTMC) to answer questions regarding how resources affect animal movement. Conceptually, the CTMC approach allows you to ask how the **speed** and **direction** of animal movement relate to various covariates and what this means for the long-term resource utilization [@Wilson2018]. 
+
+### Step 3: Fit the CTMC with covariates
+
+There are two types of covariates to consider in this framework
+
+1. **Location-based covariates**: Covariates that affect the rate that an animal leaves the cell that they are currently in.
+  - e.g. When a pig enters a forested cell, it tends to slow down such that it remains in this cell longer. This is a location effect of forest.
+2. **Gradient-based covariates**: Gradients of covariates that affect the direction of the next step that the animal takes
+  - e.g. When a pig moves to a new cell, they tend to move in the direction of the nearest water source. This is a gradient effect.
+
+Above, we described the various covariates we were considering in this Camp Bullis example. These consist of both location- and gradient-based covariates. 
+
+---
+
+For pig \#20125 in Camp Bullis, we want to know how these covariates affect transition rates. The rate of transitioning from cell $i$ to cell $j$ at time $t$ ($\lambda_{i_t, j_t}$) can be defined as [@Hanks2015]
+
+$$\lambda_{i_t, j_t} = \exp(x_{i_t, j_t}' \beta)$$
+
+where $x_{i_t, j_t}'$ is a vector of location-based covariates (forest cover, NDVI$(t)$, temperature$(t)$) or gradient-based covariates (distance to crops, distance to open water, distance to grain-hay-seeds, NDVI gradient) specific to cells $i$ and $j$ at time $t$. $\beta$ are unknown coefficients.  
+
+Notice that this looks similar to the classic formulation of resource selection functions framed as GLMs [e.g. @Boyce1999] and it turns out that we can leverage this similarity to use standard GLM tools to estimate to estimate $\beta$: the effect of a unit change in a covariate on log-transition rate from cell $i$ to $j$ at time $t$.
+
+For pig \#20125 in Camp Bullis and the covariates given above, we convert to a continuous-time, discrete-space model and then ask how the various covariates are affecting pig movement rate and direction. 
+
+After some conversions [see @Hanks2015], this amounts to fitting a Poisson GLM.  For example, see the output below for a model fit to the continuous time-discrete state movement trajectory of pig \#20125 in Camp Bullis.
+
+```{r, echo=FALSE, include=FALSE}
+source("pigfxns.R")
+dat = pig1[1:17000, list(x=longitude, y=latitude, datetime=datetime)]
+glm_data = fit_ctmcmodel(dat, pig1$pigID[1], loc_stackproj, grad_stackproj, timestep="15 mins", method="interp", impute=4,
+                         buffer=0.001, mc.cores=4, df=100, sigma.fixed=0.001, path2ctmcMethod = "ShortestPath",
+                         xygrad=TRUE, xgrad.stack = gradx_stack, ygrad.stack=grady_stack,
+                         grad.point.decreasing=FALSE)
+glm_data = as.data.table(glm_data)
+```
+
+```{r, echo=FALSE}
+pglmdat = process_glmdata(list(glm_data),
+                            c("temperature.*loc", "ndvi.*loc", "ndvi.*grad", "forest.*loc",
+                              "crop.*loc", "openwater.*loc", "grain.*loc", "crop.*grad", 
+                              "grain.*grad", "openwater.*grad"),
+                            c("temperature_loc", "ndvi_loc", "ndvi_grad", "forest_loc", 
+                              "crop_loc", "water_loc", "grain_loc", "crop_grad", "grain_grad", "water_grad"),
+                            c("my", "my", "my", "y", "y", "y", "y", "y", "y", "y"))
+
+pglmdat = lapply(pglmdat, function(x) x[, c('z', 'pigID', 'temperature_loc', 'ndvi_loc', 'ndvi_grad', 
+                                      'forest_loc', 'crop_loc', 'water_loc', 'grain_loc', "crop_grad", 
+                                      "grain_grad", "water_grad", 'imputeID', 
+                                      'crw', 'x.current', 'y.current', 'x.adj', 'y.adj', 'tau', 't', 'datetime', 
+                                      'elevation_grad')])[[1]]
+```
+
+```{r, echo=FALSE}
+fit = glm(z ~ forest_loc + scale(ndvi_loc) + scale(ndvi_grad) + 
+                            scale(grain_grad) + scale(crop_grad) +
+                            scale(water_grad) + scale(crw), family='poisson', offset=log(tau), data=pglmdat)
+
+summary(fit)
+```
+
+The above results can be interpreted as follows:
+
+1. `forest_loc` (Location-based effect of forest): This pig slows down in forested habitat relative to non-forested habitat.
+2. `ndvi_loc` (Location-based effect of NDVI): This pig also moves slower through habitat with higher values of NDVI (higher "productivity"/vegetation cover).
+3. `ndvi_grad` (Gradient-based effect of NDVI): This pig doesn't tend to move up or done the NDVI gradient.
+4. `grain_grad` (Gradient-based effect of grain, hay, and seeds): The pig tends to move *toward* grain, hay, and seeds. This effect may actually be a result of water availability near these fields, not actually grain itself.
+5. `crop_grad` (Gradient-based effect of crop): The pig shows a slight tendency to move away from crops. 
+5. `water_grad` (Gradient-based effect of water: The pig doesn't really move toward or away from water.  Note that the water covariate used here is from Cropscape and there is only a single open water pixel in this pigs extent.  More accurate hydrological layers will be used in future analyses.
+6. `crw` (Correlative random walk component of movement): Conditional on movement, this pig tends to continue moving in the direction that it moved in the previous time step.
+
+### Long-term resource-use
+
+The fitted model above describes a dynamic model of pig movement on a landscape.  We can then use this model to predict the long-term resource utilization distribution for pig \#20125 in space -- the stationary distribution of the pig on the landscape given the covariates in the model.
+
+
+```{r, echo=FALSE}
+fit2 = glm(z ~ forest_loc + ndvi_loc + ndvi_grad +
+                            grain_grad + crop_grad + water_grad +
+                            crw, family='poisson', 
+                            offset=log(tau), data=pglmdat)
+locstack = stack(unstack(loc_stackproj)[c(9, 11)])
+
+names(locstack) = c("forest_loc", "ndvi_loc")
+gradstack = stack(unstack(grad_stackproj)[c(1, 7)])
+names(gradstack) = c("ndvi_grad", "elevation_grad")
+gradxstack = stack(unstack(gradx_stack)[c(1, 2, 3)])
+gradystack = stack(unstack(grady_stack)[c(1, 2, 3)])
+names(gradxstack) = c("crop_grad", "grain_grad", "water_grad")
+names(gradystack) = c("crop_grad", "grain_grad", "water_grad")
+
+ext = as.vector(extent(locstack))
+ext[1] = -98.554 
+ext[4] = 29.758
+ext = extent(ext)
+
+#vl = values(locstack)
+#vg = values(gradstack)
+#values(locstack)[is.na(vl[, 2]), ] = mean(vl[, 2], na.rm=T)
+#values(gradstack)[is.na(vg[, 1]), ] = mean(vg[, 1], na.rm=T)
+
+R = getR(fit2, stack(crop(locstack, ext)), stack(crop(gradstack, ext)), grad.point.decreasing = FALSE, xygrad=TRUE, stack.xgrad=stack(crop(gradxstack, ext)),
+         stack.ygrad=stack(crop(gradystack, ext)))
+pi = get.UD(R)
+ud = crop(unstack(locstack)[[1]], ext)
+values(ud) = log(pi)
+plot(ud, xlab="Longitude", ylab="Latitude", main="Colors indicate long-term log(probability of use)")
+# points(pig1$longitude[1:17000], pig1$latitude[1:17000], pch=19, cex=0.1)
+
+#points(pig1$longitude[1:10000], pig1$latitude[1:10000])
+```
+
+You can clearly see the effect of the forest variable on the long-term resource utilization distribution.  Moreover, the location of grain, hay, and seeds (see plot above) results in a higher probability of long term use in the region surrounding these fields.  The diminishing "pull" of grain, hay and seeds with distance from the fields is a result of allowing the "pull" to decay with $\exp(-\text{(distance from field)}^2)$.  **It will be important to explore the nature of this distance decay as this will affect the predicted long-term resource utilization distribution.** This relates to the scale of resource selection [e.g. @Laforge2015; @Northrup2016] 
+
+## Time-varying resource use
+
+The above analysis focuses on *time-invariant* resource use.  It is likely more realistic that these effects are time-variant. It is easy to incorporate time-varying effects of resource use into this framework to ask questions such as: *How does a pig's use of forest change over the course of a day?*
+
+For example, after running an analysis in which we allow the effects of covariates to vary with the hour of day, we find that pig \#20125 tends to move slower in forest relative to non-forest during the day, with this effect diminishing in the early morning and the evening.  
+
+```{r, echo=FALSE}
+library(glmnet)
+pglmdat$hour = hour(pglmdat$datetime)
+
+df = 8
+# Build time-dependent design matrix
+bs_hours = bs(pglmdat$hour, df=df) # B-spline basis for time effect
+bs_hours_forest_loc = pglmdat$forest_loc * bs_hours
+bs_hours_crw = pglmdat$crw * bs_hours
+bs_hours_ndvi_loc = pglmdat$ndvi_loc * bs_hours
+bs_hours_ndvi_grad = pglmdat$ndvi_grad * bs_hours
+bs_hours_grain_grad = pglmdat$grain_grad * bs_hours
+X = cbind(1, bs_hours, bs_hours_forest_loc, bs_hours_crw, bs_hours_ndvi_loc, 
+                bs_hours_ndvi_grad, bs_hours_grain_grad)
+colnames(X) = c("Intercept", paste0("hour_", 1:df), paste0("hforest_", 1:df), paste0("hcrw_",  1:df),
+                 paste0("hnloc_",  1:df), paste0("hngrad_",  1:df), paste0("hggrad_",  1:df))
+
+ind = complete.cases(X)
+# fit_time1 and fit_time2 are the same, just showing how to build the basis design matrix
+fit_time2 = glm.fit(x=X[ind, ], y=pglmdat$z[ind], family=poisson(link="log"), offset=log(pglmdat$tau[ind]))
+
+fit_timecv = glmnet(X[ind, ], y=pglmdat$z[ind], family="poisson", offset=log(pglmdat$tau[ind]), alpha=1, nlambda=20)
+# fit_cv = cv.glmnet(model.matrix(fit), y=glm_data$z, family="poisson", offset=log(glm_data$tau), alpha=1)
+```
+
+```{r, echo=FALSE}
+mod_coefs = fit_timecv$beta[, 10]
+hour_betas = mod_coefs[2:(2 + df - 1)]
+forest_betas = mod_coefs[10:(10 + df - 1)]
+crw_betas = mod_coefs[18:(18 + df - 1)]
+ndviloc_betas = mod_coefs[26:(26 + df - 1)]
+ndviloc_betas = mod_coefs[34:(34 + df - 1)]
+ndvigrad_betas = mod_coefs[34:(34 + df - 1)]
+graingrad_betas = mod_coefs[42:(42 + df - 1)]
+hrvals = bs_hours %*% t(t(hour_betas)) + mod_coefs[1]
+frvals = bs_hours %*% t(t(forest_betas))
+crwvals = bs_hours %*% t(t(crw_betas))
+ndvilocvals = bs_hours %*% t(t(ndviloc_betas))
+graingrad_vals = bs_hours %*% t(t(graingrad_betas))
+
+od = order(pglmdat$hour)
+#plot(pglmdat$hour[od], hrvals[od], type="l", xlab="Hours", ylab="Hour effect")
+
+#jpeg("../results/timeforest.jpg",  width=400, height=300)
+plot(pglmdat$hour[od], frvals[od], type="l", xlab="Hour of the day", ylab="Forest effect")
+#plot(pglmdat$hour[od], ndvilocvals[od], type="l", xlab="Hours", ylab="NDVI loc effect")
+#plot(pglmdat$hour[od], graingrad_vals[od], type="l", xlab="Hours", ylab="Grain gradient effect")
+#dev.off()
+#ggplot(data=NULL) + geom_line(aes(x=glm_data$hours[od], y=frvals[od])) + theme_bw() + xlab("Hour of day") + ylab("Forest effect")
+#ggsave("../results/timeforest.jpg", width=5, height=3)
+#plot(pglmdat$hour[od], crwvals[od], type="l", xlab="Hours", ylab="CRW effect")
+
+```
+
+## Individual variation in resource use
+
+The previous analysis just focused on a single pig.  However, the Camp Bullis data consists of 32 pigs.  How do the effects of covariates/resources vary across pigs in this population?
+
+For example, we can examine how the effect of forest varies between individuals in the population
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+library(parallel)
+
+ppigs = function(i, allpigs, numpoints, buffer, timestep){
+  
+  unqpig = unique(allpigs$pigID)
+  
+  cat("Working on pig", i, "of", length(unqpig), ":", unqpig[i], "\n")
+        
+  pigdata = allpigs[pigID == unqpig[i], ]
+  
+  extobj = extent(min(pigdata$longitude) - buffer, max(pigdata$longitude) + buffer, 
+                  min(pigdata$latitude) - buffer, max(pigdata$latitude) + buffer)
+  
+  loc_stack = process_covariates(c("temperature", "croplayer", "ndvi"), "txcamp", extobj, 
+                                 min(pigdata$datetime), max(pigdata$datetime), ext="loc")
+  grad_stack = process_covariates(c("ndvi"), "txcamp", extobj, 
+                                 min(pigdata$datetime), max(pigdata$datetime), ext="grad")
+  gradxy_stack = process_covariates(c("croplayer"), "txcamp", extobj, 
+                                 min(pigdata$datetime), max(pigdata$datetime), ext="grad",
+                                 distgrad=TRUE)
+  
+  gradx_stack = lapply(gradxy_stack, function(m) m$xgrad)
+  grady_stack = lapply(gradxy_stack, function(m) m$ygrad)
+  
+  # Ensure projections are the same
+  locnames = names(loc_stack)
+  loc_stackproj = stack(lapply(loc_stack, function(x) projectRaster(x, loc_stack[['forest_2016_loc']],
+                                                                                method="ngb")))
+  grad_stackproj = stack(lapply(grad_stack, function(x) projectRaster(x, loc_stack[['forest_2016_loc']],
+                                                                                method="bilinear")))
+  gradx_stackproj = stack(lapply(gradx_stack, function(x) projectRaster(x, loc_stack[['forest_2016_loc']],
+                                                                                method="ngb")))
+  grady_stackproj = stack(lapply(grady_stack, function(x) projectRaster(x, loc_stack[['forest_2016_loc']],
+                                                                                method="ngb")))
+  
+  pigdata = pigdata[, list(x=longitude, y=latitude, datetime=datetime)]
+  tglmdat = fit_ctmcmodel(pigdata[1:numpoints, ], unqpig[i], loc_stackproj, grad_stackproj, 
+                          method="interp", impute=1, timestep=timestep,
+                          buffer=buffer, mc.cores=1, path2ctmcMethod="ShortestPath",
+                          xygrad=TRUE, xgrad.stack = gradx_stackproj, ygrad.stack = grady_stackproj)
+  
+  cat("Done with pig", i, "of", length(unqpig), ":", unqpig[i], "\n")
+  return(tglmdat)
+}
+
+unqpig = unique(longdat2$pigID)
+sink("log_ctmc.txt")
+allglmdat = mclapply(1:length(unqpig), ppigs, longdat2, 5000, 0.001, "15 mins", mc.cores=4)
+sink()
+
+```
+
+
+```{r, echo=FALSE}
+
+tallglm = process_glmdata(allglmdat,
+                            c("temperature", "ndvi.*loc", "ndvi.*grad", "forest.*loc",
+                              "crop.*loc", "openwater.*loc", "grain.*loc", "crop.*grad", 
+                              "grain.*grad", "openwater.*grad"),
+                            c("temperature_loc", "ndvi_loc", "ndvi_grad", "forest_loc", 
+                              "crop_loc", "water_loc", "grain_loc", "crop_grad", "grain_grad", "water_grad"),
+                            c("my", "my", "my", "y", "y", "y", "y", "y", "y", "y"))
+
+tallglm_form = lapply(tallglm, function(x) x[, c('z', 'pigID', 'temperature_loc', 'ndvi_loc', 'ndvi_grad', 
+                                      'forest_loc', 'crop_loc', 'water_loc', 'grain_loc', "crop_grad", 
+                                      "grain_grad", "water_grad", 'imputeID', 
+                                      'crw', 'x.current', 'y.current', 'x.adj', 'y.adj', 'tau', 't', 'datetime')])
+
+txcampglm = as.data.table(do.call(rbind, tallglm_form))
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+library(data.table)
+txcampglm = fread("alltxcamp_glm.csv")
+```
+
+```{r, echo=FALSE}
+fit_full = glm(z ~ forest_loc + scale(ndvi_loc) + scale(ndvi_grad) + 
+                            scale(grain_grad) + scale(crop_grad) +
+                            scale(water_grad) + scale(crw), family='poisson', offset=log(tau), data=txcampglm)
+
+fit_full2 = glm(z ~ forest_loc*pigID + scale(ndvi_loc) + scale(ndvi_grad) + 
+                            scale(grain_grad) + scale(crop_grad) +
+                            scale(water_grad) + scale(crw), family='poisson', offset=log(tau), data=txcampglm)
+```
+
+```{r, echo=FALSE}
+forest_effs = c(fit_full2$coefficients[2], fit_full2$coefficients[2] + fit_full2$coefficients[40:70])
+vmat = vcov(fit_full2)[c(2, 40:70), c(2, 40:70)]
+vars = c(vmat[1, 1], sapply(2:32, function(i) vmat[1, 1] + vmat[i, i] + 2*vmat[1, i])) 
+vdat = data.table(cfs=forest_effs, upper=forest_effs + 1.96*sqrt(vars), lower=forest_effs - 1.96*sqrt(vars), 
+                  pigID=unique(txcampglm$pigID))
+pigatt = fread("../data/formatted/pig_attributes.csv")
+vdat = merge(vdat, pigatt, by="pigID")[order(cfs), ]
+vdat$pigID = factor(vdat$pigID, levels=vdat$pigID, ordered=T)
+
+ggplot(data=vdat) + geom_errorbarh(aes(y=pigID, x=cfs, xmin=lower, xmax=upper)) + geom_point(aes(x=cfs, y=pigID, color=sex)) + theme_bw() + geom_vline(aes(xintercept=0)) + xlab("Effect of forest on movement and 95% CI")
+boxplot(forest_effs, ylab="Forest effect", xlab="32 Camp Bullis pigs")
+```
+
+```{r, echo=FALSE}
+# Fit the model with Stan and a random effect of pigID...this is brutally slow in Stan too, particularly witht eh size of the data.
+library(rstan)
+trundat = txcampglm[pigID %in% unique(pigID)[1:3]]
+
+ind = complete.cases(trundat)
+X = as.matrix(trundat[ind][, list(forest_loc, ndvi_loc=scale(ndvi_loc), 
+                                         ndvi_grad=scale(ndvi_grad), 
+                                         crop_grad=scale(crop_grad), 
+                                         grain_grad=scale(grain_grad), 
+                                         water_grad=scale(water_grad), 
+                                         crw=scale(crw))])
+oset = log(trundat$tau[ind])
+z = trundat$z[ind]
+pigIDs = rethinking::coerce_index(trundat$pigID[ind])
+Z = model.matrix(~ as.factor(pigIDs) - 1)
+
+standata = list(N=nrow(trundat[ind]),
+                P=length(unique(pigIDs)),
+                C=ncol(X),
+                z=z,
+                Z = Z,
+                pigID=pigIDs,
+                X=X,
+                offset=oset)
+
+stanfit = stan("stan_files/ctmc_model.stan", data=standata, warmup=200, iter=500, chains=3, cores=3)
+```
+
+```{r, echo=FALSE}
+sum = summary(fit_full)
+```
+
+Generally, Camp Bullis pigs move slower in forested habitat than in non-forested habitat.
+
+## Next steps
+
+1. **Comparing resource use across populations**
+  - The framework proposed here will allow us to explore how resource use varies across populations as well as within populations.  One challenge will be ensuring that the covariates that we use are comparable across populations.
+2. **Validating the model**
+  - Sure, you can fit these models.  But how do you know that they are actually doing a good job describing the observed patterns?  Here are a few simple goodness-of-fit tests that could be useful
+  a. Compare the one-step-ahead likelihood of the data under the CTMC model and the one-step-ahead likelihood of the data under a correlated random walk.  A simple test would be does the resource-based model do better than assuming the data are following a correlated random walk? 
+  b. Use the model to simulate the trajectories of animal movement on the landscape. The number of events in the simulate (i.e. movements) should be the same between the simulated and observed data.  For each simulated trajectory, compute the likelihood of the trajectory given the model.  Repeat many times and then compared the likelihood of the observed trajectory  with the simulated likelihoods.  This parametric bootstrap approach should provide a measure of overall model fit (e.g. Is your model reasonably likely to generate data that looks like the observed data?)
+3. **Including additional covariates**  
+  - We have compiled a list of many other covariates which will be important to explore.
+  - Particularly, when we implement this across studies, we will want to explore how aspects such as temperature, snow depth, and ecoregion interact with other covariates to affect resource use.
+4. **The role of distance decay on the "pull" of resources**
+  - How does the distance from a resource (e.g. cropland) influence the "pull" of that resource on a pig?
+  - Does this vary across resources? Across populations?
+
+
+
+
+```{r, echo=FALSE}
+# 
+# # Format various time-dependent measures
+# glm_data$datetime = as.POSIXct(glm_data$t, origin = '1970-01-01', tz = 'GMT')
+# glm_data$hour = hour(glm_data$datetime)
+# glm_data$month = month(glm_data$datetime)
+# glm_data$year = year(glm_data$datetime)
+# glm_data$monthyear = paste(glm_data$month, glm_data$year, sep="_")
+# 
+# # Convert temperature data
+# unqtemp = t(glm_data[, unique(.SD), .SDcols = names(glm_data) %like% "temperature"])
+# monthyear = sapply(strsplit(rownames(unqtemp), "_"), function(x) paste(x[[2]], x[[3]], sep="_"))
+# tempdt = data.table(monthyear=monthyear, temperature=unqtemp[, 1])
+# 
+# glm_datatemp = merge(glm_data, tempdt, by="monthyear")
+# 
+# fits = list()
+# for(i in 1:1){
+#   fits[[i]] = glm(z ~ forest_2016_loc + scale(openwater_2016_grad) + scale(crw),
+#                   family="poisson", offset=log(tau), data=glm_datatemp[imputeID == i, ])
+# }
+# 
+# lapply(fits, summary)
+```
+
+
+## References

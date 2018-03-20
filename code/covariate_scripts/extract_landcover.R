@@ -52,8 +52,8 @@ unqgroups = unique(nlcdmeta$grouping)
 # Loop through different studies to format landcover and canopy cover covariates
 for(studynm in study_sum$study){
 
-	# Select a few studies to process...michigan is quite slow.
-	if(any(studynm %in% c("txcamp", "tejon", "tx_tyler_w2","fl_raoul", "srel_contact"))) {
+	# Select a few studies to process
+	if(any(studynm %in% c("tx_tyler_w1"))) { #"txcamp", "tejon", "tx_tyler_w2","fl_raoul", "srel_contact"))) {
 
 		cat("Processing", studynm, "\n")
 

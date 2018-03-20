@@ -17,7 +17,7 @@ crs_string = "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0"
 
 for(studynm in unique(study_sum$study)){
 
-	if(studynm %in% c('srel_contact')) {
+	if(studynm %in% c('tx_tyler_w1')) {
 
 		cat("Processing elevation for", studynm, "\n")
 

@@ -37,7 +37,7 @@ Of these variables *NDVI*, *Temperature*, *Precipication*, and *Snow depth* vary
 
 Here are some brief summary plots of the populations that are being analyzed. One plot looks at median location of pigs in space and the other gives the break down between male and female pigs in a study.
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 library(data.table)
 library(glmnet)
 library(foreach)
@@ -45,7 +45,7 @@ library(ggplot2)
 require(doMC)
 ```
 
-```{r}
+```{r, echo=FALSE}
 tejondat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/tejon.csv")
 txdat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/txcamp.csv")
 fldat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/fl_raoul.csv")
@@ -68,7 +68,7 @@ txtylerdat = merge(txtylerdat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
 srelcdat = merge(srelcdat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
 ```
 
-```{r}
+```{r, echo=FALSE}
 pig1 = tejondat[pigID == "tejonM302"]
 
 res = build_design_matrix(pig1, c("crop"), modeltype="main_effects")
@@ -88,18 +88,18 @@ fit_model1 = cv.glmnet(Xmat, y=pig1$z, offset=log(pig1$tau), family="poisson",
 
 ```
 
-```{r}
+```{r, echo=FALSE}
 plot(fit_model1)
 fit_model1$glmnet.fit$beta[, 10, drop=F]
 ```
 
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 source("pigfxns.R")
 dataset = list(txcamp=txdat, tejon=tejondat, fl_raoul=fldat, tx_tyler_w2=txtylerdat, srel_contact=srelcdat)
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 for(studynm in names(dataset)){
 
   dat = dataset[[studynm]]
@@ -129,7 +129,7 @@ This model is giving us a sense of overall patterns in how pigs are using foragi
 
 Fit the GLM LASSO model to each dataset
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 require(doMC)
 
 allmodel1_fits = list()
@@ -141,6 +141,8 @@ for(studynm in names(dataset)){
   dat = dataset[[studynm]]
   
   # Following Buderman et al. standardize on a per pig level, rather than across all pigs?
+  
+  
   res = build_design_matrix(dat, c("crop"), modeltype="main_effects")
   dat = res$data
   dataset[[studynm]] = res$data
@@ -159,9 +161,13 @@ for(studynm in names(dataset)){
 }
 ```
 
+```{r, echo=FALSE, message=FALSE}
+fwrite(as.data.table(allXs[["tejon"]]), "../results/temp_Xtejon.csv")
+```
+
 Examine the results of the regularized model fit. 
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 
 mod1_betas = list()
 for(studynm in names(allmodel1_fits)){
@@ -199,9 +205,19 @@ ggplot(mod1betas) + geom_point(aes(x=study, y=beta, color=study), size=4) + face
 1. `canopycover_loc`: For all studies, pigs tended to spend more time in higher cover habitat relative to lower cover habitat
 2. `canopycover_grad`: For all studies, either showed no directional bias or tended to move toward higher cover habitat.
 3. `crw`:  All pigs tended to continue moving in the direction they were previously moving.
+4. `sexM`: In general, male pigs tend to move faster than female pigs, or show no difference.
 
-*Variable effects*
 
+*Strong, but inconsistent effects*
+
+1. All studies show an effect of crop, but the direction varies among studies.  Three studies show that pigs, on average, move slower when they are near crops, but two studies, particularly, Tejon, show that pigs move faster when they are near crops. This could be driven by a single pig in Tejon, will need to account for this. 
+2. There is genearlly a strong affect of `water_loc`, but again this varies by site.  3 of the four sites show that pigs move slower when they are close to water and two sites show slower movement when they are far from water. 
+3. NDVI is surprisingly weak for all populations but Tejon.
+4. Masting locations also shows a variable effect across population.  No signal in fl_raoul or txcamp, pigs do not linger in masting layers in srel of tx tyler, and pigs stay longer in masting layer in Tejon.
+
+*No effects*
+
+Many of the gradient effects are unimportant, particularly after accounting for directional persistence.
 
 ## Model 2:  Time-varying analysis for studies
 
@@ -214,7 +230,7 @@ ggplot(mod1betas) + geom_point(aes(x=study, y=beta, color=study), size=4) + face
   *Monthly efects*: Canopy cover, forage resources, and distance to water.  Note NDVI is already varying by month, so I am not sure it makes a ton of sense to model a time-varying coefficient for this variable. Doing it anyway for now. 
 
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 source("pigfxns.R")
 df_hour = 6 # Number of basis vectors for the splines for hour
 
@@ -247,29 +263,30 @@ for(studynm in names(dataset)){
 
 Explore the nature of the time-varying effects after LASSO regularization.  Extract the betas that minimize CV Deviance. 
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 
-gambetas = list()
+model2betas = list()
 for(studynm in names(allmodel2_fits)){
   
   tfit = allmodel2_fits[[studynm]]
   #plot(tfit)
-  gambetas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=T]
+  model2betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=T]
 }
 ```
 
 After regularization, how do these effects vary with time?  Let's look at the daily effect on movement rate first
 
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 library(ggplot2)
 
+alldaily = list()
 for(studynm in names(dataset)){
   
   dat = dataset[[studynm]]
   splinehour = s(hourofday, bs="cc", k=df_hour)
   pred_hours = Predict.matrix(smooth.construct2(splinehour, dat, NULL), data.frame(hourofday=0:23)) # B-spline basis for hour effect
-  bestbetas = gambetas[[studynm]]
+  bestbetas = model2betas[[studynm]]
   
   dailyres = list()
   for(pattern in c("hour_*")){
@@ -280,10 +297,18 @@ for(studynm in names(dataset)){
   }
   
   dailyres = do.call(rbind, dailyres)
-  tplot = ggplot(dailyres) + geom_line(aes(x=hour, y=beta)) + xlab("Hour of day") + ylab("Daily Rate") + theme_bw() + facet_wrap(~coef) + ggtitle(studynm)
+  dailyres$study = studynm
+  alldaily[[studynm]] = dailyres
+  tplot = ggplot(dailyres) + geom_line(aes(x=hour, y=beta)) + xlab("Hour of day") + ylab("Effect on hourly movement rate") + theme_bw() + facet_wrap(~coef) + ggtitle(studynm)
   print(tplot)
   
 }
+
+alldaily = do.call(rbind, alldaily)
+ggplot(alldaily) + geom_line(aes(x=hour, y=beta, color=study)) + xlab("Hour of day") + ylab("Effect on hourly movement rate") + theme_bw() + facet_wrap(~coef) + ggtitle("Combined")
+
+
+
 ```
 
 
@@ -293,7 +318,7 @@ As expected, all pigs show reduced movement rates at some time of the day, but t
 
 Now let's look at how our covariates vary with month.
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 
 allmonthres = list()
 for(studynm in names(dataset)){
@@ -310,7 +335,7 @@ for(studynm in names(dataset)){
     pred_months = Predict.matrix(smooth.construct2(splinemonth, dat, NULL), data.frame(monthofyear=seq(minmonth, maxmonth, len=20)))
   else
     pred_months = t(t(rep(1, 20)))
-  bestbetas = gambetas[[studynm]]
+  bestbetas = model2betas[[studynm]]
   
   monthres = list()
   for(pattern in c("cover_loc_*", "cover_grad_*", "crop_grad_*", "crop_loc_*", "water_loc_*", "water_grad_*",
@@ -338,34 +363,49 @@ print(tplot)
 ```
 
 
-Some interesting population-specific effects
+Some interesting/difficult to interpret population-specific effects
 
 **Tejon**
 
-1. The Tejon population shows strong seasonal variation in selection for resources
-2. During the summer months there is a tendency to move toward crops and move faster once near crops.
-3. This effect diminshes in the winter months in which there is a tendency to spend more time in cells with increased density of masting trees.  In contrast, there is a tendency to spend less time in cells with high masting density in the summer.  
+There seems to be the strongest temporal variation in resource selection in Tejon pigs. 
 
+Some interpretable patterns
+
+1. During the summer months there is less tendency to move away from crops, though pigs tend to move faster near crops during these months. Not sure how to interpret that.
+2. Pigs move much slower in the masting layer in the winter, fall, and spring months, and do not spend much time in high density masting tree layers in the summer.
+3. Pigs spend much more time in high NDVI cells suring the summer, after accounting for cover.
+
+This seems to be evidence for temporal resource swapping
 
 **Camp Bullis**
 
 1. Relatively weak seasonal effects of resource selection
 
-**Florida, `fl_raoul`**
+**Florida, Raoul**
 
+1. Without error bars this is tough to say, but it looks like over the five months of the study, pigs are selecting for crop resources (spending more time near resources and moving toward these resources) in the early spring with this effect diminishing into May. While the diminishing effect looks quite strong, I am not sure it actually is once we put error bars around this.
+2. Tenatively, it looks like these pigs might be spending more time in high NDVI and high masting density cells once they start leaving crop fields. Again, tough to say here without error bars.
 
+**Texas, Tyler w2**
 
+1. No monthly variation in data because we only have two months of data.
+
+**SREL contact**
+
+1. Some suggestion for movement toward crops and more time spent near crops in the Fall months.
+2. This corresponds with less time spent in high density masting tree layers and high NDVI layers.
+
+For three out of the 5 studies, there is decent evidence that, as we'd probably expect, pigs are showing temporal shifts between natural resource and anthropogenic resource selection. 
 
 ## Model 3: Interactive effects of resources on pig movement
 
-This model is examining 
+This model is examining whether the presence of one forage resource effects how pigs use another.  Specifically looking for interactions between foraging resources.
 
 In others words, given a pig is in or near a natural or agricultural resource, how does the presence of another resource (or distance to that resource) affect the time the pigs spends in the current resource.
 
 For this analysis, we are going to keep the strong effects of hour and month on general movement patterns, but only consider interactions between static forage resources (i.e. the effects of resources are not time varying). 
 
-
-```{r}
+```{r, echo=FALSE, message=FALSE}
 source("pigfxns.R")
 
 allmodel3_fits = list()
@@ -393,7 +433,7 @@ for(studynm in names(dataset)){
 }
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 
 mod3betas = list()
 for(studynm in names(allmodel3_fits)){
@@ -402,7 +442,7 @@ for(studynm in names(allmodel3_fits)){
   #plot(tfit)
   print(studynm)
   print(tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=F])
-  mod3betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=T]
+  mod3betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=T]
 }
 ```
 
@@ -423,11 +463,18 @@ ggplot(mod3betas_new) + geom_point(aes(x=study, y=betas, color=study), size=4) +
               geom_hline(aes(yintercept=0)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8))
 ```
 
+A few interesting interactive effects, but nothing consistent across populations.  
+
+1. In Florida Raoul and Tx Tyler W2 there is an interaction between crop_loc and masting_loc, such that as pigs increase their tendency to spend more time near crops they decrease the time they spend in high masting layers. 
+2. For Tejon, there is a positive interaction between NDVI and crop_loc, such that as bigs increase their tendency to spend more time near crops, they spend less time in habitats with high NDVI.
+
+These interactions probably also vary with time. Haven't looked at that yet.
+
 ## Step 4: Replacing time-varying parameters with temperature, precipitation, and snow cover interactions
 
-This will be similar to model 2, but instead of basis functions that vary by month (we will keep the daily basis function), we will replace these effect by interactions with temperature and precipitation. 
+This will be similar to model 2, but instead of basis functions that vary by month (we will keep the daily basis function), we will replace these effect by interactions with temperature and precipitation.  This model is trying to get at the mechanistic time varying effects 
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 source("pigfxns.R")
 
 allmodel4_fits = list()
@@ -453,7 +500,7 @@ for(studynm in names(dataset)){
 }
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 mod4betas = list()
 
 for(studynm in names(allmodel4_fits)){
@@ -466,12 +513,12 @@ for(studynm in names(allmodel4_fits)){
 }
 ```
 
-```{r, fig.height=10, fig.width=15}
+```{r, fig.height=15, fig.width=20}
 tmpdt = list()
 
 for(studynm in names(mod3betas)){
   
-  betas = mod4betas[[studynm]][1:36]
+  betas = mod4betas[[studynm]][1:39]
   nms = names(betas)
   dt = data.table(coef=nms, betas, study=studynm)
   tmpdt[[studynm]] = dt
@@ -479,20 +526,34 @@ for(studynm in names(mod3betas)){
 
 mod4betas_new = do.call(rbind, tmpdt)
 ggplot(mod4betas_new) + geom_point(aes(x=study, y=betas, color=study), size=4) + facet_wrap(~coef,  scales='free') + 
-              geom_hline(aes(yintercept=0)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8))
+              geom_hline(aes(yintercept=0)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8),
+                                                                 strip.text.x = element_text(size = 10))
 ```
 
+*Consistent Effects*
 
-Plot the temperature, precipitation, and NDVI effects over "month of year"
+1. As temperature increases, there is an increased tendency to move toward cover for most studies.
+2. Increasing temperature increases time spent in high NDVI cells
+3. Increased precipitation and temperature generally increases or has no effect on time spend in high masting cells
+4. A consistent effect interaction between temperature and precipitation on water use.  Not much to say here other than seasonality, as reflected by this interaction, affect water use.
 
-```{r}
+---
 
+Plot the temperature, precipitation, and NDVI effects over "month of year" to see how these variables are chaning over the study period.
+
+```{r, echo=FALSE, message=FALSE}
+
+# Plot standardized temp, 
 for(studynm in names(dataset)){
   
   dat = dataset[[studynm]]
-  meanvals = dat[, list(meantemp=mean(temperature_loc_z), meanprecip=mean(precipitation_loc_z), meanndvi=mean(ndvi_loc_z)), by=monthofyear]
-  tplot = ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meanndvi, color="NDVI")) + geom_line(aes(x=monthofyear, y=meantemp, color="Temperature")) + 
-                        geom_line(aes(x=monthofyear, y=meanprecip, color="Precipitation")) + theme_bw() + ylab("Standardized value") + xlab("Month of year") + 
+  dat[, snowdepth_loc_z:= scale(snowdepth_loc)]
+  meanvals = dat[, list(meantemp=mean(temperature_loc_z), meanprecip=mean(precipitation_loc_z), meanndvi=mean(ndvi_loc_z), meansnow=mean(snowdepth_loc_z)), by=monthofyear]
+  tplot = ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meanndvi, color="NDVI")) + 
+                        geom_line(aes(x=monthofyear, y=meantemp, color="Temperature")) + 
+                        geom_line(aes(x=monthofyear, y=meanprecip, color="Precipitation")) + 
+                        geom_line(aes(x=monthofyear, y=meansnow, color="Snow depth")) + 
+                        theme_bw() + ylab("Standardized value") + xlab("Month of year") + 
                         ggtitle(studynm)
   print(tplot)
 
@@ -501,38 +562,25 @@ for(studynm in names(dataset)){
 ```
 
 
-There is less spatial variability in "natural" forage resources in Camp Bullis than in Tejon, which could diminish the effect on movement. Could be an interesting population-level predictor to consider for why the the role of natural vs crop resources on pig movement varies between population. The hypothesis is that with more homogeneous resource distributions (at what scale?), there is less signature of resource selection as pigs can wander more freely without worrying about getting to or staying in a particular resource patch. In general, the effects of all resources seem to be less in Camp Bullis, and I would suspect that has to do with the generally availability of resource (water and forage), though it would be nice to confirm this.  If each chosen cell is "as good as" the next, then resource selection should have little effect on pig movement and movement should be dominated by a random walk or other biological factors (escape from predation?).  This can also be a function of scale, where increasing spatial resolution can increase homogeneity and decrease the signature of foraging resource selection. 
-
 
 ---
 
-## Post-hoc population-level analyses
+## TODO: Post-hoc population-level analyses
 
-Ok, so we have estimated the effects of various foraging resources on pig movement among different populations, now the goal is to ask how there 
+Ok, so we have estimated the effects of various foraging resources on pig movement among different populations, now the goal is to ask what population-level variables (average snow depth, forage resource heterogeneity, ) affect how pig's use anthropogenic and natural forage resources.  Are the consistent population-level or environmental predictors that can account for variation in resource use across populations?  
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 
 sumdats = list()
 for(studynm in names(dataset)){
   
   dat = dataset[[studynm]]
-  sumdat = dat[z == 1, lapply(list(ndvi=ndvi_loc, crop=crop_loc, masting=masting_loc, water=water_loc, dev=developed_loc), function(x) quantile(x, c(0.5)))]
+  sumdat = dat[z == 1, lapply(list(ndvi=ndvi_loc, crop=crop_loc, masting=masting_loc, water=water_loc, dev=developed_loc), function(x) quantile(x, c(0.25, 0.5, 0.75)))]
   sumdat$study = studynm
   sumdats[[studynm]] = sumdat
   
 }
 
 sumdatsdt = do.call(rbind, sumdats)
-
-```
-
-
-```{r}
-sindx = function(x, h){
-  Im(sin(x)) / h
-}
-
-sindx(complex(real=2, imaginary = 10^-50), h=10^-50)
--cos(2)
 
 ```

@@ -524,7 +524,7 @@ set_direction_weights = function(past_direction, next_directions){
 
 sim_traj = function(R, fit, start, steps=100){
   # Simulate the discrete time steps of animal movement based on the CTMC 
-  # generator matrix R, and the the GLM model.  
+  # generator matrix R, and the GLM model.  
   # 
   # At the moment, the model can't have time dependent covariates.
   #
@@ -820,6 +820,10 @@ add_covariates = function(fullglm, covariates, studynm,
   #   Strings containing the various covariates to add
   # basedir : string
   #   The location of the covariate data
+  #
+  # Notes
+  # -----
+  # There will need to be conditions for each possible covariate
 
   if("drought" %in% covariates){
 
@@ -867,6 +871,11 @@ get_regex_columns = function(lgvars, croptypes, landcovertypes, ext){
   # ext : string
   #   Either "grad" or "loc" depending on whether the variables are gradient or 
   #   location variables.
+  #
+  # Returns
+  # -------
+  # : vector of strings
+  #   The regex representations of the location of gradient variables
 
   regexnms = list()
   for(lvar in lgvars){
@@ -950,14 +959,20 @@ get_distance_vect = function(longlat){
 
 
 runs = function(x, ctime=60, clength=10, ctimemin=0){
-  # Given a vector of time differneces X
+  # Given a vector of time differences X
   # determine if the vector has a run of 
   # clength or greater of diffs < ctime (in minutes). 
+  #
   # Parameters
   # ----------
   # x : vector of datetimes
   # ctime : Diffs must be less than or equal to this time
   # clength : Length of a run
+  #
+  # Returns
+  # -------
+  # : bool
+  #     TRUE or FALSE depending if if the vector meets the criteria
   
   # Notes
   # -----
@@ -988,7 +1003,7 @@ split_runs = function(x, ctime=60, clength=10, ctimemin=0){
   #
   # Returns
   # -------
-  # : a list of indices that fullfill the criteria
+  # : a list of indexes in x that fulfill the criteria
 
   deltat = diff(x)
   units(deltat) = "mins"
@@ -1146,6 +1161,8 @@ get_distance_to_gradient = function(rast, decay=1){
   # ----------
   # raster : RasterLayer object
   #   RasterLayer with 0 and 1 values
+  # decay : float
+  #   The role of distance decay on influencing the the "pull" of a resource
   #
   # Returns
   # -------
@@ -1229,6 +1246,16 @@ build_design_matrix = function(data, croptypes, modeltype="main_effects",
   #   The crop types to make into covariates (e.g. c("crop"))
   # noncrop_scaledvars : vector of strings
   #   The other variables to standardize in the analysis
+  # modeltype : string
+  #   Either "maineffect", "interactions", or "full". These make design matrices
+  #   with different numbers of covariates
+  #
+  # Returns
+  # -------
+  # : list(evalform, data)
+  #   Contains and R formula `evalform` with the appropriate structure and the 
+  #   `data` with the standardized columns.  model.matrix(evalform, data) will
+  #   make the design matrix.
 
   locvars = paste0(croptypes, "_loc")
   gradvars = paste0(croptypes, "_grad")
@@ -1379,15 +1406,29 @@ build_design_matrix = function(data, croptypes, modeltype="main_effects",
 
 build_gam_design_matrix = function(Xmat, dat, covar_use, df_hour=3, df_month=3, 
                                     cyclic_year=TRUE){
-  #
+  # Build the GAM design matrix for time varying effects
   #
   # Parameters
   # ----------
+  # Xmat : matrix
+  #   Design matrix with standardized main effects
   # dat : data.table
   #   Data.table that at least has the variables hourofday and monthofyear
+  # covar_use : vector of strings
+  #   List of main effects in Xmat to include as static main effects in the GAM
+  # df_hour : int
+  #   df_hour - 1 is the number of basis expansions used for the cyclic hour effect
+  # df_month : int
+  #   df_month is the number of basis expansions used for the non-cyclic month effect.
+  #   df_month - 1 are used is cyclic_year=TRUE
   # cyclic_year : bool
   #   If True, its a cyclic spline to year.  Useful if the collar data is over
   #   the course of the whole year.  Otherwise, fit a standard cubic spline.
+  #
+  # Returns
+  # -------
+  # : matrix
+  #   The GAM design matrix
 
   splinehour = s(hourofday, bs="cc", k=df_hour) # Build time-dependent design matrix for a cyclic cubic spline
   bs_hours = smooth.construct2(splinehour, dat, NULL)$X # B-spline basis for hour effect
@@ -1406,8 +1447,6 @@ build_gam_design_matrix = function(Xmat, dat, covar_use, df_hour=3, df_month=3,
       df_month = 2
     }
   }
-
-
 
   # Make time-varying effects
   bs_months_coverloc_effect = Xmat[, "canopycover_loc_z"] * bs_months # Allows the effect of canopy cover to vary with time of day
@@ -1445,7 +1484,11 @@ build_gam_design_matrix = function(Xmat, dat, covar_use, df_hour=3, df_month=3,
   return(Xgam)
 }
 
+
+
 diffunits = function(x){
+  # Helper function to get the differences of a datetime vector in the same units
+  # x is a datetime vector
   dt = diff(x)
   units(dt) = "mins"
   return(dt)

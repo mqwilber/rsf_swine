@@ -1,8 +1,6 @@
 ## Functions to clean each study individually
 
-## TODO:  Consider dropping the poor fixes for each study.
 ## TODO: Implemented the Bjonerass cleaning criteria for each study.
-
 
 library(data.table)
 library(ggplot2)
@@ -205,6 +203,27 @@ clean_srel_contact = function(plotit=FALSE){
 
 	return(trimdat)
 }
+
+
+	
+	dat = fread("../data/formatted/full_pig_data.csv")
+
+	for(studynm in unique(dat$study)){
+		fl = dat[study == studynm]
+
+		# Look at fix time distribution...looks reasonable
+		fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
+		fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
+
+		# There are 12 of 18 pigs that meet the criteria
+		trimdat = fl
+		goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
+
+		print(studynm)
+		print(sum(goodpigs$goodpig))
+		print(nrow(goodpigs))
+	}
+
 
 
 

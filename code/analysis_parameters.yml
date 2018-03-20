@@ -12,18 +12,19 @@ directions : 4 # Only consider rook neighbors
 
 buffer : 0.003 # Buffer to add to the cropped raster. Helps prevent points outside the range.
 
-locvars : ["temperature", "precipitation", "ndvi", "croplayer", "landcover", "masting", "elevation", "water"] # Location-based covariates
-gradvars : ["ndvi", "landcover", "masting", "croplayer", "elevation", "water"] # Gradient-based covariates
+locvars : ["temperature", "precipitation", "ndvi", "croplayer", "landcover", 
+                      "masting", "elevation", "water", "snowdepth"] # Location-based covariates
+gradvars : ["ndvi", "landcover", "masting", "croplayer", "elevation", "water", "snowdepth"] # Gradient-based covariates
 gradxyvar : ["croplayer", "landcover"] # Distance-to-gradient-based covariates
-landcovertypes : ["wetland", "canopycover", "developed"]
-distgrad_types : ["root_and_tuber", "fruit_and_nuts", "wetland", "cereals", 
+landcovertypes : ["canopycover", "developed"]
+distgrad_types : ["root_and_tuber", "fruit_and_nuts", "cereals", 
                   "grasses", "leguminous"]
 croptypes : ["beverage_and_spice", "cereals", "oilseed", "other", 
                       "fruit_and_nuts", "grasses", "leguminous",
                       "root_and_tuber", "sugar", "tobacco", 
                       "vegetables_and_melons", "crop"]
 fixedtimevars : ["landcover", "masting", "elevation", "water"]
-monthlyvars : ["temperature", "precipitation", "ndvi"]
+monthlyvars : ["temperature", "precipitation", "ndvi", "snowdepth"]
 yearlyvars : ["croplayer"]
 default_cols : ['imputeID', 'crw', 'x.current', 'y.current', 'x.adj', 'y.adj', 
                                           'tau', 't', 'datetime', 'z', 'pigID']
@@ -34,5 +35,9 @@ decay : 1 # The scale of distance decay for a resource
 cores : 4
 covariate_dir : "/Users/mqwilber/Repos/rsf_swine/data/covariate_data"
 baserastype : "_cereals_"
+fact : 1 # The spatial scale at which to project all covariates. The base scale
+         # of "_cereals_" is 30 m by 30 m, fact = 1, is not rescaling and
+         # fact = 8 aggregates to an approximately 250 m by 250 m scale, which 
+         # is consistent with NDVI/EVI
 
 

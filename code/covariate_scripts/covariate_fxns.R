@@ -101,9 +101,9 @@ dist_nearest_neighbor = function(ras, shp){
 		centers = gCentroid(polys, byid=TRUE)
 		pts = rasterToPoints(tras, spatial=TRUE)
 
-		# Distance is in kilometers
+		# Distance is in kilometers, convert to meters
 		mindists = apply(spDists(pts, centers, longlat=TRUE), 1, min)
-		values(tras) = mindists
+		values(tras) = mindists*1000
 
 	} else{
 		values(tras) = NA

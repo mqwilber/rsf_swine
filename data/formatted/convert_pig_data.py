@@ -26,6 +26,8 @@ H:M:S fixes on the GPS dates.
 
 2.1. Errant txcamp points are removed.
 
+2.2. Errant srel_contact points are removed
+
 3. Data are cleaned and IDs are changed to match with pig attributes file
 
 NOTE
@@ -251,6 +253,13 @@ contact_red = contact[~((contact.pigID == "srel_contactPhard drive") | (contact.
                      (contact.pigID == "srel_contactPdata on ") | (contact.pigID == "srel_contactPon original"))]
 
 
+# Remove errant srel_contact points
+ind = (((contact.pigID == "srel_contactP702") & (contact.latitude > 33.33)) | \
+      ((contact.pigID == "srel_contactP705") & (contact.latitude > 33.33)) | \
+      ((contact.pigID == "srel_contactP708") & (contact.latitude < 33.2)))
+
+contact_red = contact_red[~ind]
+
 print("Done")
 
 
@@ -338,6 +347,16 @@ comb_dat = comb_dat[inds]
 comb_dat.loc[:, "datetime"] = pd.to_datetime(comb_dat.datetime)
 comb_dat.loc[:, "longitude"] = comb_dat.longitude.astype(np.float)
 comb_dat.loc[:, "latitude"] = comb_dat.latitude.astype(np.float)
+
+# Reformat all Fixes
+
+# Set all NULL fixes to 3D. An assumption, but given these were cleaned studies
+# not unreasonable
+comb_dat.loc[comb_dat.fixtype.isnull(), "fixtype"] = "3D"
+comb_dat.loc[:, "fixtype"] = comb_dat.fixtype.str.replace(".*3D.*", "3D").str.replace(".*2D.*", "2D").str.replace("Succeeded", "3D")
+
+# Remove the 2D fixes
+comb_dat = comb_dat[comb_dat.fixtype == "3D"]
 
 # Save the resulting pig data
 comb_dat.to_csv("full_pig_data.csv", index=False)

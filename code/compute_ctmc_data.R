@@ -43,14 +43,15 @@ source('clean_studies.R')
 anal_params = yaml.load_file("analysis_parameters.yml")
 sink("log_ctmc.txt") # log file
 
-###########################################################
-## Step 1: Clean individual studies for outliers
-###########################################################
 
-for(studynm in c("txcamp")){
+for(studynm in c("srel_contact", "txcamp")){
 
   #studynm = "tejon"
   cat("Beginning analysis for", studynm, "\n")
+
+  ###########################################################
+  ## Step 1: Clean individual studies for outliers
+  ###########################################################
 
   trimdat = eval(parse(text=paste("clean_", studynm, "(plotit=FALSE)", sep=""))) 
   trimdat$datetime = as.POSIXct(trimdat$datetime, tz="GMT")
@@ -71,17 +72,22 @@ for(studynm in c("txcamp")){
   for(pignm in unqpigs){
     
     tdat = trimdat[pigID == pignm]
-    tdat$run_number = 0 
-    runinds = split_runs(tdat$datetime, ctime=maxtime, clength=minlength)
-    
-    for(i in 1:length(runinds)){
-      inds = runinds[[i]]
-      tdat$run_number[inds] = i
+
+    # Only perform split if pig meets criteria
+    if(runs(tdat$datetime, ctime=130, clength=200)){
+
+      tdat$run_number = 0 
+      runinds = split_runs(tdat$datetime, ctime=maxtime, clength=minlength)
+      
+      for(i in 1:length(runinds)){
+        inds = runinds[[i]]
+        tdat$run_number[inds] = i
+      }
+      
+      keepinds = do.call(c, runinds)
+      rundat = tdat[keepinds]
+      newdat[[pignm]] = rundat
     }
-    
-    keepinds = do.call(c, runinds)
-    rundat = tdat[keepinds]
-    newdat[[pignm]] = rundat
     
   }
 
@@ -145,7 +151,9 @@ for(studynm in c("txcamp")){
     basefiles = Sys.glob(file.path(anal_params$covariate_dir, "croplayer", studynm,
                 paste(studynm, anal_params$baserastype, "*.tif", sep="")))
     baseras = crop(raster(basefiles[1]), extobj)
-    # plot(baseras)
+
+    # Determine the spatial scale of the base raster
+    baseras = aggregate(baseras, fact=anal_params$fact)
 
     loc_stackproj = stack(process_covariates(locvars, studynm, baseras, 
                                    min(tdat$datetime), max(tdat$datetime), 
@@ -226,7 +234,6 @@ for(studynm in c("txcamp")){
   yearlyvars = anal_params$yearlyvars
   default_cols = anal_params$default_cols
 
-  # A bit ugly, but dropping wetland and canopycover so we don't get duplicates. Will probably want to make this cleaner
   regexcols_locs = unlist(get_regex_columns(locvars, croptypes, landcovertypes, "loc"))
   regexcols_grad = unlist(get_regex_columns(gradvars, croptypes, landcovertypes, "grad"))
   #regexcols_gradxy = unlist(get_regex_columns(gradxyvar, distgrad_types, landcovertypes[landcovertypes != "canopycover"], "grad"))
@@ -251,7 +258,7 @@ for(studynm in c("txcamp")){
   ## Step 7: Write the file to disk
   ###########################################################
 
-  fwrite(fullglm, file=paste("../results/glmdata_by_study/", studynm, "2.csv", sep=""))
+  fwrite(fullglm, file=paste("../results/glmdata_by_study/", studynm, ".csv", sep=""))
   cat("Completed analysis for", studynm, "\n")
 
 }

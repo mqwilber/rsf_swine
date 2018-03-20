@@ -15,7 +15,7 @@ study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)
 
 for(studynm in unique(study_sum$study)){
 	
-	if(studynm %in% c("txcamp", "tejon")) {
+	if(studynm %in% c("srel_contact")) {
 
 		cat("Working on", studynm, "\n")
 		dir.create(file.path("../../data/covariate_data/ndvi/", studynm))

@@ -589,7 +589,7 @@ sim_traj = function(R, fit, start, steps=100){
 process_covariates = function(locvars, studynm, baseras, 
           mindate, maxdate, ext,
           cov_path="/Users/mqwilber/Repos/rsf_swine/data/covariate_data",
-          timevar=c("temperature", "ndvi", "precipitation"),
+          timevar=c("temperature", "ndvi", "precipitation", "snowdepth"),
           croptypes=c("beverage_and_spice", "cereals", "oilseed", "other", 
                       "fruit_and_nuts", "grasses", "leguminous",
                       "root_and_tuber", "sugar", "tobacco", 
@@ -1292,10 +1292,19 @@ build_design_matrix = function(data, croptypes, modeltype="main_effects",
 
   } else if(modeltype == "full"){
 
-    base = paste("z ~ crw_z + sex + canopycover_loc_z + canopycover_grad_z ", 
+    base = paste("z ~ crw_z + sex + canopycover_loc_z + canopycover_grad_z ",
+                 "+ temperature_loc_z + precipitation_loc_z ",
+                 "+ temperature_loc_z:precipitation_loc_z ", 
                  "+ canopycover_loc_z:temperature_loc_z ",
                  "+ canopycover_grad_z:temperature_loc_z ",
-                 "+ ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z ",
+                 "+ ndvi_loc_z + ndvi_grad_z ",
+                 "+ ndvi_loc_z:temperature_loc_z ",
+                 "+ ndvi_loc_z:precipitation_loc_z ",
+                 "+ ndvi_loc_z:temperature_loc_z:precipitation_loc_z ",
+                 "+ ndvi_grad_z:temperature_loc_z ",
+                 "+ ndvi_grad_z:precipitation_loc_z ",
+                 "+ ndvi_grad_z:temperature_loc_z:precipitation_loc_z ",
+                 "+ masting_loc_z + masting_grad_z ", 
                  "+ masting_loc_z:temperature_loc_z ", 
                  "+ masting_loc_z:precipitation_loc_z ", 
                  "+ masting_loc_z:temperature_loc_z:precipitation_loc_z ",
@@ -1308,7 +1317,7 @@ build_design_matrix = function(data, croptypes, modeltype="main_effects",
                  "+ water_loc_z + water_loc_z:temperature_loc_z ",
                  "+ water_loc_z:precipitation_loc_z ",
                  "+ water_loc_z:temperature_loc_z:precipitation_loc_z ", 
-                 "+ crop_loc_z + crop_loc_z:temperature_loc_z ",
+                 "+ crop_grad_z + crop_loc_z + crop_loc_z:temperature_loc_z ",
                  "+ crop_loc_z:precipitation_loc_z ", 
                  "+ crop_loc_z:temperature_loc_z:precipitation_loc_z", sep="")
 
@@ -1368,7 +1377,8 @@ build_design_matrix = function(data, croptypes, modeltype="main_effects",
 
 }
 
-build_gam_design_matrix = function(Xmat, dat, covar_use, df=3, cyclic_year=TRUE){
+build_gam_design_matrix = function(Xmat, dat, covar_use, df_hour=3, df_month=3, 
+                                    cyclic_year=TRUE){
   #
   #
   # Parameters
@@ -1379,16 +1389,22 @@ build_gam_design_matrix = function(Xmat, dat, covar_use, df=3, cyclic_year=TRUE)
   #   If True, its a cyclic spline to year.  Useful if the collar data is over
   #   the course of the whole year.  Otherwise, fit a standard cubic spline.
 
-  splinehour = s(hourofday, bs="cc", k=df) # Build time-dependent design matrix for a cyclic cubic spline
+  splinehour = s(hourofday, bs="cc", k=df_hour) # Build time-dependent design matrix for a cyclic cubic spline
   bs_hours = smooth.construct2(splinehour, dat, NULL)$X # B-spline basis for hour effect
 
   if(cyclic_year){
-    splinemonth = s(monthofyear, bs="cc", k=df) # Yearly cyclic spline
+    splinemonth = s(monthofyear, bs="cc", k=df_month) # Yearly cyclic spline
     bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
   }
   else{
-    splinemonth = s(monthofyear, bs="cr", k=df - 1) # Non-cyclic spline for year
-    bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
+
+    if(df_month > 1){
+      splinemonth = s(monthofyear, bs="cr", k=df_month - 1) # Non-cyclic spline for year
+      bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
+    } else{
+      bs_months = t(t(rep(1, nrow(Xmat))))
+      df_month = 2
+    }
   }
 
 
@@ -1415,19 +1431,25 @@ build_gam_design_matrix = function(Xmat, dat, covar_use, df=3, cyclic_year=TRUE)
                    bs_months_mastingloc_effect, bs_months_mastinggrad_effect,
                    bs_months_ndviloc_effect, bs_months_ndvigrad_effect)
 
-  p = df - 1
+  p_month = df_month - 1
+  p_hour = df_hour - 1
+
   colnames(Xgam) = c("(Intercept)", "crw_z", "sexM", 
-                         paste0("hour_", 1:p), paste0("month_", 1:p),
-                         paste0("cover_loc_", 1:p), paste0("cover_grad_", 1:p),
-                         paste0("water_loc_", 1:p), paste0("water_grad_", 1:p),
-                         paste0("crop_loc_", 1:p), paste0("crop_grad_", 1:p),
-                         paste0("masting_loc_", 1:p), paste0("masting_grad_", 1:p),
-                         paste0("ndvi_loc_", 1:p), paste0("ndvi_grad_", 1:p))
+                         paste0("hour_", 1:p_hour), paste0("month_", 1:p_month),
+                         paste0("cover_loc_", 1:p_month), paste0("cover_grad_", 1:p_month),
+                         paste0("water_loc_", 1:p_month), paste0("water_grad_", 1:p_month),
+                         paste0("crop_loc_", 1:p_month), paste0("crop_grad_", 1:p_month),
+                         paste0("masting_loc_", 1:p_month), paste0("masting_grad_", 1:p_month),
+                         paste0("ndvi_loc_", 1:p_month), paste0("ndvi_grad_", 1:p_month))
 
   return(Xgam)
 }
 
-
+diffunits = function(x){
+  dt = diff(x)
+  units(dt) = "mins"
+  return(dt)
+}
 
 
 

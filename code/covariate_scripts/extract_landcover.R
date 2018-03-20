@@ -53,7 +53,7 @@ unqgroups = unique(nlcdmeta$grouping)
 for(studynm in study_sum$study){
 
 	# Select a few studies to process...michigan is quite slow.
-	if(any(studynm %in% c("txcamp"))) {
+	if(any(studynm %in% c("txcamp", "tejon", "tx_tyler_w2","fl_raoul", "srel_contact"))) {
 
 		cat("Processing", studynm, "\n")
 
@@ -87,12 +87,20 @@ for(studynm in study_sum$study){
 			fname = file.path(ftp, paste(studynm, "_", ctype, ".tif", sep=""))
 			writeRaster(tempras, filename=fname, format="GTiff", overwrite=TRUE)
 
-			if(ctype %in% c("wetland", "developed", "barren_land")){
+			if(ctype %in% c("developed", "barren_land")){ #"wetland", "developed", 
 
 				fnameshp = paste(strsplit(fname, ".", fixed=TRUE)[[1]][1], ".shp", sep="")
 				system(paste("gdal_polygonize.py ", fname, " -f 'ESRI Shapefile' ", fnameshp, sep=""))
 
-				distras = dist_nearest_neighbor(tempras, fnameshp)
+				# Dummy raster
+				buffer = 0.005
+				dumras = raster()
+				extent(dumras) = extent(cras)
+				projection(dumras) = projection(cras)
+				res(dumras) = res(cras)
+
+				shp = shapefile(fnameshp)
+				distras = dist_nearest_neighbor(dumras, shp)
 				writeRaster(distras, filename=file.path(ftp, 
 									paste(studynm, "_", ctype, "_nndistance.tif", sep="")), 
 									format="GTiff", overwrite=TRUE)
@@ -101,7 +109,7 @@ for(studynm in study_sum$study){
 
 		}
 
-		# Crop and project the percent tree cover
+		# Crop and project the tree cover density
 		lcras_extent = projectExtent(crop(coverTrans, extobj), crs(cover))
 		lcras = projectRaster(crop(cover, extent(lcras_extent)), crs=crsbase, method="ngb")
 

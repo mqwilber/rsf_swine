@@ -14,11 +14,14 @@ base = "/Users/mqwilber/Repos/rsf_swine/data/covariate_data/water"
 
 # List of NWI shape files referenced by study
 nwi_shpfiles = list("tejon"=file.path(base, "downloaded/CA_Wetlands_South.shp"),
-										"txcamp"=file.path(base, "downloaded/TX_Wetlands_Central.shp"))
+										"txcamp"=file.path(base, "downloaded/TX_Wetlands_Central.shp"),
+										"fl_raoul"=file.path(base, "downloaded/FL_Wetlands.shp"),
+										"tx_tyler_w2"=file.path(base, "downloaded/TX_Wetlands_Central.shp"),
+										"srel_contact"=file.path(base, "downloaded/SC_Wetlands.shp"))
 
 for(studynm in summarydat$study){
 
-	if(studynm %in% c("tejon", "txcamp")){
+	if(studynm %in% c("tejon", "txcamp", "fl_raoul", "tx_tyler_w2", "srel_contact")){
 
 		## STEP 1: Crop the state-level wetland shape files
 
@@ -81,9 +84,9 @@ for(studynm in summarydat$study){
 
 		tif_path = file.path(dirpath, paste(studynm, "_water_nndistance.tif", sep=""))
 
-		if(!file.exists(tif_path)){
+		#if(!file.exists(tif_path)){
 			distras = dist_nearest_neighbor(ras, peren)
 			writeRaster(distras, tif_path, format="GTiff", overwrite=TRUE)
-		}
+		#}
 	}
 }

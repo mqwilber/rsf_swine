@@ -33,7 +33,7 @@ cropvals = lapply(1:length(unqgroups), function(x) csmeta[group_name == unqgroup
 # Loop through different studies to format croplayer covariates
 for(studynm in study_sum$study){
 
-	if(studynm %in% c("tejon", "txcamp")) { # Just process txcamp and tejon 
+	if(studynm %in% c("fl_raoul", "txcamp", "tejon", "tx_tyler_w2", "srel_contact")) { # Just process txcamp and tejon 
 
 		cat("Processing", studynm, "\n")
 
@@ -81,9 +81,16 @@ for(studynm in study_sum$study){
 				system(paste("gdal_polygonize.py ", fname, " -f 'ESRI Shapefile' ", fnameshp, sep=""))
 
 				# Calculate distance to nearest neighbor
+				# Create a dummy raster
+				buffer = 0.005
+				dumras = raster()
+				extent(dumras) = extent(cras)
+				projection(dumras) = projection(cras)
+				res(dumras) = res(cras)
+
 				shp = shapefile(fnameshp)
 				shp = shp[shp$DN == 1, ]
-				distras = dist_nearest_neighbor(tempras, shp)
+				distras = dist_nearest_neighbor(dumras, shp)
 				writeRaster(distras, filename=file.path(base, "data/covariate_data/croplayer", 
 											studynm, paste(studynm, "_", ctype, "_", yr, "_nndistance.tif", sep="")), 
 											format="GTiff", overwrite=TRUE)

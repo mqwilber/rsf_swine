@@ -4,6 +4,7 @@ import glob
 import os
 import sys
 import string
+from sklearn.cluster import KMeans
 
 """
 Description
@@ -75,7 +76,17 @@ cali_red.loc[:, "pigID"] = cali_red.study + cali_red.collarID.astype("S21")
 
 # Get the cali datatimes in the right format...slow because all different formats
 cali_red.loc[:, "datetime"] = pd.to_datetime(cali.datetime)
+
+# Split the California populations into separate populations that are spatially
+# proximate
+kobj = KMeans(n_clusters=5)
+X = cali_red[['longitude', 'latitude']].values
+kfit = kobj.fit(X)
+labels = kfit.labels_
+cali_red.loc[:, "study"] = np.array("cali" + pd.Series(labels).astype(np.str))
+
 print("Done")
+
 
 #########################################################
 ### Judas pig files need to be loaded in individually ### 
@@ -224,6 +235,14 @@ move.loc[:, "collarID"] = move.collarID.str.replace(r"([0-9]+)_([a-d])", r"\1\2"
 
 move.loc[:, "collarID"] = [val.split("_")[-1] for val in move.collarID]
 move.loc[:, "pigID"] = move.study + move.collarID
+
+# Break mo_kurt into multiple spatially proximate studies
+mo_kurt = move[move.study == "mo_kurt"]
+kobj = KMeans(n_clusters=9)
+X = mo_kurt[['longitude', 'latitude']].values
+kfit = kobj.fit(X)
+labels = kfit.labels_
+move.loc[move.study == "mo_kurt", "study"] = np.array("mo_kurt" + pd.Series(labels).astype(np.str))
 
 print("Done")
 
@@ -415,15 +434,15 @@ attrib.sex[attrib.sex == "female"] = "F"
 attrib.to_csv("pig_attributes.csv", index=False)
 
 # Check that all IDs match...all IDs are matching!
-gb = comb_dat.groupby('study') 
+# gb = comb_dat.groupby('study') 
 
-for study in comb_dat.study.unique():
+# for study in comb_dat.study.unique():
 
-  cvals = gb['pigID'].unique()[study]
-  atvals = attrib.loc[attrib.study == study, "pigID"]
+#   cvals = gb['pigID'].unique()[study]
+#   atvals = attrib.loc[attrib.study == study, "pigID"]
 
-  print(study)
-  print(set(cvals) - set(atvals))
+#   print(study)
+#   print(set(cvals) - set(atvals))
 
 
 ##########################################

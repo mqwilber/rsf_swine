@@ -376,16 +376,16 @@ TODO
 
 Some items TODO for tomorrow March 14
 
-1. Re-build GLM files with the new Nearest Neighbor Distances
+1. Re-build GLM files with the new Nearest Neighbor Distances [DONE]
 2. Rerun the population-level GLMs with the new GLM files. Add in interactions 
-between crop_loc:NDVI_loc/Masting_loc. 
-3. Continue writing up the methods.
-4. Edit what you have already written
+between crop_loc:NDVI_loc/Masting_loc. [DONE]
+3. Continue writing up the methods. [DONE]
+4. Edit what you have already written [DONE]
 5. Implement the ADVI mixed effect models in PyMC3 and extract population-level 
 effects.
 	- Save these population-level effects so we can start comparing them across
-	populations.
-6. Consider implementing time-varying Canopy cover in the base model. 
+	populations. [DONE]
+6. Consider implementing time-varying Canopy cover in the base model. [DONE]
 
 
 

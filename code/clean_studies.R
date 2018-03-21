@@ -206,23 +206,23 @@ clean_srel_contact = function(plotit=FALSE){
 
 
 	
-	dat = fread("../data/formatted/full_pig_data.csv")
+	# dat = fread("../data/formatted/full_pig_data.csv")
 
-	for(studynm in unique(dat$study)){
-		fl = dat[study == studynm]
+	# for(studynm in unique(dat$study)){
+	# 	fl = dat[study == studynm]
 
-		# Look at fix time distribution...looks reasonable
-		fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-		fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
+	# 	# Look at fix time distribution...looks reasonable
+	# 	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
+	# 	fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
 
-		# There are 12 of 18 pigs that meet the criteria
-		trimdat = fl
-		goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
+	# 	# There are 12 of 18 pigs that meet the criteria
+	# 	trimdat = fl
+	# 	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
 
-		print(studynm)
-		print(sum(goodpigs$goodpig))
-		print(nrow(goodpigs))
-	}
+	# 	print(studynm)
+	# 	print(sum(goodpigs$goodpig))
+	# 	print(nrow(goodpigs))
+	# }
 
 
 

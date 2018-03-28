@@ -2,7 +2,7 @@
 
 maxtime : 130 # The length in minutes between collaring times.  
               # Time diffs must be less than or equal to this to be included
-minlength : 200 # Runs of maxtime diffs must be longer than this. 
+minlength : 150 #200 # Runs of maxtime diffs must be longer than this. 
                 # e.g. 200 fixes that are less than or equal to 200 minutes apart
 
 timestep : "15 mins" # Time step at which to predict with the continuous time model.

@@ -8,6 +8,7 @@
 \usepackage{hyperref}
 \usepackage{gensymb}
 \usepackage{bbold}
+\usepackage{rotating}
 
 
 % Bibliography
@@ -88,35 +89,34 @@
 
 \subsection*{Data}
 
-To analyze pig movement patterns with respect resource availability, we used GPS collar data collected on 500 pigs in the United States of America and Canada (Fig. 1).  Of the 500 pigs, X were male and Y were female. These data were a result of X unique studies and were collected from May, 2004 to November, 2017  The median collaring time per pig across all studies was X (95\% quantiles) (see supplementary material for additional details). The average time between GPS fixes varied by study, with the median fix time being X across all Y studies [95\% CI]. 
+To analyze how forage availability affected pig movement patterns, we used GPS collar data collected on 500 pigs in the United States of America and Canada (Fig. 1).  Of the X pigs, X were male and Y were female. These data are from X different studies and were collected from May, 2004 to November, 2017.  The median collaring time per pig across all studies was X (95\% quantiles) (see supplementary material for additional details). The average time between GPS fixes varied by study, with the median fix time being X across all Y studies [95\% CI]. 
 
-While the movement models that we describe below account for unequal fix times, too large of a gap between fix times for any particular pig leads to a large amount of uncertainty regarding where a pig was in between those two fixes. To account for this, for a sequence of GPS fixes for a given pig, we split the single sequence into multiple sequences at when the time between to adjacent fixes was greater than \emph{c.} 130 minutes. We then discarded all sequences that had less than 200 fixes. The remaining sequences were considered independent "runs" for a given pig. We chose to only include sequences of 200 or greater fixes because at a fix time of 15 minutes, a sequence of 200 GPS fixes would span just over two days. This is the minimum time span needed for inference on diel patterns of movement (i.e. two daily cycles).  Finally, we cleaned trajectories for errant fixes using the non-movement criteria described in \cite{Bjorneraas2010}. [DESCRIBE THIS MORE]  Finally, we cleaned trajectories for errant fixes using the non-movement criteria described in \cite{Bjorneraas2010}. [DESCRIBE THIS MORE and move this up.] After this cleaning, our analysis contained X pigs and a total of X fix times.
+For each pig used in the study, we cleaned the movement trajectory using the following criteria. First, we excluded all 2D GPS fixes from the analysis \citep{Bjorneraas2010}.  Second, we eliminated the first and last 25 fixes for each pig to account for capture effects [citation]. Third, we eliminated all pig movements in which pigs moved faster than 50 km per hour over any distance or moved greater than 15 km per hour over a distance of 8 km or more. These movements are unlikely given previously observed patterns of feral swine movement \citep{Mayer2009}. Finally, we also removed large temporal gaps between fix times as these can lead to a large amount of uncertainty regarding a pig's location in between two temporally distant fixes. To do this, we split a single pig movement trajectory into multiple sequences when the time between two adjacent fixes was greater than \emph{c.} 130 minutes. We then discarded all sequences that had less than 150 fixes at least 130 minutes apart. The remaining sequences were considered independent ``runs'' for a given pig. We chose to only include sequences of 150 fixes as shorter runs would not always span the length of a day, precluding analysis of diel movement patterns, and longer runs excluded too many of the pigs from the analysis. After this cleaning, our analysis contained X pigs and a total of X fix times (Fig. 1).
 
 \subsection*{Covariates}
 
-The goal of our analysis was to understand how the availability of agricultural forage on a landscape affected the movement and resource selection of feral swine.  Moreover, we sought to understand how the availability of natural forage resources affected the selection of agricultural forage resources, and vice-versa. To address these goals, we identified covariates related to natural forage and agricultural forage resources that were comparable across studies in our data.  For natural forage resources, we considered two proxies for availability of natural forage: plant productivity as measured by Normalized Difference Vegetation Index (NDVI) and density of masting trees (Mikey citation, Table 1). We included masting tree density as masting events are an important component of pig diets and can have significant implications on population-level pig growth rates \citep[e.g.][]{Bieber2005}.  The masting layer we used was developed by Tabak et al. and describes the density of masting trees across the world at a 1 km by 1 km scale.  NDVI is a general correlate of plant productivity in an area \citep{Pettorelli2005}.  Given that pigs are extreme generalists and plant material often makes up a large percentage of their diet \citep{Mayer2009} [Others], NDVI provides a proxy for plant resource availability.  Moreover, we consider NDVI as time-varying covariate on the monthly scale, to account for the fact that pigs often shift their foraging activity to match available resources \citep{Mayer2009}.
+The goal of our analysis was to understand how the availability of anthropogenic and natural forage on a landscape affected the movement and resource selection of feral swine. To address these goals, we identified covariates related to natural forage and anthropogenic forage resources that were comparable across studies.  For the availability of natural forage resources, we considered two proxies: plant productivity as measured by Normalized Difference Vegetation Index (NDVI) and density of masting trees (Table 1). We included masting tree density as masting events are an important component of pig diets and can have significant implications on population-level pig growth rates \citep[e.g.][]{Bieber2005}.  NDVI is a general correlate of plant productivity in an area \citep{Pettorelli2005} and, given that pigs are extreme generalists and plant material often makes up a large percentage of their diet \citep{Mayer2009}, here we use it to reflect the availability of herbaceous forage.  
 
-For agricultural forage resources, we used agricultural data available on CropScape (X), which provides yearly data on crop production (Table 1). These data are provided yearly at a 30m by 30m scale across the contiguous US and each pixel specifies the dominant type of crop grown in that pixel.  While CropScape enumerates 105 types of crop, we chose not to distinguish between crop types. While previous studies have shown that feral swine can preferentially select crop types \citep[e.g.][]{Herrero2006}, the generic grouping of crop allowed us to more easily explore how the effect of agricultural forage on pig movement varied across space and time.  When we considered crop types in our post-hoc analyses, we grouped the 105 crop types into 11 groups: cereals, oilseed, tobacco, beverage and spice, leguminous, grasses, sugar, root and tuber, fruit and nuts, vegetables and melons, and other crops. [WHAT ABOUT CANADA?]
+% Moreover, we consider NDVI as time-varying covariate on the monthly scale, to account for the fact that pigs often shift their foraging activity to match available resources \citep{Mayer2009}.
 
-While our primary goal of this analysis was to understand the effect of forage availability on pig movement, movement is also driven by a number of other variables, including cover, water availability, temperature, pressure, human development, mammal diversity, sex, and age \citep{McClure2015,Garza2017,Kay2017} [MORE].  Of these additional predictors of pig movement, pig ecology and physiology suggests that cover and water are critically important as both are necessary for pigs to thermoregulate \citep{Choquenot1996a} and cover, in particular, is necessary for protection from predators [citation] (citations in Mayer2009). Generally, these predictions regarding the importance of cover and water have born out in other studies exploring pig movement\citep[e.g.][]{Kay2017} and thus we sought to include these covariates in our models as well.
+For anthropogenic forage resources, we used agricultural data available from the National Agricultural Statistics Service (NASS). These data are obtained yearly at a 30m by 30m scale across the contiguous US and each pixel specifies the dominant type of crop grown in that pixel.  While the NASS data enumerates 105 types of crop, we chose not to distinguish between crop types. Instead, we used a generic grouping of ``crop'' vs. ``no-crop'', which allowed us to more easily explore how the effect of agricultural forage on pig movement varied across space and time.  We did consider crop-types in our post-hoc analyses, in which we grouped the 105 crop types into 11 groups: cereals, oilseed, tobacco, beverage and spice, leguminous, grasses, sugar, root and tuber, fruit and nuts, vegetables and melons, and other crops [according the criteria outlined in...]. WHAT ABOUT CANADA?]
 
-For a cover covariate, we used tree canopy density data [check wording] from the National Landcover Database (NLCD) (Table 1). These data are available at a 30m by 30m scale for the contiguous United States. For a water covariate, we used the National Wetland Inventory (NWI) Database which identifies X types of water bodies larger than X m2 in the continguous United States. For this study, we only considered the water sources that were permanent or semi-permanent as defined by the NWI. For a given landscape on which a pig was moving, we then computed the distance to the nearest water source at a 30m by 30m resolution (see Table 1 and Sup Mat). 
+While our primary goal of this analysis was to understand the effect of forage availability on pig movement, movement is also driven by a number of other variables, including cover, water availability, temperature, pressure, human development, mammal diversity, sex, and age \citep{McClure2015,Garza2017,Kay2017} [MORE].  Of these additional predictors of pig movement, cover and water are critically important as both are necessary for pigs to thermoregulate \citep{Choquenot1996a} and cover, in particular, is necessary for protection from predators [citation] (citations in Mayer2009). We used tree canopy density data [check wording] from the National Landcover Database (NLCD) as a covariate for cover (Table 1). These data are available at a 30m by 30m scale for the contiguous United States. For a water, we used the National Wetland Inventory (NWI) Database which identifies X types of water bodies larger than X m2 in the continguous United States. For this study, we only considered the water sources that were permanent or semi-permanent as defined by the NWI and computed the distance to the nearest water source at a 30m by 30m resolution (see Table 1 and Sup Mat). 
 
 We also included mean monthly temperature, total monthly precipitation, and distance to developed land/roads as additional covariates (Table 1). Note that while the inclusion of these covariates is import for capturing pig movement, our questions were focused the foraging resources, such that we considered non-foraging covariates "blocking" covariates and did not exhaustively explore their potential relationships and interactions beyond what had already been shown in the literature.  
 
-Finally, we also considered a number of study-level variables to allow us to explore how and why the affect of natural forage resources, agricultural forage resources, and their interactions varied across different studies. To this end, we explored study-level covariates such as drought severity, ecoregion, local pig density, and MORE (see Table 1). 
+Finally, we also considered a number of study-level variables to allow us to explore how and why the effect of natural forage resources and anthropogenic forage resources varied across different studies. To this end, we explored study-level covariates such as drought severity, ecoregion, local pig density, and MORE (see Table 1). 
 
 \subsection*{Continuous-time, discrete-space movement model}
 
-
-To understand role of natural forage resources and agricultural forage resources on pig resource selection, we used the modeling framework of \cite{Hanks2015} and \cite{Wilson2018}.  Generally, this framework leverages auto-correlated animal movement data and gridded raster covariates to make inference about the resource utilization of an animal \citep{Hanks2015,Buderman2018,Wilson2018}.  
+To understand role of forage resources on pig movement, we used the modeling framework of \cite{Hanks2015} and \cite{Wilson2018}.  Generally, this framework leverages auto-correlated animal movement data and gridded raster covariates to make inference about the resource utilization of an animal \citep{Hanks2015,Buderman2018,Wilson2018}.  
 
 Specifically, this approach can be broken into two distinct steps. Given a trajectory of GPS fixes (not necessarily with equal fix times), the first step of this approach estimates animal movement as a function of continuous time at some particular temporal grain (e.g. 15 minutes).  To do this, we used a phenomenological functional movement model (FMM) \citep{Buderman2016,Hooten2017a}, which is a non-mechanistic, continuous-time movement model that can capture an animal's movement patterns at some desired-level of detail \citep{Buderman2016}.  The phenomenological FMM can be represented as a series of basis functions, which allow for large flexibility in animal movement patterns.
 In particular, we used a B-spline basis expansion to model the longitude and latitude of an animal as a function of time (see Supplementary Material for additional detail).
 
 After fitting the phenomenological FMM to each pig trajectory, we used this model to predict a pig's location at 15 minute intervals. We chose 15 minutes as this provided a reasonable trade-off between computational time and computing the exact amount of time spent in each cell, which is equivalent to letting the time between fix times go to 0 [NOTE: Would this be hard to do? Double Check interpretation of 15 minute intervals...]. We repeated this 20 times to account for the uncertainty in the movement path \citep{Hanks2015,Buderman2018}.  All the analyses described next were repeated on each of the 20 imputed data sets to account for uncertainty in the movement trajectory.
 
-Given the FMM-predicted trajectories, we then explored how agricultural and natural forage resources on a landscape affected pig movement using the continuous-time Markov Chain (CTMC) approach described in \cite{Hanks2015}. The CTMC approach considers continuous-time animal movement (i.e. the FMM model described above) through a discrete, rasterized landscape. From this point-of-view, animal movement can be considered as a series of rates of moving from cell $i$ to an adjacent cell $j$, $\lambda_{ij}$.  As for any continuous-time Markov Chain, the process can be decomposed into the waiting time before a state change occurs (i.e. the time an animal spends in a cell) and the new state once a change occurs (i.e. the new cell to which the animal has moved) \citep{Allen2003a}.  With this interpretation, one can then model the rate of moving between cell $i$ and $j$ $\lambda_{ij}$ as a function of the environmental covariates on the landscape in cell $i$ and $j$.  \cite{Hanks2015} showed that this type of inference can be re-expressed as a latent-variable, Poisson Generalized Linear Model, where the response variable for adjacent cell $j$ is one if a pig moved to that cell from cell $i$, and 0 otherwise. Specifically, let $z_{ij}$ be the zero/one latent variable, then
+Given the FMM-predicted trajectories, we then explored how agricultural and natural forage resources on a landscape affected pig movement using a continuous-time Markov Chain (CTMC) approach \cite{Hanks2015}. The CTMC approach considers continuous-time animal movement (i.e. the FMM model described above) through a discrete, rasterized landscape. From this point-of-view, animal movement can be considered as a series of rates of moving from cell $i$ to an adjacent cell $j$, $\lambda_{ij}$.  As for any continuous-time Markov Chain, the process can be decomposed into the waiting time before a state change occurs (i.e. the time an animal spends in a cell) and the new state once a change occurs (i.e. the new cell to which the animal has moved) \citep{Allen2003a}.  With this interpretation, one can then model the rate of moving between cell $i$ and $j$ $\lambda_{ij}$ as a function of the environmental covariates in cell $i$ and $j$.  \cite{Hanks2015} showed that this type of inference can be re-expressed as a latent-variable, Poisson Generalized Linear Model, where the response variable for adjacent cell $j$ is one if a pig moved to that cell from cell $i$, and 0 otherwise. Specifically, let $z_{ij}$ be the zero/one latent variable, then
 
 \begin{align}
   z_{ij} &\sim \text{Poisson}(\lambda_{ij}) \\
@@ -128,25 +128,50 @@ Considering $\mathbf{X}$, we explored two classes of covariates: location-based 
 
 \subsection*{Model specification and fitting}
 
-We analyzed four variations of the model described by equation X in order to understand the the role of foraging resources on the movement of feral swine across populations.  In order to minimize computational and model complexity, we performed each of the following steps when fitting the models below.  First, for each population separately, we fit the full model using a regularized  we fit each model described below separately for all studies and used a post-hoc [regression analysis] to compare population-level effects across studies.  This was necessary as the imputed data for each model averaged 1 million data points with between 20-60 parameters being fit and regularized [fix wording and lingo].
+We analyzed three variations of the CTMC model with the goal of understanding the role of foraging resources on the movement of feral swine across populations.  The each model is described below
+
+% In order to minimize computational and model complexity, we performed each of the following steps when fitting the models below.  First, for each population [study?], we fit a given model using a LASSO-regularized Poisson GLM .  This helped minimize the the number of covariates included in each model    we fit each model described below separately for all studies and used a post-hoc [regression analysis] to compare population-level effects across studies.  This was necessary as the imputed data for each model averaged 1 million data points with between 20-60 parameters being fit and regularized [fix wording and lingo].
 
 \noindent
 \emph{Model 1: Main effects model}
 
-The first, and simplest, model that we analyzed only considered time-invariant main effects of agricultural and natural foraging resources and ``blocking'' factors.  Specifically, the model was defined as
+The first, and simplest, model that we analyzed only considered time-invariant main effects of anthropogenic and natural foraging resources and ``blocking'' factors.  The model is defined as
 
 \begin{align}
   \log(\lambda_{ij}) = & \log(\tau_{ij}) + \beta_0 +  \beta_1 \text{directional persistence} + \beta_2 \text{male  } \\
   & + \beta_{3} \text{canopy cover}_{\text{loc}} + \beta_{4} \text{canopy cover}_{\text{grad}} \\
   & + \beta_5 \text{distance to water}_{\text{loc}} + \beta_6 \text{distance to water}_{\text{grad}} \\
-  & + \beta_6\text{distance to crops}_{\text{loc}} + \beta_7\text{distance to crops}_{\text{grad}} \\
-  & + \beta_8\text{masting tree density}_{\text{loc}} + \beta_9\text{masting tree density}_{\text{grad}} \\
-  & + \beta_{10}\text{NDVI}_{\text{loc}} + \beta_{11}\text{NDVI}_{\text{grad}}
+  & + \beta_7 \text{distance to development}_{\text{loc}} + \beta_8 \text{distance to development}_{\text{grad}} \\
+  & + \beta_9\text{distance to crops}_{\text{loc}} + \beta_{10}\text{distance to crops}_{\text{grad}} \\
+  & + \beta_{11}\text{masting tree density}_{\text{loc}} + \beta_{12}\text{masting tree density}_{\text{grad}} \\
+  & + \beta_{13}\text{NDVI}_{\text{loc}} + \beta_{14}\text{NDVI}_{\text{grad}}
 \end{align}
 
-[TODO: add in random effects if necessary and more description].  We fit this model in two steps.  First, we performed LASSO regularization with X-fold cross-validation using the \texttt{glmnet} package to select the estimate the best-fit, regularized model [MORE]. However, as this LASSO approach does not provide easy access to parameter uncertainty or random effects, we then re-fit the best-fit regularized model using automatic differentiation variational inference (ADVI), which allowed us to approximate the uncertainty on the model parameters and include random effects of individual pigs on movement.  Due to the size of the datasets under-consideration in this study (i.e. millions of datapoints) ADVI allowed us to perform these analyses in a reasonable amount of time (i.e. 2- 4 hours) compared to a full-scale Bayesian analysis.
+[TODO: add in random effects if necessary and more description].  We fit this model in two steps.  First, we performed LASSO regularization with 5-fold cross-validation using the \texttt{glmnet} package and selected the best model as the one that minimized out-of-sample deviance.  This LASSO approach simultaneously performed variable selection and shrunk non-predictive covariates to zero.  However, as this LASSO approach does not provide easy access to parameter uncertainty or random effects, we then re-fit the best-fit regularized model using automatic differentiation variational inference (ADVI), which allowed us to approximate the uncertainty on the model parameters and include random effects of individual pigs on resource use.  Due to the size of the datasets under-consideration in this study (i.e. millions of datapoints) ADVI allowed us to perform these analyses in a reasonable amount of time (i.e. 2- 4 hours) compared to a full-scale Bayesian analysis.
 
-[Describe additional models here]
+\noindent
+\emph{Model 2: Time-varying movement model}
+
+The second model we considered allowed pig movement and resource use to vary with time. We allowed overall movement speed to vary on both a daily and monthly time-scale and also allowed selection for forage resource, cover, and water to vary on a monthly time scale.  The model is given by
+
+\begin{align}
+  \log(\lambda_{ij}(h, m)) = & \log(\tau_{ij}) + \beta_0(h) + \beta_0(m) \\
+  & + \beta_1 \text{directional persistence} + \beta_2 \text{male  } \\
+  & + \beta_{3}(m) \text{canopy cover}_{\text{loc}} + \beta_{4}(m) \text{canopy cover}_{\text{grad}} \\
+  & + \beta_5(m) \text{distance to water}_{\text{loc}} + \beta_6(m) \text{distance to water}_{\text{grad}} \\
+  & + \beta_7 \text{distance to development}_{\text{loc}} + \beta_8 \text{distance to development}_{\text{grad}} \\
+  & + \beta_9(m) \text{distance to crops}_{\text{loc}} + \beta_{10}(m) \text{distance to crops}_{\text{grad}} \\
+  & + \beta_{11}(m) \text{masting tree density}_{\text{loc}} + \beta_{12}(m) \text{masting tree density}_{\text{grad}} \\
+  & + \beta_{13}(m) \text{NDVI}_{\text{loc}} + \beta_{14}(m) \text{NDVI}_{\text{grad}}
+\end{align}
+where $h$ indicates the hour of the day and $m$ indicates the month of the year.  $\beta_0(h)$ describes how overall movement rate changes as a function of the hour of the day. $\beta_i(m)$ describes how the effect of a particular covariate varies with the month of the year. We modeled $\beta_0(h)$ using cyclic splines to ensure movement rate at the start of a 24 hour period was the same as movement rate at the end of the 24 hour period. We modeled $\beta_i(m)$ using cyclic splines when the data for pigs in a populations spanned 12 months. This ensured that the effect of a particular covariate was the same at the end December and the beginning of January.  When the data for a particular population did not span 12 months [NOTE: rarely, if ever, does a single pig span twelve months! Should we be fitting each pig separately?], we modeled $\beta_i(m)$ using a cubic B-spline [check terminology]. Similar to model 1, we performed LASSO regularization with 5-fold cross-validation.  Given the large number of parameters in the above model, we increased the regularization penalty and selected the best model as the one in which the LASSO penalty was 1 standard error greater than the LASSO penalty that minimized out-of-sample deviance. This more stringent regularization criteria tends to lead to a minimal increase in out-of-sample deviance compared to the minimum, while greatly reducing model complexity [cite glmnet package]GAMS. 
+
+
+
+\noindent
+\emph{Model 3: Environmentally-driven movement model}
+
+The final model we considered still allowed for overall movement speed to vary both daily and monthly, but now sought to describe the seasonal changes in selection for anthropogenic and natural forage in terms of monthly changes in precipitation and temperature.  Specifically, we updated the basis function form of model 3 to include interactions between temperature, precipitation and forage resources 
 
 % We analyzed two models following full model  full model that we defined analyze  can be conceptually broken into two components: the blocking effects and the forage resource effects.  The blocking effects component contains variables that we know influence pig movement, but are not the focus of this current study.  This component of the model is given by [TODO: WHY NO Intercept?]
 
@@ -210,6 +235,26 @@ The first, and simplest, model that we analyzed only considered time-invariant m
 \singlespacing
 \bibliographystyle{/Users/mqwilber/Dropbox/Documents/Bibformats/mee.bst}
 \bibliography{/Users/mqwilber/Dropbox/Documents/Bibfiles/Projects_and_Permits-feral_swine.bib}
+
+\clearpage
+
+\def\arraystretch{1.5}
+\begin{sidewaystable}
+\caption{Description of covariates used in analysis}
+\begin{tabular}{p{4 cm}  p{4 cm}  p{4 cm}  p{4 cm}  p{4 cm}  p{2 cm} p{2cm}}
+	Covariate & Description & Data Source & Spatial Resolution & Temporal Resolution & Location \newline or gradient? \\
+	\hline
+	Normalized Difference \newline Vegetation Index (NDVI) & A proxy for plant productivity and natural forage availability.  & MODIS and NASS & 250 m $\times$ 250 m & Monthly & Both \\ 
+	Density of hard-masting trees & & Tabak et al. & 1 km $\times$ 1 km & Time-invariant & Both \\
+	Distance to crops & The distance to the nearest crop field. A measure of anthropogenic forage. & NASS & 30 m $\times$ 30 m & Yearly & Both \\
+	Distance to water & The distance the nearest permanent or semi-permanent water source & NWI & 30 m $\times$ 30 m & Time-invariant & Both \\
+	Canopy density [CHECK] & A proxy for habitat cover & NLCD & 30 m $\times$ 30 m & Time-invariant & Both \\
+	Distance to developed-land & A measure of human presence & NLCD & 30 m $\times$ 30 m & Time-invariant & Both \\
+	Temperature & Mean monthly temperature & NOAA & 50 km $\times$ 50 km & Monthly & Location \\
+	Precipitation & Total monthly precipitation & NOAA & 50 km $\times$ 50 km & Monthly & Location \\
+
+\end{tabular}
+\end{sidewaystable}
 
 
 

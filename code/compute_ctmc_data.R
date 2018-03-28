@@ -44,7 +44,7 @@ anal_params = yaml.load_file("analysis_parameters.yml")
 sink("log_ctmc.txt") # log file
 
 
-for(studynm in c("srel_contact", "txcamp")){
+for(studynm in c("mo_kurt0")){
 
   #studynm = "tejon"
   cat("Beginning analysis for", studynm, "\n")
@@ -74,7 +74,7 @@ for(studynm in c("srel_contact", "txcamp")){
     tdat = trimdat[pigID == pignm]
 
     # Only perform split if pig meets criteria
-    if(runs(tdat$datetime, ctime=130, clength=200)){
+    if(runs(tdat$datetime, ctime=anal_params$maxtime, clength=anal_params$minlength)){
 
       tdat$run_number = 0 
       runinds = split_runs(tdat$datetime, ctime=maxtime, clength=minlength)

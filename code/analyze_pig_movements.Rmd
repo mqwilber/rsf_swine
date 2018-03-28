@@ -43,36 +43,50 @@ library(glmnet)
 library(foreach)
 library(ggplot2)
 require(doMC)
+source("pigfxns.R")
 ```
 
+Load the data
+
 ```{r, echo=FALSE}
-tejondat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/tejon.csv")
-txdat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/txcamp.csv")
-fldat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/fl_raoul.csv")
-txtylerdat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/tx_tyler_w2.csv")
-srelcdat = fread("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/srel_contact.csv")
 
-
-# Add in sex data
+# Attribute data
 pigattrib = fread("~/Repos/rsf_swine/data/formatted/pig_attributes.csv")[, list(pigID, sex)]
 
-# Check NA values, should have some in the crop values
-tejondat[, lapply(.SD, function(x) any(is.na(x)))][1,] == FALSE
-txdat[, lapply(.SD, function(x) any(is.na(x)))][1, ] == FALSE
+studys = Sys.glob("/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/*.csv")
+dataset = list()
 
-# Merge the pig attributes to the data
-tejondat = merge(tejondat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
-txdat = merge(txdat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
-fldat = merge(fldat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
-txtylerdat = merge(txtylerdat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
-srelcdat = merge(srelcdat, pigattrib, by="pigID")[!is.na(ndvi_loc)]
+# Load and merge each data file
+for(filenm in studys){
+  
+  
+  studynm = strsplit(basename(filenm), ".", fixed=T)[[1]][1]
+  tdat =  fread(filenm)
+  # if(studynm == "fl_raoul"){
+  #   fr = tdat
+  # } else if (studynm == "florida"){
+  #   f = tdat
+  # } else{
+  dataset[[studynm]] = merge(tdat, pigattrib, by="pigID")
+  #}
+}
+
+# Combine florida studies
+# dataset[["florida"]] = merge(rbind(fr, f), pigattrib, by="pigID")
+# rm(fr)
+# rm(f)
+
 ```
 
 ```{r, echo=FALSE}
-pig1 = tejondat[pigID == "tejonM302"]
+source("pigfxns.R")
+pig1 = dataset[['tejon']]#[pigID == "tejonM302"]
 
 res = build_design_matrix(pig1, c("crop"), modeltype="main_effects")
-pig1 = res$data
+tdat = res$data
+
+pig1[, lapply(.SD, function(x) as.vector(scale(x))), by=pigID, .SDcols=c("crw", "canopycover_loc", "crop_loc", "crop_grad")]
+tdat[, lapply(.SD, sd), .SDcols=names(tdat)[names(tdat) %like% "*_z"]]
 
 evalform = res$evalform
 evalform = update.formula(evalform, ~ . - sex)
@@ -86,6 +100,15 @@ fit_model1 = cv.glmnet(Xmat, y=pig1$z, offset=log(pig1$tau), family="poisson",
                        alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
 
 
+```
+
+```{r}
+
+temp = pig1[, lapply(.SD, function(x) as.vector(scale(x))), by=pigID, .SDcols=scaledvars]
+
+res = pig1[, list(crop_loc, crop_grad, pigID)][, lapply(.SD, function(x) as.vector(scale(x))), by=pigID, .SDcols=-"pigID"]
+res$pigID = pig1$pigID
+res[,lapply(.SD, mean), by=pigID, .SDcols=-"pigID"]
 ```
 
 ```{r, echo=FALSE}
@@ -141,8 +164,6 @@ for(studynm in names(dataset)){
   dat = dataset[[studynm]]
   
   # Following Buderman et al. standardize on a per pig level, rather than across all pigs?
-  
-  
   res = build_design_matrix(dat, c("crop"), modeltype="main_effects")
   dat = res$data
   dataset[[studynm]] = res$data
@@ -173,8 +194,8 @@ mod1_betas = list()
 for(studynm in names(allmodel1_fits)){
   tfit = allmodel1_fits[[studynm]]
   # plot(tfit)
-  print(tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=F])
-  mod1_betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=T]
+  # print(tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=F])
+  mod1_betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=T]
 }
 ```
 
@@ -194,7 +215,13 @@ for(studynm in names(mod1_betas)){
 mod1betas = do.call(rbind, tmpdt)
 ggplot(mod1betas) + geom_point(aes(x=study, y=beta, color=study), size=4) + facet_wrap(~coef,  scales='free') + 
               geom_hline(aes(yintercept=0)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8))
+```
 
+```{r}
+mod1betas$grad = mod1betas$coef %like% "*grad*"
+ggplot(mod1betas) + geom_boxplot(aes(x=coef, y=beta)) +
+              geom_hline(aes(yintercept=0)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8)) + 
+              facet_wrap(~grad, scales="free")
 ```
 
 
@@ -236,7 +263,10 @@ df_hour = 6 # Number of basis vectors for the splines for hour
 
 # Allow the monthly basis functions to vary between studies as they are of different lengths.
 # If a study spans the course of a year, use a cyclic spline, otherwise use a cubic regression spline
-cc_year = list(txcamp=list(FALSE, "cr", 6), tejon=list(TRUE, "cc", 6), fl_raoul=list(FALSE, "cr", 4), tx_tyler_w2=c(FALSE, "cr", 1), srel_contact=list(FALSE, "cr", 6))
+cc_year = list(txcamp=list(FALSE, "cr", 6), tejon=list(TRUE, "cc", 6), fl_raoul=list(FALSE, "cr", 4), 
+               tx_tyler_w2=c(FALSE, "cr", 1), srel_contact=list(FALSE, "cr", 6), cali0=list(FALSE, "cr", 6), 
+               cali2=list(FALSE, "cr", 6), florida=list(TRUE, "cc", 6), tx_tyler_w1=list(FALSE, "cr", 1),
+               mo_kurt0=list(TRUE, "cc", 6))
 
 allmodel2_fits = list()
 allXgams = list()
@@ -516,7 +546,7 @@ for(studynm in names(allmodel4_fits)){
 ```{r, fig.height=15, fig.width=20}
 tmpdt = list()
 
-for(studynm in names(mod3betas)){
+for(studynm in names(mod4betas)){
   
   betas = mod4betas[[studynm]][1:39]
   nms = names(betas)
@@ -548,6 +578,11 @@ for(studynm in names(dataset)){
   
   dat = dataset[[studynm]]
   dat[, snowdepth_loc_z:= scale(snowdepth_loc)]
+  # Extract hour of day and month of year for spline fitting
+  dat[ , datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
+  dat[ , hourofday:=hour(datetime)]
+  dat[ , monthofyear:=month(datetime)]
+  
   meanvals = dat[, list(meantemp=mean(temperature_loc_z), meanprecip=mean(precipitation_loc_z), meanndvi=mean(ndvi_loc_z), meansnow=mean(snowdepth_loc_z)), by=monthofyear]
   tplot = ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meanndvi, color="NDVI")) + 
                         geom_line(aes(x=monthofyear, y=meantemp, color="Temperature")) + 
@@ -562,7 +597,6 @@ for(studynm in names(dataset)){
 ```
 
 
-
 ---
 
 ## TODO: Post-hoc population-level analyses
@@ -575,12 +609,23 @@ sumdats = list()
 for(studynm in names(dataset)){
   
   dat = dataset[[studynm]]
-  sumdat = dat[z == 1, lapply(list(ndvi=ndvi_loc, crop=crop_loc, masting=masting_loc, water=water_loc, dev=developed_loc), function(x) quantile(x, c(0.25, 0.5, 0.75)))]
+  
+  # Extract hour of day and month of year for spline fitting
+  dat[ , datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
+  dat[ , hourofday:=hour(datetime)]
+  dat[ , monthofyear:=month(datetime)]
+  
+  sumdat = dat[, lapply(list(ndvi=ndvi_loc, crop=crop_loc, masting=masting_loc, water=water_loc, canopycover=canopycover_loc), function(x) sd(x) / mean(x))]
   sumdat$study = studynm
   sumdats[[studynm]] = sumdat
   
 }
 
 sumdatsdt = do.call(rbind, sumdats)
+```
 
+```{r}
+mdat = merge(mod1betas, sumdatsdt, by="study")
+
+ggplot(mdat) + geom_point(aes(x=beta, y=ndvi, color=study)) + facet_wrap(~coef, scales="free") + theme_bw()
 ```

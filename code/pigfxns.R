@@ -1234,7 +1234,8 @@ build_design_matrix = function(data, croptypes, modeltype="main_effects",
                                 noncrop_scaledvars = c("crw", "canopycover_loc", 
                                 "canopycover_grad", "masting_loc", "masting_grad", 
                                 "ndvi_loc", "ndvi_grad", "temperature_loc", 
-                                "precipitation_loc", "water_grad", "water_loc")) {
+                                "precipitation_loc", "water_grad", "water_loc"),
+                                sex=TRUE) {
 
   # Build a design matrix for the GLM LASSO analysis
   #
@@ -1268,21 +1269,30 @@ build_design_matrix = function(data, croptypes, modeltype="main_effects",
   # Only get gradients variables for used crops
   used_cropgrads = paste0(strsplit(used_croplocs, "_loc"), "_grad")
 
-    # Scale the appropriate covariates
   scaledvars = c(noncrop_scaledvars,
                  used_croplocs, used_cropgrads)
-  data_sc = data[, scaledvars, with=F][, lapply(.SD, function(x) scale(x))]
+
+  data_sc = data[, lapply(.SD, function(x) as.vector(scale(x))), .SDcols=scaledvars]
   names(data_sc) = paste0(scaledvars, "_z")
   data = cbind(data, data_sc)
 
 
   if(modeltype == "main_effects"){
 
-    base = paste("z ~ crw_z + sex + canopycover_loc_z + canopycover_grad_z ",
-                 "+ water_loc_z + water_grad_z ",
-                 "+ ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z ",
-                 "+ ", do.call(paste, as.list(c(paste0(locvars, "_z"), sep=" + "))), " + ", 
-                 do.call(paste, as.list(c(paste0(gradvars, "_z"), sep=" + "))))
+    if(sex){
+
+      base = paste("z ~ crw_z + sex + canopycover_loc_z + canopycover_grad_z ",
+                   "+ water_loc_z + water_grad_z ",
+                   "+ ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z ",
+                   "+ ", do.call(paste, as.list(c(paste0(locvars, "_z"), sep=" + "))), " + ", 
+                   do.call(paste, as.list(c(paste0(gradvars, "_z"), sep=" + "))))
+    } else{
+        base = paste("z ~ crw_z + canopycover_loc_z + canopycover_grad_z ",
+                   "+ water_loc_z + water_grad_z ",
+                   "+ ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z ",
+                   "+ ", do.call(paste, as.list(c(paste0(locvars, "_z"), sep=" + "))), " + ", 
+                   do.call(paste, as.list(c(paste0(gradvars, "_z"), sep=" + "))))
+    }
 
     fullform = paste("formula(", base, ")", sep="")
     evalform = eval(parse(text=fullform))
@@ -1344,7 +1354,10 @@ build_design_matrix = function(data, croptypes, modeltype="main_effects",
                  "+ water_loc_z + water_loc_z:temperature_loc_z ",
                  "+ water_loc_z:precipitation_loc_z ",
                  "+ water_loc_z:temperature_loc_z:precipitation_loc_z ", 
-                 "+ crop_grad_z + crop_loc_z + crop_loc_z:temperature_loc_z ",
+                 "+ crop_grad_z + crop_grad_z:temperature_loc_z  ",
+                 "+ crop_grad_z:precipitation_loc_z  ",
+                 "+ crop_grad_z:temperature_loc_z:precipitation_loc_z",
+                 "+ crop_loc_z + crop_loc_z:temperature_loc_z ",
                  "+ crop_loc_z:precipitation_loc_z ", 
                  "+ crop_loc_z:temperature_loc_z:precipitation_loc_z", sep="")
 
@@ -1473,7 +1486,7 @@ build_gam_design_matrix = function(Xmat, dat, covar_use, df_hour=3, df_month=3,
   p_month = df_month - 1
   p_hour = df_hour - 1
 
-  colnames(Xgam) = c("(Intercept)", "crw_z", "sexM", 
+  colnames(Xgam) = c(covar_use, 
                          paste0("hour_", 1:p_hour), paste0("month_", 1:p_month),
                          paste0("cover_loc_", 1:p_month), paste0("cover_grad_", 1:p_month),
                          paste0("water_loc_", 1:p_month), paste0("water_grad_", 1:p_month),

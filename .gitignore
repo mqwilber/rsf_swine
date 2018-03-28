@@ -18,3 +18,5 @@ docs/manuscript/*.log
 docs/manuscript/*.out
 docs/manuscript/*.synctex.gz
 docs/manuscript/*.xdv
+temp_data/
+data.zip

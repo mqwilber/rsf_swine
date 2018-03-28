@@ -1,6 +1,19 @@
+#!/usr/bin/env Rscript
+
+# Extract command line arguments
+args = commandArgs(trailingOnly=TRUE)
+if (length(args)==0) {
+  stop("At least one argument must be supplied (input file).n", call.=FALSE)
+}
+
+## Creates distance to nearest water rasters for pig studies
+##
+## Description
+## -----------
 ## Given a shapefile from the NWI:
 ## 1. Clip the shapefile using gdal and save the minimal shapefile
 ## 2. Compute the distance 2 nearest water over a raster
+
 library(data.table)
 library(sp)
 library(raster)
@@ -18,11 +31,15 @@ nwi_shpfiles = list("tejon"=file.path(base, "downloaded/CA_Wetlands_South.shp"),
 										"fl_raoul"=file.path(base, "downloaded/FL_Wetlands.shp"),
 										"tx_tyler_w2"=file.path(base, "downloaded/TX_Wetlands_Central.shp"),
 										"srel_contact"=file.path(base, "downloaded/SC_Wetlands.shp"),
-										"tx_tyler_w1"=file.path(base, "downloaded/TX_Wetlands_Central.shp"))
+										"tx_tyler_w1"=file.path(base, "downloaded/TX_Wetlands_Central.shp"),
+										"cali2"=file.path(base, "downloaded/CA_Wetlands_North.shp"),
+										"florida"=file.path(base, "downloaded/FL_Wetlands.shp"),
+										"cali0"=file.path(base, "downloaded/CA_Wetlands_NorthCentral.shp"),
+										"mo_kurt0"=file.path(base, "downloaded/MO_Wetlands.shp"))
 
 for(studynm in summarydat$study){
 
-	if(studynm %in% c("tx_tyler_w1")) {
+	if(studynm %in% args) {
 
 		## STEP 1: Crop the state-level wetland shape files
 

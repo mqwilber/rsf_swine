@@ -1,3 +1,11 @@
+#!/usr/bin/env Rscript
+
+# Extract command line arguments
+args = commandArgs(trailingOnly=TRUE)
+if (length(args)==0) {
+  stop("At least one argument must be supplied (input file).n", call.=FALSE)
+}
+
 ## Extract and format the NDVI data for each study
 
 library(data.table)
@@ -15,7 +23,7 @@ study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)
 
 for(studynm in unique(study_sum$study)){
 	
-	if(studynm %in% c("srel_contact")) {
+	if(studynm %in% args) {
 
 		cat("Working on", studynm, "\n")
 		dir.create(file.path("../../data/covariate_data/ndvi/", studynm))

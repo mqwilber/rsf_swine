@@ -1,3 +1,11 @@
+#!/usr/bin/env Rscript
+
+# Extract command line arguments
+args = commandArgs(trailingOnly=TRUE)
+if (length(args)==0) {
+  stop("At least one argument must be supplied (input file).n", call.=FALSE)
+}
+
 ## Extract and convert drought data
 
 library(data.table)
@@ -10,7 +18,7 @@ study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)
 
 for(studynm in study_sum$study){
 
-	if(studynm %in% c("tejon", "txcamp", "fl_raoul", "tx_tyler_w2", "srel_contact", "tx_tyler_w1")){
+	if(studynm %in% args){
 		# Assuming only one file per study...TODO
 		files = Sys.glob(file.path("../../data/covariate_data/drought/", studynm, 
 																			paste(studynm, "_drought*.csv", sep="")))

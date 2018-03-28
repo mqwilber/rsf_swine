@@ -1,3 +1,11 @@
+#!/usr/bin/env Rscript
+
+# Extract command line arguments
+args = commandArgs(trailingOnly=TRUE)
+if (length(args)==0) {
+  stop("At least one argument must be supplied (input file).n", call.=FALSE)
+}
+
 ## Script to extract and format NLCD landcover data
 ## -----------------------------------------------
 ## 
@@ -53,7 +61,7 @@ unqgroups = unique(nlcdmeta$grouping)
 for(studynm in study_sum$study){
 
 	# Select a few studies to process
-	if(any(studynm %in% c("tx_tyler_w1"))) { #"txcamp", "tejon", "tx_tyler_w2","fl_raoul", "srel_contact"))) {
+	if(any(studynm %in% args)) { #"txcamp", "tejon", "tx_tyler_w2","fl_raoul", "srel_contact"))) {
 
 		cat("Processing", studynm, "\n")
 
@@ -82,6 +90,11 @@ for(studynm in study_sum$study){
 			ctypeind = (values(cras) %in% landvals) # Indicator TRUE if values match ctype
 			values(tempras)[ctypeind] = 1 # ctype habitat
 			values(tempras)[!ctypeind] = 0 # Not ctype forest
+
+			# Aggregate raster for some studies to reduce computational time
+			if(studynm == "cali0" & ctype == "developed"){
+				tempras = raster::aggregate(tempras, fact=4)
+			}
 
 			# Save formated raster file
 			fname = file.path(ftp, paste(studynm, "_", ctype, ".tif", sep=""))

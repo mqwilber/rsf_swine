@@ -1,3 +1,11 @@
+#!/usr/bin/env Rscript
+
+# Extract command line arguments
+args = commandArgs(trailingOnly=TRUE)
+if (length(args)==0) {
+  stop("At least one argument must be supplied (input file).n", call.=FALSE)
+}
+
 ## Extracts elevation rasters from the USGS NED data downloaded for each
 ## particular study.  If necessary, merges rasters.
 
@@ -17,7 +25,7 @@ crs_string = "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0"
 
 for(studynm in unique(study_sum$study)){
 
-	if(studynm %in% c('tx_tyler_w1')) {
+	if(studynm %in% args) {
 
 		cat("Processing elevation for", studynm, "\n")
 
@@ -35,7 +43,7 @@ for(studynm in unique(study_sum$study)){
 
 		} else{
 
-			# If now image file, there should be jpgs with metadata
+			# If no image file, there should be jpgs with metadata
 			jpgfls = Sys.glob(file.path("../../data/covariate_data/elevation", 
 																										studynm, "raw", "*.jpg"))
 

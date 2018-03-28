@@ -1,3 +1,11 @@
+#!/usr/bin/env Rscript
+
+# Extract command line arguments
+args = commandArgs(trailingOnly=TRUE)
+if (length(args)==0) {
+  stop("At least one argument must be supplied (input file).n", call.=FALSE)
+}
+
 ## Script to extract and format the CropScape data
 ## 
 ## Script reads in Cropscape data and breaks the data into 10-11 indicator variables
@@ -33,7 +41,7 @@ cropvals = lapply(1:length(unqgroups), function(x) csmeta[group_name == unqgroup
 # Loop through different studies to format croplayer covariates
 for(studynm in study_sum$study){
 
-	if(studynm %in% c("tx_tyler_w1")) { #"fl_raoul", "txcamp", "tejon", "tx_tyler_w2", "srel_contact") Just process txcamp and tejon 
+	if(studynm %in% args) { #"fl_raoul", "txcamp", "tejon", "tx_tyler_w2", "srel_contact") Just process txcamp and tejon 
 
 		cat("Processing", studynm, "\n")
 

@@ -20,3 +20,4 @@ docs/manuscript/*.synctex.gz
 docs/manuscript/*.xdv
 temp_data/
 data.zip
+code/log_ctmc.txt

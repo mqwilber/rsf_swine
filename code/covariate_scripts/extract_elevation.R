@@ -35,11 +35,14 @@ for(studynm in unique(study_sum$study)){
 		ras_list = list()
 		if(length(imgfls) != 0){
 
-			tras = raster(imgfls[1])
+			# Load all image rasters
+			for(img in imgfls){
+				tras = raster(img)
 
-			# Raster is by default in ned_crs_string
-			cras = projectRaster(tras, crs=crs_string)
-			ras_list[[1]] = cras
+				# Raster is by default in ned_crs_string
+				cras = projectRaster(tras, crs=crs_string)
+				ras_list[[img]] = cras
+			}
 
 		} else{
 

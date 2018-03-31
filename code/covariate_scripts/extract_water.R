@@ -103,7 +103,7 @@ for(studynm in summarydat$study){
 		tif_path = file.path(dirpath, paste(studynm, "_water_nndistance.tif", sep=""))
 
 		#if(!file.exists(tif_path)){
-			distras = dist_nearest_neighbor(ras, peren)
+			distras = dist_nearest_neighbor(ras, peren, center_dist=FALSE)
 			writeRaster(distras, tif_path, format="GTiff", overwrite=TRUE)
 		#}
 	}

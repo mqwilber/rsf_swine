@@ -82,27 +82,52 @@ ncdf_to_raster = function(nc, timeindex, varname, extobj, latname="lat",
 
 }
 
-dist_nearest_neighbor = function(ras, shp){
+dist_nearest_neighbor = function(ras, shp, center_dist=TRUE){
 	# For each cell in the given raster, computes distance to the nearest polygon
-	# in the shapefile
+	# center in the shapefile
 	#
 	# Parameters
 	# ----------
 	# ras : RasterLayer
 	# shp : SpatialPolygonsDataFrame 
+	# center_dist : bool
+	#		If TRUE, computes distance to nearest polygon centers (much faster but less accurate).
+	#		If FALSE, computes distance to nearest perimeter point
 
 	polys = shp
 	tras = ras
+	polys = crop(polys, ras)
 
 	# Polygons are present
 	if(dim(polys)[1] != 0){
 
 		# For each cell in raster, compute distance to nearest
-		centers = gCentroid(polys, byid=TRUE)
+
+		if(center_dist)
+			objectpts = gCentroid(polys, byid=TRUE)
+		else
+			objectpts = as(as(polys, "SpatialLinesDataFrame"), "SpatialPoints")
+
 		pts = rasterToPoints(tras, spatial=TRUE)
 
-		# Distance is in kilometers, convert to meters
-		mindists = apply(spDists(pts, centers, longlat=TRUE), 1, min)
+		numcalcs = as.numeric(length(pts)) * as.numeric(length(objectpts))
+		cat("Distance to nearest calculation will require", 
+								numcalcs, "calculations", "\n")
+
+		# If there are too many points for nearest neighbor, subsample 
+		if(numcalcs > 7e8){
+
+			numneeded = floor(7e8 / length(pts))
+			numsamp = length(objectpts) - numneeded
+			cat("Sub-sampling points to 7e8 calculations", "\n")
+
+			set.seed(123)
+			objectpts = objectpts[-sample(1:length(objectpts), numsamp, replace=F)]
+		}
+
+		# Distance is in kilometers, convert to meters. 
+		cat("Calculating distances...", "\n")
+		mindists = apply(spDists(pts, objectpts, longlat=TRUE), 1, min)
 		values(tras) = mindists*1000
 
 	} else{
@@ -110,6 +135,58 @@ dist_nearest_neighbor = function(ras, shp){
 	}
 
 	return(tras)
+}
+
+min_distance_buffered = function(pt, sl, buffers=c(0.5, 1, 2, 3, 4, 5),
+                                 crs_str="+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"){
+
+  # Tries to be smart about computing nearest distance.  
+  # Computes a range of rectangular buffers and only computes distance for points
+  # in the buffer. For small buffers, this is mush faster than computing the 
+  # distance to all points and taking the minimum.
+  #
+  # If none of the buffers hold any points, return the distance of maximum 
+  # buffer for that raster.
+  #
+  # Parameters
+  # ----------
+  # pt : 1 X 2 matrix
+  #		A point for which to find the minimum distance
+  # sl : SpatialPointsDataFrame
+  #		All the points against which to compute nearest distance
+  # buffers: vector
+  #		Vector of sizes buffers to draw around points. In km
+  # crs_str : string
+  # 	Projection of the raster
+  #
+  #	Returns
+  # -------
+  # : distance to nearest point or max buffer.
+
+  xy = pt
+  buffersrng = 0.0003258508*(buffers*100 / 3) # Range of buffers
+  
+  inpoly = array(NA,  dim=length(buffers))
+  inds = list()
+  
+  for(i in 1:length(buffersrng)){
+    
+    buffer = buffersrng[i]
+    xs = c(xmin=xy[, 1] - buffer, xmax=xy[, 1] + buffer)
+    ys = c(ymin=xy[, 2] - buffer, ymax=xy[, 2] + buffer)
+    ind = point.in.polygon(sl@coords[, 1], sl@coords[, 2], rep(xs, 2), rep(ys, c(2, 2)))
+    
+    inpoly[i] = any(ind > 0)
+    inds[[i]] = ind
+  }
+  
+  if(!any(inpoly)){
+    dist = spDistsN1(pt, c(xs[1], ys[1]), longlat = T)
+  } else{
+    ptsin = sl[inds[[which(inpoly)[1]]] > 0, ]
+    dist = min(spDists(pt, ptsin, longlat=T))
+  }
+  return(dist)
 }
 
 

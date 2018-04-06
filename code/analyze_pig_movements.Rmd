@@ -59,8 +59,9 @@ dataset = list()
 # Load and merge each data file
 for(filenm in studys){
   
-  
   studynm = strsplit(basename(filenm), ".", fixed=T)[[1]][1]
+  
+  if(studynm == "tejon"){
   tdat =  fread(filenm)
   # if(studynm == "fl_raoul"){
   #   fr = tdat
@@ -68,6 +69,7 @@ for(filenm in studys){
   #   f = tdat
   # } else{
   dataset[[studynm]] = merge(tdat, pigattrib, by="pigID")
+  }
   #}
 }
 
@@ -76,50 +78,6 @@ for(filenm in studys){
 # rm(fr)
 # rm(f)
 
-```
-
-```{r, echo=FALSE}
-source("pigfxns.R")
-pig1 = dataset[['tejon']]#[pigID == "tejonM302"]
-
-res = build_design_matrix(pig1, c("crop"), modeltype="main_effects")
-tdat = res$data
-
-pig1[, lapply(.SD, function(x) as.vector(scale(x))), by=pigID, .SDcols=c("crw", "canopycover_loc", "crop_loc", "crop_grad")]
-tdat[, lapply(.SD, sd), .SDcols=names(tdat)[names(tdat) %like% "*_z"]]
-
-evalform = res$evalform
-evalform = update.formula(evalform, ~ . - sex)
-
-Xmat = model.matrix(evalform, data=pig1)
-
-registerDoMC(cores=4)
-
-# Fit overall model with GLM LASSO
-fit_model1 = cv.glmnet(Xmat, y=pig1$z, offset=log(pig1$tau), family="poisson", 
-                       alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
-
-
-```
-
-```{r}
-
-temp = pig1[, lapply(.SD, function(x) as.vector(scale(x))), by=pigID, .SDcols=scaledvars]
-
-res = pig1[, list(crop_loc, crop_grad, pigID)][, lapply(.SD, function(x) as.vector(scale(x))), by=pigID, .SDcols=-"pigID"]
-res$pigID = pig1$pigID
-res[,lapply(.SD, mean), by=pigID, .SDcols=-"pigID"]
-```
-
-```{r, echo=FALSE}
-plot(fit_model1)
-fit_model1$glmnet.fit$beta[, 10, drop=F]
-```
-
-
-```{r, echo=FALSE, message=FALSE}
-source("pigfxns.R")
-dataset = list(txcamp=txdat, tejon=tejondat, fl_raoul=fldat, tx_tyler_w2=txtylerdat, srel_contact=srelcdat)
 ```
 
 ```{r, echo=FALSE, message=FALSE}
@@ -163,7 +121,6 @@ for(studynm in names(dataset)){
   cat("Fitting", studynm, "\n") 
   dat = dataset[[studynm]]
   
-  # Following Buderman et al. standardize on a per pig level, rather than across all pigs?
   res = build_design_matrix(dat, c("crop"), modeltype="main_effects")
   dat = res$data
   dataset[[studynm]] = res$data
@@ -176,14 +133,10 @@ for(studynm in names(dataset)){
   registerDoMC(cores=4)
   
   # Fit overall model with GLM LASSO
-  fit_model1 = cv.glmnet(Xmat, y=dat$z, offset=log(dat$tau), family="poisson", 
+  fit_model1 = cv.glmnet(Xmat[, c("ndvi_loc_z", "ndvi_grad_z", "canopycover_loc_z", "canopycover_grad_z")], y=dat$z, offset=log(dat$tau), family="poisson", 
                        alpha=1, nlambda=20, nfolds=4, parallel=TRUE)
   allmodel1_fits[[studynm]] = fit_model1
 }
-```
-
-```{r, echo=FALSE, message=FALSE}
-fwrite(as.data.table(allXs[["tejon"]]), "../results/temp_Xtejon.csv")
 ```
 
 Examine the results of the regularized model fit. 
@@ -197,6 +150,9 @@ for(studynm in names(allmodel1_fits)){
   # print(tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=F])
   mod1_betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=T]
 }
+
+mod1_betas
+#saveRDS(mod1_betas, "../results/mod1_betas.rds")
 ```
 
 Plot results by coefficient.
@@ -300,8 +256,10 @@ for(studynm in names(allmodel2_fits)){
   
   tfit = allmodel2_fits[[studynm]]
   #plot(tfit)
-  model2betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=T]
+  model2betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=T]
 }
+
+saveRDS(model2betas, "../results/mod2_betas.rds")
 ```
 
 After regularization, how do these effects vary with time?  Let's look at the daily effect on movement rate first
@@ -427,7 +385,7 @@ This seems to be evidence for temporal resource swapping
 
 For three out of the 5 studies, there is decent evidence that, as we'd probably expect, pigs are showing temporal shifts between natural resource and anthropogenic resource selection. 
 
-## Model 3: Interactive effects of resources on pig movement
+## Model X: Interactive effects of resources on pig movement
 
 This model is examining whether the presence of one forage resource effects how pigs use another.  Specifically looking for interactions between foraging resources.
 
@@ -500,7 +458,7 @@ A few interesting interactive effects, but nothing consistent across populations
 
 These interactions probably also vary with time. Haven't looked at that yet.
 
-## Step 4: Replacing time-varying parameters with temperature, precipitation, and snow cover interactions
+## Model 3: Replacing time-varying parameters with temperature, precipitation, and snow cover interactions
 
 This will be similar to model 2, but instead of basis functions that vary by month (we will keep the daily basis function), we will replace these effect by interactions with temperature and precipitation.  This model is trying to get at the mechanistic time varying effects 
 
@@ -538,9 +496,11 @@ for(studynm in names(allmodel4_fits)){
   tfit = allmodel4_fits[[studynm]]
   #plot(tfit)
   print(studynm)
-  print(tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=F])
-  mod4betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=T]
+  #print(tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.1se), drop=F])
+  mod4betas[[studynm]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=T]
 }
+
+saveRDS(mod4betas, "../results/mod4_betas.rds")
 ```
 
 ```{r, fig.height=15, fig.width=20}
@@ -548,9 +508,9 @@ tmpdt = list()
 
 for(studynm in names(mod4betas)){
   
-  betas = mod4betas[[studynm]][1:39]
+  betas = mod4betas[[studynm]][1:42]
   nms = names(betas)
-  dt = data.table(coef=nms, betas, study=studynm)
+  dt = data.table(coef=nms, betas=betas, study=studynm)
   tmpdt[[studynm]] = dt
 }
 
@@ -569,10 +529,10 @@ ggplot(mod4betas_new) + geom_point(aes(x=study, y=betas, color=study), size=4) +
 
 ---
 
-Plot the temperature, precipitation, and NDVI effects over "month of year" to see how these variables are chaning over the study period.
+Plot the temperature, precipitation, and NDVI effects over "month of year" to see how these variables are changing over the study period.
 
 ```{r, echo=FALSE, message=FALSE}
-
+library(gridExtra)
 # Plot standardized temp, 
 for(studynm in names(dataset)){
   
@@ -596,8 +556,101 @@ for(studynm in names(dataset)){
 
 ```
 
-
 ---
+
+For each population, plot the predicted monthly varying effects of resource use given the relationship between temperature and precipitation.
+
+```{r}
+
+library(gridExtra)
+for(studynm in names(dataset)){
+  
+  dat = dataset[[studynm]]
+  dat[ , datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
+  dat[ , monthofyear:=month(datetime)]
+  
+  st = function(x){
+    return((x - mean(dat$temperature_loc)) / sd(dat$temperature_loc))
+  }
+  
+  sp = function(x){
+    return((x - mean(dat$precipitation_loc)) / sd(dat$precipitation_loc))
+  }
+  
+  meanvals = dat[, list(meantemp=mean(temperature_loc_z), meanprecip=mean(precipitation_loc_z)), by=monthofyear]
+  
+  sbetas = mod4betas_new[study == studynm]
+  cropeff = sbetas[coef == "crop_loc_z", betas] + sbetas[coef == "temperature_loc_z:crop_loc_z", betas]*meanvals$meantemp + 
+                                           sbetas[coef == "precipitation_loc_z:crop_loc_z", betas]*meanvals$meanprecip +
+                                           sbetas[coef == "temperature_loc_z:precipitation_loc_z:crop_loc_z", betas]*meanvals$meantemp*meanvals$meanprecip
+  mastingeff = sbetas[coef == "masting_loc_z", betas] + sbetas[coef == "temperature_loc_z:masting_loc_z", betas]*meanvals$meantemp + 
+                                           sbetas[coef == "precipitation_loc_z:masting_loc_z", betas]*meanvals$meanprecip +
+                                           sbetas[coef == "temperature_loc_z:precipitation_loc_z:masting_loc_z", betas]*meanvals$meantemp*meanvals$meanprecip
+  ndvieff = sbetas[coef == "ndvi_loc_z", betas] + sbetas[coef == "temperature_loc_z:ndvi_loc_z", betas]*meanvals$meantemp + 
+                                           sbetas[coef == "precipitation_loc_z:ndvi_loc_z", betas]*meanvals$meanprecip +
+                                           sbetas[coef == "temperature_loc_z:precipitation_loc_z:ndvi_loc_z", betas]*meanvals$meantemp*meanvals$meanprecip
+  
+  df = as.data.table(data.frame(cropeff=cropeff, mastingeff=mastingeff, ndvieff=ndvieff, month=meanvals$monthofyear))
+  tplot1 = ggplot(df[order(month)]) + geom_line(aes(x=month, y=cropeff, color="Crop")) + 
+                                      geom_line(aes(x=month, y=mastingeff, color="Masting")) + 
+                                      geom_line(aes(x=month, y=ndvieff, color="NDVI")) +
+                                      ylab("Forage location effect") + xlab("Month") + theme_bw() + ggtitle(studynm)
+  tplot2 = ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meantemp, color="Temperature")) + 
+                              geom_line(aes(x=monthofyear, y=meanprecip, color="Precipitation")) + 
+                              ylab("Standardize temperature/precipitation") + xlab("Month") + theme_bw() + ggtitle(studynm)
+  print(grid.arrange(tplot1, tplot2, nrow=1, ncol=2))
+  
+}
+
+```
+
+
+```{r}
+
+library(gridExtra)
+for(studynm in names(dataset)){
+  
+  dat = dataset[[studynm]]
+  dat[ , datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
+  dat[ , monthofyear:=month(datetime)]
+  
+  st = function(x){
+    return((x - mean(dat$temperature_loc)) / sd(dat$temperature_loc))
+  }
+  
+  sp = function(x){
+    return((x - mean(dat$precipitation_loc)) / sd(dat$precipitation_loc))
+  }
+  
+  meanvals = dat[, list(meantemp=mean(temperature_loc_z), meanprecip=mean(precipitation_loc_z)), by=monthofyear]
+  #fittemp = loess.smooth(meanvals$monthofyear, meanvals$meantemp)
+  #fitprecip = loess.smooth(meanvals$monthofyear, meanvals$meanprecip)
+  #meanvals = as.data.table(data.frame(monthofyear=fittemp$x, meantemp=fittemp$y, meanprecip=fitprecip$y))
+  
+  sbetas = mod4betas_new[study == studynm]
+  cropeff = sbetas[coef == "crop_grad_z", betas] + sbetas[coef == "temperature_loc_z:crop_grad_z", betas]*meanvals$meantemp + 
+                                           sbetas[coef == "precipitation_loc_z:crop_grad_z", betas]*meanvals$meanprecip +
+                                           sbetas[coef == "temperature_loc_z:precipitation_loc_z:crop_grad_z", betas]*meanvals$meantemp*meanvals$meanprecip
+  mastingeff = sbetas[coef == "masting_grad_z", betas] + sbetas[coef == "temperature_loc_z:masting_grad_z", betas]*meanvals$meantemp + 
+                                           sbetas[coef == "precipitation_loc_z:masting_grad_z", betas]*meanvals$meanprecip +
+                                           sbetas[coef == "temperature_loc_z:precipitation_loc_z:masting_grad_z", betas]*meanvals$meantemp*meanvals$meanprecip
+  ndvieff = sbetas[coef == "ndvi_grad_z", betas] + sbetas[coef == "temperature_loc_z:ndvi_grad_z", betas]*meanvals$meantemp + 
+                                           sbetas[coef == "precipitation_loc_z:ndvi_grad_z", betas]*meanvals$meanprecip +
+                                           sbetas[coef == "temperature_loc_z:precipitation_loc_z:ndvi_grad_z", betas]*meanvals$meantemp*meanvals$meanprecip
+  
+  df = as.data.table(data.frame(cropeff=cropeff, mastingeff=mastingeff, ndvieff=ndvieff, month=meanvals$monthofyear))
+  tplot1 = ggplot(df[order(month)]) + geom_line(aes(x=month, y=cropeff*-1, color="Crop")) + 
+                                      geom_line(aes(x=month, y=mastingeff, color="Masting")) + 
+                                      geom_line(aes(x=month, y=ndvieff, color="NDVI")) +
+                                      ylab("Forage directional effect") + xlab("Month") + theme_bw() + ggtitle(studynm)
+  tplot2 = ggplot(meanvals) + geom_line(aes(x=monthofyear, y=meantemp, color="Temperature")) + 
+                              geom_line(aes(x=monthofyear, y=meanprecip, color="Precipitation")) + 
+                              ylab("Standardize temperature/precipitation") + xlab("Month") + theme_bw() + ggtitle(studynm)
+  print(grid.arrange(tplot1, tplot2, nrow=1, ncol=2))
+  
+}
+
+```
 
 ## TODO: Post-hoc population-level analyses
 
@@ -615,7 +668,7 @@ for(studynm in names(dataset)){
   dat[ , hourofday:=hour(datetime)]
   dat[ , monthofyear:=month(datetime)]
   
-  sumdat = dat[, lapply(list(ndvi=ndvi_loc, crop=crop_loc, masting=masting_loc, water=water_loc, canopycover=canopycover_loc), function(x) sd(x) / mean(x))]
+  sumdat = dat[, lapply(list(ndvi=ndvi_loc, crop=crop_loc, masting=masting_loc, water=water_loc, canopycover=canopycover_loc), function(x) mean(x))]
   sumdat$study = studynm
   sumdats[[studynm]] = sumdat
   

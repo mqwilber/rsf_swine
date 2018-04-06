@@ -42,10 +42,10 @@ source('pigfxns.R')
 source('clean_studies.R')
 anal_params = yaml.load_file("analysis_parameters.yml")
 sink("log_ctmc.txt") # log file
-preprocessed = TRUE
+preprocessed = FALSE
 
 
-for(studynm in c("tejon", "txcamp", "srel_contact", "tx_tyler_w2", 
+for(studynm in c("txcamp", "srel_contact", "tx_tyler_w2", 
                  "tx_tyler_w1", "fl_raoul", "florida", "mo_kurt0",
                  "cali0", "cali2")) {
 

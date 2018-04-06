@@ -388,6 +388,14 @@ effects.
 6. Consider implementing time-varying Canopy cover in the base model. [DONE]
 
 
+## March 30
+
+1. Scale-back down to 1 pig.
+	- Try to figure out how to best implement distance to crop as pigs are very selective about crop type AND location of crop. 
+	- Work on the distance to nearest water metric. 
+	- Work on the Tejon population. 
+	- For some reason, 2 Tejon pigs are in oats that show up in crops, but not in cereals.
+2. Pig-specific movement covariates. 
 
 
 

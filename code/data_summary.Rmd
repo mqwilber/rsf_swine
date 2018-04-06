@@ -30,8 +30,9 @@ meandat = dat[order(pigID, datetime), ][,list(meanlat = mean(latitude[drop:lengt
 
 us <- c(left = -125, bottom = 23.75, right = -67, top = 54)
 map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite")
-plt = ggmap(map) + geom_point(data=meandat, aes(x=meanlong, y=meanlat, color=study), size=1)
+plt = ggmap(map) + geom_point(data=meandat, aes(x=meanlong, y=meanlat, color=study), size=1) + guides(color=FALSE)
 plt
+ggsave("../results/studymap.pdf", width=8, height=6)
 ```
 
 The study IDs are unique identifiers for different studies. The contributors/contacts that we have associated with each study are

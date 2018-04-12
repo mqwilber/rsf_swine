@@ -96,10 +96,11 @@ dist_nearest_neighbor = function(ras, shp, center_dist=TRUE){
 
 	polys = shp
 	tras = ras
-	polys = crop(polys, ras)
 
 	# Polygons are present
 	if(dim(polys)[1] != 0){
+		
+		polys = crop(polys, ras)
 
 		# For each cell in raster, compute distance to nearest
 

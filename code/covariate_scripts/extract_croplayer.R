@@ -98,6 +98,7 @@ for(studynm in study_sum$study){
 
 				shp = shapefile(fnameshp)
 				shp = shp[shp$DN == 1, ]
+				
 				distras = dist_nearest_neighbor(dumras, shp)
 				writeRaster(distras, filename=file.path(base, "data/covariate_data/croplayer", 
 											studynm, paste(studynm, "_", ctype, "_", yr, "_nndistance.tif", sep="")), 

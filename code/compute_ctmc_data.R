@@ -45,9 +45,7 @@ sink("log_ctmc.txt") # log file
 preprocessed = FALSE
 
 
-for(studynm in c("txcamp", "srel_contact", "tx_tyler_w2", 
-                 "tx_tyler_w1", "fl_raoul", "florida", "mo_kurt0",
-                 "cali0", "cali2")) {
+for(studynm in c("tx_susan")) {
 
   #studynm = "tejon"
   cat("Beginning analysis for", studynm, "\n")

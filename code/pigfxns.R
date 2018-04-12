@@ -1256,7 +1256,7 @@ build_design_matrix2 = function(dat, stdcols, nonstdcols){
 }
 
 build_daily_design_matrix = function(dat, stdcols, nonstdcols, 
-                                                splinecols, df_hour=5){
+                                          splinecols, df_hour=5){
   # Build a design matrix for daily splines
   #
   # Parameters 
@@ -1283,13 +1283,15 @@ build_daily_design_matrix = function(dat, stdcols, nonstdcols,
   # -----
   # Defaults to cyclic-cubic splines
 
-  # Build time-dependent design matrix for a cyclic cubic spline
-  splinehour = s(hourofday, bs="cc", k=df_hour) 
-  bs_hours = smooth.construct2(splinehour, dat, NULL)$X
 
   # Build non-spline matrix
   Xfull = build_design_matrix2(dat, stdcols, nonstdcols)
 
+  # Build time-dependent design matrix for a cyclic cubic spline
+
+
+  splinehour = s(hourofday, bs="cc", k=df_hour) 
+  bs_hours = smooth.construct2(splinehour, dat, NULL)$X
   Xgam = bs_hours
 
   # Add basis functions onto Xgam design matrix
@@ -1388,6 +1390,29 @@ build_seasonal_design_matrix = function(dat, stdcols, nonstdcols,
 build_tempprecip_design_matrix = function(dat, stdcols, nonstdcols, 
                                                 splinecols, seasonalcols, 
                                                 df_hour=5){
+  # Build a design matrix with seasonal effects given by temperature and 
+  # precipitation interactions
+  #
+  # Parameters
+  # ----------
+  # dat : data.table
+  #   The dataset. Must have a column named hourofday and monthofyear
+  # stdcols : vector of column names as strings
+  #   Columns that should be standardized
+  # nonstdcols : vector of column names as strings
+  #   Columns that shouldn't be standardized
+  # splinecols : vector of column names as strings
+  #   Must be a subset of stdcols and contains the columns that will be
+  #   converted into daily basis functions.
+  # seasonalcols : vector of columns names as strings
+  #   The columns that will interact with season
+  # df_hours : int
+  #   The there will be df_hours - 1 basis expansions (i.e. columns) for each
+  #   spline.
+  #
+  # Returns
+  # -------
+  # : A design matrix with temp and precip effects.
 
   Xgam_full = build_daily_design_matrix(dat, stdcols, nonstdcols, 
                                     splinecols)
@@ -1447,6 +1472,24 @@ scale2 = function(x){
   return(sx)
 }
 
+
+remove_nas_from_crop = function(tdat, cropdistgrad){
+  # If cropdistgrad columns is NA, set to 0.
+
+  # Set fngrad to 0 if it is NA, otherwise keep it the same
+  for(cdist in cropdistgrad){
+
+    if(all(is.na(tdat[[cdist]])))
+       fngrad = rep(0, nrow(tdat))
+    else
+      fngrad = tdat[[cdist]]
+    
+    tdat[[cdist]] = fngrad
+  }
+
+  return(tdat)
+
+}
 
 
 
@@ -1633,85 +1676,85 @@ scale2 = function(x){
 
 # }
 
-build_gam_design_matrix = function(Xmat, dat, covar_use, df_hour=3, df_month=3, 
-                                    cyclic_year=TRUE){
-  # Build the GAM design matrix for time varying effects
-  #
-  # Parameters
-  # ----------
-  # Xmat : matrix
-  #   Design matrix with standardized main effects
-  # dat : data.table
-  #   Data.table that at least has the variables hourofday and monthofyear
-  # covar_use : vector of strings
-  #   List of main effects in Xmat to include as static main effects in the GAM
-  # df_hour : int
-  #   df_hour - 1 is the number of basis expansions used for the cyclic hour effect
-  # df_month : int
-  #   df_month is the number of basis expansions used for the non-cyclic month effect.
-  #   df_month - 1 are used is cyclic_year=TRUE
-  # cyclic_year : bool
-  #   If True, its a cyclic spline to year.  Useful if the collar data is over
-  #   the course of the whole year.  Otherwise, fit a standard cubic spline.
-  #
-  # Returns
-  # -------
-  # : matrix
-  #   The GAM design matrix
+# build_gam_design_matrix = function(Xmat, dat, covar_use, df_hour=3, df_month=3, 
+#                                     cyclic_year=TRUE){
+#   # Build the GAM design matrix for time varying effects
+#   #
+#   # Parameters
+#   # ----------
+#   # Xmat : matrix
+#   #   Design matrix with standardized main effects
+#   # dat : data.table
+#   #   Data.table that at least has the variables hourofday and monthofyear
+#   # covar_use : vector of strings
+#   #   List of main effects in Xmat to include as static main effects in the GAM
+#   # df_hour : int
+#   #   df_hour - 1 is the number of basis expansions used for the cyclic hour effect
+#   # df_month : int
+#   #   df_month is the number of basis expansions used for the non-cyclic month effect.
+#   #   df_month - 1 are used is cyclic_year=TRUE
+#   # cyclic_year : bool
+#   #   If True, its a cyclic spline to year.  Useful if the collar data is over
+#   #   the course of the whole year.  Otherwise, fit a standard cubic spline.
+#   #
+#   # Returns
+#   # -------
+#   # : matrix
+#   #   The GAM design matrix
 
-  splinehour = s(hourofday, bs="cc", k=df_hour) # Build time-dependent design matrix for a cyclic cubic spline
-  bs_hours = smooth.construct2(splinehour, dat, NULL)$X # B-spline basis for hour effect
+#   splinehour = s(hourofday, bs="cc", k=df_hour) # Build time-dependent design matrix for a cyclic cubic spline
+#   bs_hours = smooth.construct2(splinehour, dat, NULL)$X # B-spline basis for hour effect
 
-  if(cyclic_year){
-    splinemonth = s(monthofyear, bs="cc", k=df_month) # Yearly cyclic spline
-    bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
-  }
-  else{
+#   if(cyclic_year){
+#     splinemonth = s(monthofyear, bs="cc", k=df_month) # Yearly cyclic spline
+#     bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
+#   }
+#   else{
 
-    if(df_month > 1){
-      splinemonth = s(monthofyear, bs="cr", k=df_month - 1) # Non-cyclic spline for year
-      bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
-    } else{
-      bs_months = t(t(rep(1, nrow(Xmat))))
-      df_month = 2
-    }
-  }
+#     if(df_month > 1){
+#       splinemonth = s(monthofyear, bs="cr", k=df_month - 1) # Non-cyclic spline for year
+#       bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
+#     } else{
+#       bs_months = t(t(rep(1, nrow(Xmat))))
+#       df_month = 2
+#     }
+#   }
 
-  # Make time-varying effects
-  bs_months_coverloc_effect = Xmat[, "canopycover_loc_z"] * bs_months # Allows the effect of canopy cover to vary with time of day
-  bs_months_covergrad_effect = Xmat[, "canopycover_grad_z"] * bs_months
+#   # Make time-varying effects
+#   bs_months_coverloc_effect = Xmat[, "canopycover_loc_z"] * bs_months # Allows the effect of canopy cover to vary with time of day
+#   bs_months_covergrad_effect = Xmat[, "canopycover_grad_z"] * bs_months
 
-  bs_months_waterloc_effect = Xmat[, "water_loc_z"] * bs_months
-  bs_months_water_grad_effect = Xmat[, "water_grad_z"] * bs_months
+#   bs_months_waterloc_effect = Xmat[, "water_loc_z"] * bs_months
+#   bs_months_water_grad_effect = Xmat[, "water_grad_z"] * bs_months
 
-  bs_months_croploc_effect = Xmat[, "crop_loc_z"] * bs_months
-  bs_months_mastingloc_effect = Xmat[, "masting_loc_z"] * bs_months
-  bs_months_ndviloc_effect = Xmat[, "ndvi_loc_z"] * bs_months # Not totally convinced this makes sense...
+#   bs_months_croploc_effect = Xmat[, "crop_loc_z"] * bs_months
+#   bs_months_mastingloc_effect = Xmat[, "masting_loc_z"] * bs_months
+#   bs_months_ndviloc_effect = Xmat[, "ndvi_loc_z"] * bs_months # Not totally convinced this makes sense...
 
-  bs_months_cropgrad_effect = Xmat[, "crop_grad_z"] * bs_months
-  bs_months_mastinggrad_effect = Xmat[, "masting_grad_z"] * bs_months
-  bs_months_ndvigrad_effect = Xmat[, "ndvi_grad_z"] * bs_months # Not totally convinced this makes sense...
+#   bs_months_cropgrad_effect = Xmat[, "crop_grad_z"] * bs_months
+#   bs_months_mastinggrad_effect = Xmat[, "masting_grad_z"] * bs_months
+#   bs_months_ndvigrad_effect = Xmat[, "ndvi_grad_z"] * bs_months # Not totally convinced this makes sense...
 
-  Xgam = cbind(Xmat[, covar_use], bs_hours, bs_months, 
-                   bs_months_coverloc_effect, bs_months_covergrad_effect,
-                   bs_months_waterloc_effect, bs_months_water_grad_effect,
-                   bs_months_croploc_effect,  bs_months_cropgrad_effect,
-                   bs_months_mastingloc_effect, bs_months_mastinggrad_effect,
-                   bs_months_ndviloc_effect, bs_months_ndvigrad_effect)
+#   Xgam = cbind(Xmat[, covar_use], bs_hours, bs_months, 
+#                    bs_months_coverloc_effect, bs_months_covergrad_effect,
+#                    bs_months_waterloc_effect, bs_months_water_grad_effect,
+#                    bs_months_croploc_effect,  bs_months_cropgrad_effect,
+#                    bs_months_mastingloc_effect, bs_months_mastinggrad_effect,
+#                    bs_months_ndviloc_effect, bs_months_ndvigrad_effect)
 
-  p_month = df_month - 1
-  p_hour = df_hour - 1
+#   p_month = df_month - 1
+#   p_hour = df_hour - 1
 
-  colnames(Xgam) = c(covar_use, 
-                         paste0("hour_", 1:p_hour), paste0("month_", 1:p_month),
-                         paste0("cover_loc_", 1:p_month), paste0("cover_grad_", 1:p_month),
-                         paste0("water_loc_", 1:p_month), paste0("water_grad_", 1:p_month),
-                         paste0("crop_loc_", 1:p_month), paste0("crop_grad_", 1:p_month),
-                         paste0("masting_loc_", 1:p_month), paste0("masting_grad_", 1:p_month),
-                         paste0("ndvi_loc_", 1:p_month), paste0("ndvi_grad_", 1:p_month))
+#   colnames(Xgam) = c(covar_use, 
+#                          paste0("hour_", 1:p_hour), paste0("month_", 1:p_month),
+#                          paste0("cover_loc_", 1:p_month), paste0("cover_grad_", 1:p_month),
+#                          paste0("water_loc_", 1:p_month), paste0("water_grad_", 1:p_month),
+#                          paste0("crop_loc_", 1:p_month), paste0("crop_grad_", 1:p_month),
+#                          paste0("masting_loc_", 1:p_month), paste0("masting_grad_", 1:p_month),
+#                          paste0("ndvi_loc_", 1:p_month), paste0("ndvi_grad_", 1:p_month))
 
-  return(Xgam)
-}
+#   return(Xgam)
+# }
 
 
 

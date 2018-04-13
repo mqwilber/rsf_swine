@@ -1255,9 +1255,8 @@ build_design_matrix2 = function(dat, stdcols, nonstdcols){
 
 }
 
-build_daily_design_matrix = function(dat, stdcols, nonstdcols, 
-                                          splinecols, df_hour=5){
-  # Build a design matrix for daily splines
+build_daily_design_matrix = function(dat, stdcols, nonstdcols, splinecols){
+  # Build a design matrix for daily factor effect
   #
   # Parameters 
   # ----------
@@ -1270,51 +1269,53 @@ build_daily_design_matrix = function(dat, stdcols, nonstdcols,
   # splinecols : vector of column names as string
   #   Must be a subset of stdcols and contains the columns that will be
   #   converted into daily basis functions.
-  # df_hours : int
-  #   The there will be df_hours - 1 basis expansions (i.e. columns) for each
-  #   spline.
   #
   # Returns
   # -------
   # : matrix
-  #   The design matrix with basis functions
+  #   The design matrix with seasonal factor.
   #
   # Notes
   # -----
   # Defaults to cyclic-cubic splines
 
+  # Create hourly dummy variable
+  timeofday = list("morning"=c(1:8), "midday"=c(9:16), "evening"= c(17:23, 0))
+
+  hours_dummies = list()
+
+  for(tod in names(timeofday)){
+    hours = timeofday[[tod]]
+    hours_dummies[[tod]] = as.numeric(dat$hourofday %in% hours)
+  }
+
+  hourmat = do.call(cbind, hours_dummies)
+  Xtod = hourmat
 
   # Build non-spline matrix
   Xfull = build_design_matrix2(dat, stdcols, nonstdcols)
 
-  # Build time-dependent design matrix for a cyclic cubic spline
-
-
-  splinehour = s(hourofday, bs="cc", k=df_hour) 
-  bs_hours = smooth.construct2(splinehour, dat, NULL)$X
-  Xgam = bs_hours
-
-  # Add basis functions onto Xgam design matrix
+  # Add daily effects onto columns
   for(colname in splinecols){
-    bs_hours_col = Xfull[, colname] * bs_hours
-    Xgam = cbind(Xgam, bs_hours_col)
+    hour_cols = Xfull[, colname] * hourmat
+    Xtod = cbind(Xtod, hour_cols)
   }
 
-  # Remove spline cols from Xfull
+  # Remove splinecols from Xfull
   Xfull_red = Xfull[, -which(colnames(Xfull) %in% splinecols)]
-  Xgam_full = cbind(Xfull_red, Xgam)
+  Xtod_full = cbind(Xfull_red, Xtod)
 
   # Set column names
-  colnames(Xgam_full) = c(colnames(Xfull_red), 
-                          paste0("base_hour_", 1:(df_hour - 1)),
+  colnames(Xtod_full) = c(colnames(Xfull_red), 
+                          paste0("base_hour_", names(timeofday)),
                           do.call(c, lapply(splinecols, 
-                                        function(x) paste0(x, "_", 1:(df_hour - 1)))))
-  return(Xgam_full)
+                                        function(x) paste0(x, "_", names(timeofday)))))
+  return(Xtod_full)
 }
 
+
 build_seasonal_design_matrix = function(dat, stdcols, nonstdcols, 
-                                                splinecols, seasonalcols, 
-                                                df_hour=5){
+                                                splinecols, seasonalcols){
   # Build a design matrix with seasonal effects (winter, spring, summer, fall)
   #
   # Parameters
@@ -1338,8 +1339,7 @@ build_seasonal_design_matrix = function(dat, stdcols, nonstdcols,
   # -------
   # : A design matrix with season effects.
 
-  Xgam_full = build_daily_design_matrix(dat, stdcols, nonstdcols, 
-                                    splinecols)
+  Xtod_full = build_daily_design_matrix(dat, stdcols, nonstdcols, splinecols)
 
   # Create seasonal dummy variables
   seasons = list("summer" = c(6, 7, 8), "fall" = c(9, 10, 11), 
@@ -1348,26 +1348,26 @@ build_seasonal_design_matrix = function(dat, stdcols, nonstdcols,
 
   for(season in names(seasons)){
     smonths = seasons[[season]]
-    season_dummies[[season]] = as.numeric(tdat$monthofyear %in% smonths)
+    season_dummies[[season]] = as.numeric(dat$monthofyear %in% smonths)
   }
 
   seasonmat = do.call(cbind, season_dummies)
-  Xseason = cbind(Xgam_full, seasonmat)
+  Xseason = cbind(Xtod_full, seasonmat)
 
-
+  tod = c("morning", "midday", "evening")
   for(scol in c(seasonalcols, "base_hour")) {
 
     for(season in names(seasons)){
       if((scol %in% splinecols) | (scol == "base_hour")) {
 
-        varnames = paste0(scol, "_", 1:(df_hour - 1))
-        intercols = Xgam_full[, varnames] * seasonmat[, season]
+        varnames = paste0(scol, "_", tod)
+        intercols = Xtod_full[, varnames] * seasonmat[, season]
         colnames(intercols) = paste0(varnames, ":", season)
         Xseason = cbind(intercols, Xseason)
 
       } else{
 
-        intercols = Xgam_full[, scol] * seasonmat[, season]
+        intercols = Xtod_full[, scol] * seasonmat[, season]
         Xseason = cbind(intercols, Xseason)
         colnames(Xseason)[1] = paste0(scol, ":", season)
 

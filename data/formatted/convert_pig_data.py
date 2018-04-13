@@ -25,6 +25,9 @@ GPS locations.
 2. Michigan pigs that were sampled in the year 2000 are removed as there are no
 H:M:S fixes on the GPS dates.
 
+2.0. All michigan points below 43.75 latitude are remove as these are pre-release
+and post-capture data.
+
 2.1. Errant txcamp points are removed.
 
 2.2. Errant srel_contact points are removed
@@ -190,7 +193,7 @@ for i, df in enumerate(dfs):
 full_dat = pd.concat(dfs)
 
 # For the michigan study, exclude all the points from year 2000 as they don't have
-# daily times
+# daily times. Also exclude all points below 43.75 latitude
 full_dat.loc[:, "year"] = [a.year for a in full_dat.datetime] 
 full_dat = full_dat[~((full_dat.year == 2000) & (full_dat.study == "michigan"))]
 
@@ -366,6 +369,11 @@ comb_dat = comb_dat[inds]
 comb_dat.loc[:, "datetime"] = pd.to_datetime(comb_dat.datetime)
 comb_dat.loc[:, "longitude"] = comb_dat.longitude.astype(np.float)
 comb_dat.loc[:, "latitude"] = comb_dat.latitude.astype(np.float)
+
+
+# Clean up errant points in Michigan after converting lat long to floats
+comb_dat = comb_dat[~(((comb_dat.latitude < 43.75) | (comb_dat.longitude < -84.6)) & (comb_dat.study == "michigan"))]
+
 
 # Reformat all Fixes
 

@@ -11,7 +11,7 @@ base = "../data/covariate_data/ndvi/downloaded"
 
 studysum = fread("../data/formatted/study_summary.csv")
 
-for(studynm in studysum$study){
+for(studynm in "michigan"){#studysum$study){
 
 	# Make extent object
 	tstud = studysum[study == studynm]

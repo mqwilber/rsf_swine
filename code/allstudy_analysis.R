@@ -48,12 +48,12 @@ allseasonbb = list()
 alltpffects = list()
 
 # Loop through analysis for each study
-for(studynm in studynames){
+for(studynm in c("tx_tyler_k1")) { #studynames){
 
   cat("Beginning analysis of", studynm, "\n")
   dat = fread(paste0("~/Repos/rsf_swine/results/glmdata_by_study/", studynm, ".csv"))
   dat[ , datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
-  dat[ , hourofday:=scale(hour(datetime))]
+  dat[ , hourofday:=hour(datetime)]
   dat[ , monthofyear:=month(datetime)]
 
   # Extract the crop-using pigs
@@ -65,7 +65,6 @@ for(studynm in studynames){
 
   # Pigs must spend longer than 1 hour in crops to be crop users
   longcroppigs = timeincrops[tottime > 3600]$pigID
-
 
   ctypes = anal_params$croptypes
   croptypes = croppigs[z == 1, lapply(.SD, function(x) any(x == 1)),
@@ -106,12 +105,8 @@ for(studynm in studynames){
               "masting_grad_*", "water_grad_*", "crw_*"),
               paste0(cropdistgrad, "_*"))
 
-  # Number of basis - 1 for the cyclic spline. Keep the splines relatively small
-  df_hour = 5
   # Append at the end of each file
-  saveappend = "crop"
-
-  if(length(longcroppigs) > 0) {
+  saveappend = "crop_day_factor"
 
   ###################################################### 
   ### Step 1: Fit model with no time-varying effects ###
@@ -124,7 +119,7 @@ for(studynm in studynames){
   nongam = list()
   allbestbetas = list()
 
-  for(pig in longcroppigs){
+  for(pig in allpigs){
     
     # Extract a format data
     tdat = dat[pigID == pig]
@@ -151,6 +146,8 @@ for(studynm in studynames){
   nongam_dt = melt(do.call(rbind, nongam))
   colnames(nongam_dt) = c("pigID", "coef", "beta")
   nongam_dt$study = studynm
+
+  nongam_dt$cropuser = nongam_dt$pigID %in% longcroppigs
   allnongam[[studynm]] = nongam_dt
 
   tplot = ggplot(nongam_dt) + geom_boxplot(aes(x=coef, y=beta)) + 
@@ -172,7 +169,7 @@ for(studynm in studynames){
   dailybestbetas = list()
   dailyeffects = list()
 
-  for(pig in longcroppigs){
+  for(pig in allpigs){
     
     # Extract a format data
     tdat = dat[pigID == pig]
@@ -182,7 +179,7 @@ for(studynm in studynames){
     tdat = remove_nas_from_crop(tdat, cropdistgrad)
     
     Xgam = build_daily_design_matrix(tdat, stdcols, 
-                                      nonstdcols, splinecols, df_hour=df_hour)
+                                      nonstdcols, splinecols)
     
     registerDoMC(cores=4)
     fitgam = cv.glmnet(Xgam, y=tdat$z, offset=log(tdat$tau), family="poisson", 
@@ -193,20 +190,17 @@ for(studynm in studynames){
                                                            drop=T]
     dailybestbetas[[pig]] = bestbetas
     
-    # Extract cyclic basis for hour effect
-    splinehour = s(hourofday, bs="cc", k=df_hour)
-    pred_hours = Predict.matrix(smooth.construct2(splinehour, tdat, NULL), 
-                                data.frame(hourofday=sort(unique(dat$hourofday))))
-    
     dailyres = list()
     for(pattern in plist) {
       
       # Flip the sign for interpretability
       flip = ifelse(pattern %in% c("water_grad_*", paste0(cropdistgrad, "_*")), -1, 1)
 
-      eff = flip *pred_hours %*% t(t(bestbetas[names(bestbetas) %like% pattern]))
+      eff = flip * bestbetas[names(bestbetas) %like% pattern]
+      ind = order(names(eff))
 
-      effdt = data.frame(hour=0:23, beta=eff, coef=pattern)
+      tod = c("evening", "midday", "morning")
+      effdt = data.frame(hour=tod, beta=eff[ind], coef=pattern)
       dailyres[[pattern]] = effdt
     }
     
@@ -218,16 +212,19 @@ for(studynm in studynames){
 
   # Plot the daily results
   dailyeffects_dt = as.data.table(do.call(rbind, dailyeffects))
+  dailyeffects_dt$hour = factor(dailyeffects_dt$hour, 
+                        levels=c("morning", "midday", "evening"))
   dailyeffects_dt$study = studynm
+  dailyeffects_dt$cropuser = dailyeffects_dt$pigID %in% longcroppigs
   alldailyeffects[[studynm]] = dailyeffects_dt
 
   meandailyeffects_dt = dailyeffects_dt[, list(meanbeta=mean(beta)), by=list(coef, hour)]
-  tplot = ggplot(data=NULL) + geom_line(data=dailyeffects_dt, 
-                                  aes(x=hour, y=beta, color=pigID), alpha=0.3) + 
-                      geom_line(data=meandailyeffects_dt, aes(x=hour, y=meanbeta), 
-                                  size=1) +
-                      xlab("Hour of day") + 
-                      ylab("Effect on hourly movement rate") + 
+  tplot = ggplot(data=NULL) + geom_boxplot(data=dailyeffects_dt, 
+                                  aes(x=hour, y=beta), alpha=0.3) + 
+                      geom_point(data=meandailyeffects_dt, aes(x=hour, y=meanbeta), 
+                                  size=1, color="red") +
+                      xlab("Time of day") + 
+                      ylab("Effect on daily movement rate") + 
                       theme_bw() + facet_wrap(~coef, scales="free")
 
   ggsave(file.path("../results/effect_plots", 
@@ -238,6 +235,8 @@ for(studynm in studynames){
   colnames(dailybestbetas_dt) = c("pigID", "coef", "beta")
   dailyloceffects = dailybestbetas_dt[coef %like% "*_loc"]
   dailyloceffects$study = studynm
+  dailyloceffects$cropuser = dailyloceffects$pigID %in% longcroppigs
+
   alldailyloceffects[[studynm]] = dailyloceffects
 
   tplot = ggplot(dailyloceffects) + geom_boxplot(aes(x=coef, y=beta)) + 
@@ -258,7 +257,7 @@ for(studynm in studynames){
   seasonalbestbetas = list()
   seasonaleffects = list()
 
-  for(pig in longcroppigs){
+  for(pig in allpigs){
     
     # Extract a format data
     tdat = dat[pigID == pig]
@@ -268,8 +267,7 @@ for(studynm in studynames){
     tdat = remove_nas_from_crop(tdat, cropdistgrad)
     
     Xseason = build_seasonal_design_matrix(tdat, stdcols, nonstdcols, 
-                                                 splinecols, seasonalcols,
-                                                 df_hour=df_hour)
+                                                 splinecols, seasonalcols)
     
     registerDoMC(cores=4)
     fitseason = cv.glmnet(Xseason, y=tdat$z, offset=log(tdat$tau), 
@@ -281,10 +279,6 @@ for(studynm in studynames){
                         which(fitseason$lambda == fitseason$lambda.min), drop=T]
     seasonalbestbetas[[pig]] = bestbetas
 
-    splinehour = s(hourofday, bs="cc", k=df_hour)
-    pred_hours = Predict.matrix(smooth.construct2(splinehour, tdat, NULL), 
-                          data.frame(hourofday=sort(unique(dat$hourofday)))) 
-    
     dailyres = list()
     rsums = apply(Xseason[, seasons], 2, sum)
     inseason = names(rsums)[rsums != 0]
@@ -298,8 +292,12 @@ for(studynm in studynames){
 
 
         flip = ifelse(pattern %in% c("water_grad_*", paste0(cropdistgrad, "_*")), -1, 1)
-        eff = flip*pred_hours %*% t(t(seasbetas[names(seasbetas) %like% season]))
-        effdt = data.frame(hour=0:23, beta=eff, coef=pattern)
+        eff = flip*seasbetas[names(seasbetas) %like% season]
+
+        ind = order(names(eff))
+        tod = c("evening", "midday", "morning")
+
+        effdt = data.frame(hour=tod, beta=eff[ind], coef=pattern)
         effdt$season = season
         dailyres[[pattern]][[season]] = effdt
       }
@@ -316,29 +314,35 @@ for(studynm in studynames){
   seasoneffects_dt = as.data.table(do.call(rbind, seasonaleffects))
   seasoneffects_dt$season = factor(seasoneffects_dt$season, 
                                     levels=c("winter", "spring", "summer", "fall"))
+  seasoneffects_dt$hour = factor(seasoneffects_dt$hour, 
+                                        levels=c("morning", "midday", "evening"))
 
   seasoneffects_dt$study = studynm
+  seasoneffects_dt$cropuser = seasoneffects_dt$pigID %in% longcroppigs
   allseasoneffects[[studynm]] = seasoneffects_dt
 
   seasonmeanpigs = seasoneffects_dt[, list(meanbeta=mean(beta)), 
                                               by=list(coef, season, hour)]
   seasonmeanpigs$season = factor(seasonmeanpigs$season, 
                               levels=c("winter", "spring", "summer", "fall"))
+  seasonmeanpigs$hour = factor(seasonmeanpigs$hour, 
+                                      levels=c("morning", "midday", "evening"))
 
 
   numseason = length(unique(seasonmeanpigs$season))
-  tplot = ggplot(data=NULL) + geom_line(data=seasoneffects_dt, 
-                                  aes(x=hour, y=beta, color=pigID), alpha=0.5) +
-                              geom_line(data=seasonmeanpigs, aes(x=hour, y=meanbeta), size=1) + 
-                              xlab("Hour of day") + 
-                              ylab("Effect of on pig movement") + 
+  tplot = ggplot(data=NULL) + geom_boxplot(data=seasoneffects_dt, 
+                                  aes(x=hour, y=beta), alpha=0.3) +
+                              geom_point(data=seasonmeanpigs, aes(x=hour, y=meanbeta), 
+                                        size=2, color="red") + 
+                              xlab("Time of day") + 
+                              ylab("Effect on pig movement") + 
                               theme_bw() + 
                               facet_wrap(~coef + season, scales="free", 
                                             nrow=length(plistseas), 
                                             ncol=numseason)
 
   ggsave(file.path("../results/effect_plots", 
-                paste0("model3seasondailyeffects_", studynm, saveappend, ".pdf")), tplot, width=15, height=15)
+                paste0("model3seasondailyeffects_", studynm, saveappend, ".pdf")), tplot, width=5*numseason, height=15)
 
   # Plot just the seasonal effects
   sbb = as.matrix(do.call(rbind, seasonalbestbetas))
@@ -346,7 +350,7 @@ for(studynm in studynames){
   # Extract the location columns
   sbb = sbb[ , colnames(sbb) %like% "*_loc*", drop=F]
   seasonalbb_dt = melt(sbb)
-  colnames(seasonalbb_dt) = c("pig", "coef", "value")
+  colnames(seasonalbb_dt) = c("pigID", "coef", "value")
 
   seasonalbb_dt$season = sapply(strsplit(as.character(seasonalbb_dt$coef), ":"), function(x) x[2])
   seasonalbb_dt$coef1 = sapply(strsplit(as.character(seasonalbb_dt$coef), ":"), function(x) x[1])
@@ -356,6 +360,7 @@ for(studynm in studynames){
                     levels=c("winter", "spring", "summer", "fall", "nonseasonal"))
 
   seasonalbb_dt$study = studynm
+  seasonalbb_dt$cropuser = seasonalbb_dt$pigID %in% longcroppigs
   allseasonbb[[studynm]] = seasonalbb_dt
 
   tplot = ggplot(seasonalbb_dt) + geom_boxplot(aes(x=season, y=value)) + 
@@ -363,121 +368,120 @@ for(studynm in studynames){
                           theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
   ggsave(file.path("../results/effect_plots", 
-                paste0("model3seasoneffects_", studynm, saveappend, ".pdf")), tplot, width=10, height=7)
+                paste0("model3seasoneffects_", studynm, saveappend, ".pdf")), 
+                tplot, width=10, height=7)
 
-  ###################################################### 
-  ### Step 4: Fit model with temp/precip effects     ###
-  ######################################################
+  # ###################################################### 
+  # ### Step 4: Fit model with temp/precip effects     ###
+  # ######################################################
 
-  cat("Model 4: Temp/precip and daily effects", "\n")
+  # cat("Model 4: Temp/precip and daily effects", "\n")
 
-  tpbestbetas = list()
-  tpeffects = list()
+  # tpbestbetas = list()
+  # tpeffects = list()
 
-  for(pig in longcroppigs) {
+  # for(pig in longcroppigs) {
     
-    # Extract a format data
-    tdat = dat[pigID == pig]
-    cat("Fitting pig", pig, "\n")
+  #   # Extract a format data
+  #   tdat = dat[pigID == pig]
+  #   cat("Fitting pig", pig, "\n")
 
-    # Set fngrad to 0 if it is NA, otherwise keep it the same
-    tdat = remove_nas_from_crop(tdat, cropdistgrad)
+  #   # Set fngrad to 0 if it is NA, otherwise keep it the same
+  #   tdat = remove_nas_from_crop(tdat, cropdistgrad)
     
-    Xtp = build_tempprecip_design_matrix(tdat, stdcols, nonstdcols, 
-                                                 splinecols, seasonalcols,
-                                                 df_hour=df_hour)
+  #   Xtp = build_tempprecip_design_matrix(tdat, stdcols, nonstdcols, 
+  #                                                splinecols, seasonalcols,
+  #                                                df_hour=df_hour)
 
-    # Check on correlation between temp a
+  #   # Check on correlation between temp a
 
-    # Check if there is variability in temperature before fitting
-    if(!((sd(Xtp[, "temperature_loc"]) == 0) | (sd(Xtp[, "precipitation_loc"]) == 0))) {
+  #   # Check if there is variability in temperature before fitting
+  #   if(!((sd(Xtp[, "temperature_loc"]) == 0) | (sd(Xtp[, "precipitation_loc"]) == 0))) {
 
     
-      registerDoMC(cores=4)
-      fittp = cv.glmnet(Xtp, y=tdat$z, offset=log(tdat$tau), 
-                            family="poisson", alpha=1, nlambda=20, nfolds=5, 
-                            parallel=TRUE)
+  #     registerDoMC(cores=4)
+  #     fittp = cv.glmnet(Xtp, y=tdat$z, offset=log(tdat$tau), 
+  #                           family="poisson", alpha=1, nlambda=20, nfolds=5, 
+  #                           parallel=TRUE)
 
-      bestbetas = fittp$glmnet.fit$beta[, which(fittp$lambda == fittp$lambda.min), drop=T]
-      tpbestbetas[[pig]] = bestbetas
+  #     bestbetas = fittp$glmnet.fit$beta[, which(fittp$lambda == fittp$lambda.min), drop=T]
+  #     tpbestbetas[[pig]] = bestbetas
       
-      # Build a monthly temperature and precipitation predictor
-      monthtemp = dat[, list(stemp=scale2(temperature_loc), monthofyear)][, 
-                           list(temperature_loc=mean(stemp)), by=monthofyear]
-      monthprecip = dat[, list(sprecip=scale2(precipitation_loc), monthofyear)][,
-                           list(precipitation_loc=mean(sprecip)), by=monthofyear]
-      monthtp = cbind(monthtemp, monthprecip[, list(precipitation_loc)])
-      monthtp[, ("temperature_loc:precipitation_loc"):=temperature_loc*precipitation_loc]
+  #     # Build a monthly temperature and precipitation predictor
+  #     monthtemp = dat[, list(stemp=scale2(temperature_loc), monthofyear)][, 
+  #                          list(temperature_loc=mean(stemp)), by=monthofyear]
+  #     monthprecip = dat[, list(sprecip=scale2(precipitation_loc), monthofyear)][,
+  #                          list(precipitation_loc=mean(sprecip)), by=monthofyear]
+  #     monthtp = cbind(monthtemp, monthprecip[, list(precipitation_loc)])
+  #     monthtp[, ("temperature_loc:precipitation_loc"):=temperature_loc*precipitation_loc]
       
-      splinehour = s(hourofday, bs="cc", k=df_hour)
-      pred_hours = Predict.matrix(smooth.construct2(splinehour, tdat, NULL), 
-                      data.frame(hourofday=sort(unique(tdat$hourofday))))
+  #     splinehour = s(hourofday, bs="cc", k=df_hour)
+  #     pred_hours = Predict.matrix(smooth.construct2(splinehour, tdat, NULL), 
+  #                     data.frame(hourofday=sort(unique(tdat$hourofday))))
       
-      dailyres = list()
-      inmonth = unique(tdat$monthofyear)
+  #     dailyres = list()
+  #     inmonth = unique(tdat$monthofyear)
       
-      tpcols = c("temperature_loc", "precipitation_loc", 
-                                "temperature_loc:precipitation_loc")
+  #     tpcols = c("temperature_loc", "precipitation_loc", 
+  #                               "temperature_loc:precipitation_loc")
       
-      # Make the basis effects for each time-varying parameter
-      for(pattern in plistseas) {
+  #     # Make the basis effects for each time-varying parameter
+  #     for(pattern in plistseas) {
         
-        dailyres[[pattern]] = list()
-        tpbetas = bestbetas[names(bestbetas) %like% pattern]
+  #       dailyres[[pattern]] = list()
+  #       tpbetas = bestbetas[names(bestbetas) %like% pattern]
         
-        for(month in inmonth){
+  #       for(month in inmonth){
           
-          basenames = paste0(strsplit(pattern, "*", fixed=T)[[1]], 1:(df_hour - 1))
-          baseeff = pred_hours %*% t(t(tpbetas[basenames]))
+  #         basenames = paste0(strsplit(pattern, "*", fixed=T)[[1]], 1:(df_hour - 1))
+  #         baseeff = pred_hours %*% t(t(tpbetas[basenames]))
           
-          for(tp in tpcols){
+  #         for(tp in tpcols){
             
-            tnames = paste0(strsplit(pattern, "*", fixed=T)[[1]], 1:(df_hour - 1), ":", tp)
-            tpval = as.numeric(monthtp[monthofyear == month, tp, with=F])
-            teff = (pred_hours*tpval) %*% t(t(tpbetas[tnames]))
+  #           tnames = paste0(strsplit(pattern, "*", fixed=T)[[1]], 1:(df_hour - 1), ":", tp)
+  #           tpval = as.numeric(monthtp[monthofyear == month, tp, with=F])
+  #           teff = (pred_hours*tpval) %*% t(t(tpbetas[tnames]))
             
-            baseeff = baseeff + teff
-          }
+  #           baseeff = baseeff + teff
+  #         }
           
-          flip = ifelse(pattern %in% c("water_grad_*", paste0(cropdistgrad, "_*")), -1, 1)
-          effdt = data.frame(hour=0:23, beta=flip*baseeff, coef=pattern)
-          effdt$monthofyear = month
-          dailyres[[pattern]][[month]] = effdt
-        }
-      }
+  #         flip = ifelse(pattern %in% c("water_grad_*", paste0(cropdistgrad, "_*")), -1, 1)
+  #         effdt = data.frame(hour=0:23, beta=flip*baseeff, coef=pattern)
+  #         effdt$monthofyear = month
+  #         dailyres[[pattern]][[month]] = effdt
+  #       }
+  #     }
       
-      monthres = do.call(rbind, lapply(dailyres, function(x) do.call(rbind, x)))
-      monthres$pigID = pig
-      tpeffects[[pig]] = monthres
+  #     monthres = do.call(rbind, lapply(dailyres, function(x) do.call(rbind, x)))
+  #     monthres$pigID = pig
+  #     tpeffects[[pig]] = monthres
 
-    } 
+  #   } 
 
-  } # End pig for loop
+  # } # End pig for loop
 
-  # Plot the temperature-dependent effects, if there are any pigs that qualify
-  if(length(tpeffects) > 0) {
+  # # Plot the temperature-dependent effects, if there are any pigs that qualify
+  # if(length(tpeffects) > 0) {
 
-    tpeffects_dt = as.data.table(do.call(rbind, tpeffects))
-    tpmeanpig = tpeffects_dt[, list(beta=mean(beta)), by=list(monthofyear, hour, coef)]
-    tpmeanpig$pigID = paste0("meanpig", studynm)
-    tpmeanpig = tpmeanpig[, colnames(tpeffects_dt), with=F]
-    tpeffects_full = rbind(tpeffects_dt, tpmeanpig)
-    tpeffects_full$study = studynm
-    alltpffects[[studynm]] = tpeffects_full
+  #   tpeffects_dt = as.data.table(do.call(rbind, tpeffects))
+  #   tpmeanpig = tpeffects_dt[, list(beta=mean(beta)), by=list(monthofyear, hour, coef)]
+  #   tpmeanpig$pigID = paste0("meanpig", studynm)
+  #   tpmeanpig = tpmeanpig[, colnames(tpeffects_dt), with=F]
+  #   tpeffects_full = rbind(tpeffects_dt, tpmeanpig)
+  #   tpeffects_full$study = studynm
+  #   alltpffects[[studynm]] = tpeffects_full
 
-    numpigs = length(unique(tpeffects_full$pigID))
-    tplot = ggplot(tpeffects_full) + geom_line(aes(x=hour, y=beta, 
-                                      color=as.factor(monthofyear))) + 
-                            xlab("Hour of day") + ylab("Effect on pig movement") + 
-                            theme_bw() + facet_wrap(~pigID + coef, scales="free", 
-                                              ncol=length(plistseas), nrow=numpigs)
+  #   numpigs = length(unique(tpeffects_full$pigID))
+  #   tplot = ggplot(tpeffects_full) + geom_line(aes(x=hour, y=beta, 
+  #                                     color=as.factor(monthofyear))) + 
+  #                           xlab("Hour of day") + ylab("Effect on pig movement") + 
+  #                           theme_bw() + facet_wrap(~pigID + coef, scales="free", 
+  #                                             ncol=length(plistseas), nrow=numpigs)
 
-    ggsave(file.path("../results/effect_plots", 
-                paste0("model4tempprecipeffects_", studynm, saveappend, ".pdf")), 
-                tplot, width=20, height=20)
-  }
-
-  } # End if long crop pigs have any pigs
+  #   ggsave(file.path("../results/effect_plots", 
+  #               paste0("model4tempprecipeffects_", studynm, saveappend, ".pdf")), 
+  #               tplot, width=20, height=20)
+  # }
 
 } # End study loop
 
@@ -486,17 +490,26 @@ for(studynm in studynames){
 ### Save all of the estimated coefficients for post-hoc analysis ###
 ####################################################################
 
-allresults = list(model1maineffects=allnongam, 
-                  model2dailyeffects = alldailyeffects,
-                  model2maineffects = alldailyloceffects,
-                  model3seasonaleffects = allseasoneffects,
-                  model3maineffects = allseasonbb,
-                  model4tpeffects = alltpffects)
+# append = TRUE # Append to previous results
 
-for(res in names(allresults)){
-  fulldt = as.data.table(do.call(rbind, allresults[[res]]))
-  fwrite(fulldt, file.path("../results/effect_size_data",
-                 paste0(res, ".csv")), row.names = FALSE)
-}
+# allresults = list(model1maineffects= allnongam, 
+#                   model2dailyeffects = alldailyeffects,
+#                   model2maineffects = alldailyloceffects,
+#                   model3seasonaleffects = allseasoneffects,
+#                   model3maineffects = allseasonbb)
+
+# for(res in names(allresults)){
+
+#   fulldt = as.data.table(do.call(rbind, allresults[[res]]))
+
+#   if(append){
+#     tempdt = fread(file.path("../results/effect_size_data",
+#                  paste0(res, "_dailyfactor.csv")))
+#     fulldt = rbind(tempdt, fulldt)
+#   }
+
+#   fwrite(fulldt, file.path("../results/effect_size_data",
+#                  paste0(res, "_dailyfactor.csv")), row.names = FALSE)
+# }
 
 

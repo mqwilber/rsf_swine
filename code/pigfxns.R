@@ -1230,7 +1230,7 @@ wgradient = function(pt, longlat_ctype, decay){
 
 ## Analysis functions
 
-build_design_matrix2 = function(dat, stdcols, nonstdcols){
+build_design_matrix2 = function(dat, stdcols, nonstdcols, interactions=NULL){
   # Build a design matrix given a data set and columns to standardize and not
   # standardize
   #
@@ -1242,6 +1242,9 @@ build_design_matrix2 = function(dat, stdcols, nonstdcols){
   #   Columns that should be standardized
   # nonstdcols : vector of column names as strings
   #   Columns that shouldn't be standardized
+  # interactions : vector of strings
+  #   Interaction strings in the form "crw:crop_loc".  Each columns must also
+  #   be in stdcols or nonstdcols
   #
   # Returns
   # -------
@@ -1251,11 +1254,22 @@ build_design_matrix2 = function(dat, stdcols, nonstdcols){
   Xscale = dat[, lapply(.SD, function(x) scale2(x)), .SDcols = stdcols]
 
   Xfull = as.matrix(cbind(dat[, nonstdcols, with=F], Xscale))
+
+  # Build interactions
+  if(!is.null(interactions)){
+
+    for(int in interactions){
+      cols = strsplit(int, ":")[[1]]
+      Xfull = cbind(Xfull[, cols[1]] * Xfull[, cols[2]], Xfull)
+      colnames(Xfull)[1] = int
+    }
+  }
   return(Xfull)
 
 }
 
-build_daily_design_matrix = function(dat, stdcols, nonstdcols, splinecols){
+build_daily_design_matrix = function(dat, stdcols, nonstdcols, splinecols,
+                                          df_hour=0, interactions=NULL){
   # Build a design matrix for daily factor effect
   #
   # Parameters 
@@ -1280,20 +1294,35 @@ build_daily_design_matrix = function(dat, stdcols, nonstdcols, splinecols){
   # Defaults to cyclic-cubic splines
 
   # Create hourly dummy variable
-  timeofday = list("morning"=c(1:8), "midday"=c(9:16), "evening"= c(17:23, 0))
 
-  hours_dummies = list()
+  if(df_hour == 0){
 
-  for(tod in names(timeofday)){
-    hours = timeofday[[tod]]
-    hours_dummies[[tod]] = as.numeric(dat$hourofday %in% hours)
+    # Build discrete day covariates
+    timeofday = list("morning"=c(1:8), "midday"=c(9:16), "evening"= c(17:23, 0))
+
+    hours_dummies = list()
+
+    for(tod in names(timeofday)){
+      hours = timeofday[[tod]]
+      hours_dummies[[tod]] = as.numeric(dat$hourofday %in% hours)
+    }
+
+    hourmat = do.call(cbind, hours_dummies)
+    Xtod = hourmat
+    todnames = names(timeofday)
+
+  } else{
+
+    # Build continuous hour covariates
+    splinehour = s(hourofday, bs="cc", k=df_hour) 
+    hourmat = smooth.construct2(splinehour, dat, NULL)$X
+    Xtod = hourmat
+    todnames = 1:(df_hour - 1)
   }
 
-  hourmat = do.call(cbind, hours_dummies)
-  Xtod = hourmat
-
   # Build non-spline matrix
-  Xfull = build_design_matrix2(dat, stdcols, nonstdcols)
+  Xfull = build_design_matrix2(dat, stdcols, nonstdcols, 
+                                      interactions=interactions)
 
   # Add daily effects onto columns
   for(colname in splinecols){
@@ -1307,15 +1336,16 @@ build_daily_design_matrix = function(dat, stdcols, nonstdcols, splinecols){
 
   # Set column names
   colnames(Xtod_full) = c(colnames(Xfull_red), 
-                          paste0("base_hour_", names(timeofday)),
+                          paste0("base_hour_", todnames),
                           do.call(c, lapply(splinecols, 
-                                        function(x) paste0(x, "_", names(timeofday)))))
+                                        function(x) paste0(x, "_", todnames))))
   return(Xtod_full)
 }
 
 
 build_seasonal_design_matrix = function(dat, stdcols, nonstdcols, 
-                                                splinecols, seasonalcols){
+                                                splinecols, seasonalcols,
+                                                df_hour=0, interactions=NULL){
   # Build a design matrix with seasonal effects (winter, spring, summer, fall)
   #
   # Parameters
@@ -1333,13 +1363,14 @@ build_seasonal_design_matrix = function(dat, stdcols, nonstdcols,
   #   The columns that will interact with season
   # df_hours : int
   #   The there will be df_hours - 1 basis expansions (i.e. columns) for each
-  #   spline.
+  #   spline. If df_hour == 0, use morning, midday, evening delineation.
   #
   # Returns
   # -------
   # : A design matrix with season effects.
 
-  Xtod_full = build_daily_design_matrix(dat, stdcols, nonstdcols, splinecols)
+  Xtod_full = build_daily_design_matrix(dat, stdcols, nonstdcols, splinecols, 
+                                      df_hour=df_hour, interactions=interactions)
 
   # Create seasonal dummy variables
   seasons = list("summer" = c(6, 7, 8), "fall" = c(9, 10, 11), 
@@ -1354,7 +1385,11 @@ build_seasonal_design_matrix = function(dat, stdcols, nonstdcols,
   seasonmat = do.call(cbind, season_dummies)
   Xseason = cbind(Xtod_full, seasonmat)
 
-  tod = c("morning", "midday", "evening")
+  if(df_hour == 0)
+    tod = c("morning", "midday", "evening")
+  else
+    tod = 1:(df_hour - 1)
+
   for(scol in c(seasonalcols, "base_hour")) {
 
     for(season in names(seasons)){
@@ -1492,272 +1527,6 @@ remove_nas_from_crop = function(tdat, cropdistgrad){
 }
 
 
-
-
-
-# build_design_matrix = function(data, croptypes, modeltype="main_effects", 
-#                                 noncrop_scaledvars = c("crw", "canopycover_loc", 
-#                                 "canopycover_grad", "masting_loc", "masting_grad", 
-#                                 "ndvi_loc", "ndvi_grad", "temperature_loc", 
-#                                 "precipitation_loc", "water_grad", "water_loc"),
-#                                 sex=TRUE) {
-
-#   # Build a design matrix for the GLM LASSO analysis
-#   #
-#   # Parameters
-#   # ----------
-#   # data : data.table
-#   #   The CTMC data
-#   # croptypes : vector of strings
-#   #   The crop types to make into covariates (e.g. c("crop"))
-#   # noncrop_scaledvars : vector of strings
-#   #   The other variables to standardize in the analysis
-#   # modeltype : string
-#   #   Either "maineffect", "interactions", or "full". These make design matrices
-#   #   with different numbers of covariates
-#   #
-#   # Returns
-#   # -------
-#   # : list(evalform, data)
-#   #   Contains and R formula `evalform` with the appropriate structure and the 
-#   #   `data` with the standardized columns.  model.matrix(evalform, data) will
-#   #   make the design matrix.
-
-#   locvars = paste0(croptypes, "_loc")
-#   gradvars = paste0(croptypes, "_grad")
-
-#   # Used location variables
-#   locpres = data[, locvars, with=F][, lapply(.SD, function(x) any(x !=0))]
-#   used_croplocs = names(locpres[1, locpres[1, ] == TRUE, with=F])
-#   used_croplocs
-
-#   # Only get gradients variables for used crops
-#   used_cropgrads = paste0(strsplit(used_croplocs, "_loc"), "_grad")
-
-#   scaledvars = c(noncrop_scaledvars,
-#                  used_croplocs, used_cropgrads)
-
-#   data_sc = data[, lapply(.SD, function(x) as.vector(scale(x))), .SDcols=scaledvars]
-#   names(data_sc) = paste0(scaledvars, "_z")
-#   data = cbind(data, data_sc)
-
-
-#   if(modeltype == "main_effects"){
-
-#     if(sex){
-
-#       base = paste("z ~ crw_z + sex + canopycover_loc_z + canopycover_grad_z ",
-#                    "+ water_loc_z + water_grad_z ",
-#                    "+ ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z ",
-#                    "+ ", do.call(paste, as.list(c(paste0(locvars, "_z"), sep=" + "))), " + ", 
-#                    do.call(paste, as.list(c(paste0(gradvars, "_z"), sep=" + "))))
-#     } else{
-#         base = paste("z ~ crw_z + canopycover_loc_z + canopycover_grad_z ",
-#                    "+ water_loc_z + water_grad_z ",
-#                    "+ ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z ",
-#                    "+ ", do.call(paste, as.list(c(paste0(locvars, "_z"), sep=" + "))), " + ", 
-#                    do.call(paste, as.list(c(paste0(gradvars, "_z"), sep=" + "))))
-#     }
-
-#     fullform = paste("formula(", base, ")", sep="")
-#     evalform = eval(parse(text=fullform))
-
-
-#   } else if(modeltype == "interactions"){
-
-
-#     if(sex){
-#       base = paste("z ~ crw_z + sex + canopycover_loc_z + canopycover_grad_z ", 
-#                    "+ water_loc_z + water_grad_z ",
-#                    "+ ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z ",
-#                    "+ crop_loc_z + crop_grad_z ",
-#                    "+ crop_loc_z:ndvi_loc_z ",
-#                    "+ crop_loc_z:masting_loc_z", sep="")
-#     } else{
-#       base = paste("z ~ crw_z + canopycover_loc_z + canopycover_grad_z ", 
-#                    "+ water_loc_z + water_grad_z ",
-#                    "+ ndvi_loc_z + ndvi_grad_z + masting_loc_z + masting_grad_z ",
-#                    "+ crop_loc_z + crop_grad_z ",
-#                    "+ crop_loc_z:ndvi_loc_z ",
-#                    "+ crop_loc_z:masting_loc_z", sep="")
-
-#     }
-
-#     fullform = paste("formula(", base, ")", sep="")
-#     evalform = eval(parse(text=fullform))
-
-#   } else if(modeltype == "full"){
-
-#     base = paste("z ~ crw_z + sex + canopycover_loc_z + canopycover_grad_z ",
-#                  "+ temperature_loc_z + precipitation_loc_z ",
-#                  "+ temperature_loc_z:precipitation_loc_z ", 
-#                  "+ canopycover_loc_z:temperature_loc_z ",
-#                  "+ canopycover_grad_z:temperature_loc_z ",
-#                  "+ ndvi_loc_z + ndvi_grad_z ",
-#                  "+ ndvi_loc_z:temperature_loc_z ",
-#                  "+ ndvi_loc_z:precipitation_loc_z ",
-#                  "+ ndvi_loc_z:temperature_loc_z:precipitation_loc_z ",
-#                  "+ ndvi_grad_z:temperature_loc_z ",
-#                  "+ ndvi_grad_z:precipitation_loc_z ",
-#                  "+ ndvi_grad_z:temperature_loc_z:precipitation_loc_z ",
-#                  "+ masting_loc_z + masting_grad_z ", 
-#                  "+ masting_loc_z:temperature_loc_z ", 
-#                  "+ masting_loc_z:precipitation_loc_z ", 
-#                  "+ masting_loc_z:temperature_loc_z:precipitation_loc_z ",
-#                  "+ masting_grad_z:temperature_loc_z ",
-#                  "+ masting_grad_z:precipitation_loc_z ", 
-#                  "+ masting_grad_z:temperature_loc_z:precipitation_loc_z ",
-#                  "+ water_grad_z + water_grad_z:temperature_loc_z ",
-#                  "+ water_grad_z:precipitation_loc_z ",
-#                  "+ water_grad_z:temperature_loc_z:precipitation_loc_z",
-#                  "+ water_loc_z + water_loc_z:temperature_loc_z ",
-#                  "+ water_loc_z:precipitation_loc_z ",
-#                  "+ water_loc_z:temperature_loc_z:precipitation_loc_z ", 
-#                  "+ crop_grad_z + crop_grad_z:temperature_loc_z  ",
-#                  "+ crop_grad_z:precipitation_loc_z  ",
-#                  "+ crop_grad_z:temperature_loc_z:precipitation_loc_z",
-#                  "+ crop_loc_z + crop_loc_z:temperature_loc_z ",
-#                  "+ crop_loc_z:precipitation_loc_z ", 
-#                  "+ crop_loc_z:temperature_loc_z:precipitation_loc_z", sep="")
-
-#     fullform = paste("formula(", base, ")", sep="")
-#     evalform = eval(parse(text=fullform))
-#   }
-
-#       # ## Location effects
-#       # croploc_formlist = list()
-#       # used_croplocs_z = paste0(used_croplocs, "_z")
-#       # used_cropgrads_z = paste0(used_cropgrads, "_z")
-
-#       # gradstring = function(cl) paste(cl, ":ndvi_grad_z + ", cl, ":masting_grad_z", sep="")
-#       # locstring = function(cl) paste(cl, ":ndvi_loc_z + ", cl, ":masting_loc_z", sep="")
-
-#       # for(cl in used_croplocs_z){
-        
-#       #   cform = paste(cl, " + ", gradstring(cl), sep="")
-#       #   cform = paste(cform, " + ", locstring(cl), sep="")
-        
-#       #   cl_grad = paste(strsplit(cl, "_loc_z")[[1]][1], "_grad_z", sep="")
-        
-#       #   for(cgrad in used_cropgrads_z[-which(used_cropgrads_z == cl_grad)]){
-#       #     cform = paste(cform, " + ", cl, ":", cgrad, sep="")
-#       #   }
-#       #   croploc_formlist[[cl]] = cform
-#       # }
-
-#       # croploc_formlist[["sep"]] = " + "
-#       # croploc_formula = do.call(paste, croploc_formlist)
-
-#       # ## Gradient effects
-#       # cropgrad_formlist = list()
-
-#       # for(cl in used_cropgrads_z){
-        
-#       #   cform = paste(cl, " + ", locstring(cl), sep="")
-        
-#       #   cl_loc = paste(strsplit(cl, "_grad_z")[[1]][1], "_loc_z", sep="")
-        
-#       #   for(cloc in used_croplocs_z[-which(used_croplocs_z == cl_loc)]){
-          
-#       #     cform = paste(cform, " + ", cl, ":", cloc, sep="")
-          
-#       #   }
-#       #   cropgrad_formlist[[cl]] = cform
-#       # }
-
-#       # cropgrad_formlist[["sep"]] = " + "
-#       # cropgrad_formula = do.call(paste, cropgrad_formlist)
-    
-
-#       # fullform = paste("formula(", paste(base, croploc_formula, cropgrad_formula, sep=" + "), ")", sep="")
-#       # evalform = eval(parse(text=fullform))
-
-#   return(list(evalform=evalform, data=data))
-
-# }
-
-# build_gam_design_matrix = function(Xmat, dat, covar_use, df_hour=3, df_month=3, 
-#                                     cyclic_year=TRUE){
-#   # Build the GAM design matrix for time varying effects
-#   #
-#   # Parameters
-#   # ----------
-#   # Xmat : matrix
-#   #   Design matrix with standardized main effects
-#   # dat : data.table
-#   #   Data.table that at least has the variables hourofday and monthofyear
-#   # covar_use : vector of strings
-#   #   List of main effects in Xmat to include as static main effects in the GAM
-#   # df_hour : int
-#   #   df_hour - 1 is the number of basis expansions used for the cyclic hour effect
-#   # df_month : int
-#   #   df_month is the number of basis expansions used for the non-cyclic month effect.
-#   #   df_month - 1 are used is cyclic_year=TRUE
-#   # cyclic_year : bool
-#   #   If True, its a cyclic spline to year.  Useful if the collar data is over
-#   #   the course of the whole year.  Otherwise, fit a standard cubic spline.
-#   #
-#   # Returns
-#   # -------
-#   # : matrix
-#   #   The GAM design matrix
-
-#   splinehour = s(hourofday, bs="cc", k=df_hour) # Build time-dependent design matrix for a cyclic cubic spline
-#   bs_hours = smooth.construct2(splinehour, dat, NULL)$X # B-spline basis for hour effect
-
-#   if(cyclic_year){
-#     splinemonth = s(monthofyear, bs="cc", k=df_month) # Yearly cyclic spline
-#     bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
-#   }
-#   else{
-
-#     if(df_month > 1){
-#       splinemonth = s(monthofyear, bs="cr", k=df_month - 1) # Non-cyclic spline for year
-#       bs_months = smooth.construct2(splinemonth, dat, NULL)$X # B-spline basis for month effect
-#     } else{
-#       bs_months = t(t(rep(1, nrow(Xmat))))
-#       df_month = 2
-#     }
-#   }
-
-#   # Make time-varying effects
-#   bs_months_coverloc_effect = Xmat[, "canopycover_loc_z"] * bs_months # Allows the effect of canopy cover to vary with time of day
-#   bs_months_covergrad_effect = Xmat[, "canopycover_grad_z"] * bs_months
-
-#   bs_months_waterloc_effect = Xmat[, "water_loc_z"] * bs_months
-#   bs_months_water_grad_effect = Xmat[, "water_grad_z"] * bs_months
-
-#   bs_months_croploc_effect = Xmat[, "crop_loc_z"] * bs_months
-#   bs_months_mastingloc_effect = Xmat[, "masting_loc_z"] * bs_months
-#   bs_months_ndviloc_effect = Xmat[, "ndvi_loc_z"] * bs_months # Not totally convinced this makes sense...
-
-#   bs_months_cropgrad_effect = Xmat[, "crop_grad_z"] * bs_months
-#   bs_months_mastinggrad_effect = Xmat[, "masting_grad_z"] * bs_months
-#   bs_months_ndvigrad_effect = Xmat[, "ndvi_grad_z"] * bs_months # Not totally convinced this makes sense...
-
-#   Xgam = cbind(Xmat[, covar_use], bs_hours, bs_months, 
-#                    bs_months_coverloc_effect, bs_months_covergrad_effect,
-#                    bs_months_waterloc_effect, bs_months_water_grad_effect,
-#                    bs_months_croploc_effect,  bs_months_cropgrad_effect,
-#                    bs_months_mastingloc_effect, bs_months_mastinggrad_effect,
-#                    bs_months_ndviloc_effect, bs_months_ndvigrad_effect)
-
-#   p_month = df_month - 1
-#   p_hour = df_hour - 1
-
-#   colnames(Xgam) = c(covar_use, 
-#                          paste0("hour_", 1:p_hour), paste0("month_", 1:p_month),
-#                          paste0("cover_loc_", 1:p_month), paste0("cover_grad_", 1:p_month),
-#                          paste0("water_loc_", 1:p_month), paste0("water_grad_", 1:p_month),
-#                          paste0("crop_loc_", 1:p_month), paste0("crop_grad_", 1:p_month),
-#                          paste0("masting_loc_", 1:p_month), paste0("masting_grad_", 1:p_month),
-#                          paste0("ndvi_loc_", 1:p_month), paste0("ndvi_grad_", 1:p_month))
-
-#   return(Xgam)
-# }
-
-
-
 diffunits = function(x){
   # Helper function to get the differences of a datetime vector in the same units
   # x is a datetime vector
@@ -1765,6 +1534,8 @@ diffunits = function(x){
   units(dt) = "mins"
   return(dt)
 }
+
+
 
 
 

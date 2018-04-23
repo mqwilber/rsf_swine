@@ -1,0 +1,298 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beamer Presentation
+% LaTeX Template
+% Version 1.0 (10/11/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+%----------------------------------------------------------------------------------------
+%   PACKAGES AND THEMES
+%----------------------------------------------------------------------------------------
+
+\documentclass[xcolor=dvipsnames]{beamer}
+\usepackage{graphicx} % Allows including images
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgf}
+\usepackage{soul}
+%\usepackage{hyperref}
+\pgfplotsset{compat=newest}
+
+%\usepackage{amsmath} % Add amssymb if not using Mathtime
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+
+% Set arrow type
+\input{/Users/mqwilber/Dropbox/Documents/Latex/arrowsnew}
+\usetikzlibrary{arrows,shapes,backgrounds}
+\tikzset{>=latex}
+
+%\usefonttheme{professionalfonts}
+\usepackage{fontspec}
+\setsansfont[UprightFont={* Light},
+             BoldFont={* SemiBold},
+             ItalicFont={* Light Italic},
+             BoldItalicFont={* SemiBold Italic}]{Gill Sans}
+
+%\setsansfont[UprightFont={* Light}]{Helvetica}
+%\setsansfont{Papyrus}
+% \setsansfont[Path = /usr/local/texlive/2014/texmf-dist/fonts/truetype/huerta/alegreya/,
+% Extension=.ttf
+% ]{AlegreyaSC-Regular}
+
+% Set graphics path
+\graphicspath{{images/}}
+
+
+\renewcommand\footnoterule{}
+\newcommand{\tc}{\textcolor{red}}
+\newcommand{\tb}{\textcolor{blue}}
+\newcommand\ig[1]{\includegraphics[width=#1\textwidth]}
+
+\definecolor{dgreen}{rgb}{0.,0.6,0.}
+\setbeamertemplate{caption}{\raggedright\insertcaption\par}
+% \usepackage[dvipsnames]{xcolor}
+
+% Color of frame title
+\setbeamercolor{frametitle}{fg=Black, bg=White}
+\setbeamertemplate{frametitle}[two lines]
+
+% Change color of title
+\setbeamercolor{title}{fg=Black, bg=White}
+
+% Change color of enumerated list
+\setbeamertemplate{enumerate item}{\color{Black}\insertenumlabel.}
+
+\setbeamertemplate{itemize item}{\color{Black}\tikz[baseline=-0.8ex]\draw[black,fill=black] (0,0) circle (.3ex);}
+\setbeamertemplate{itemize subitem}{\color{Black}\tikz[baseline=-0.8ex]\draw[black,fill=black] (0,0) circle (.2ex);}
+
+%% Personal commands
+
+% Define frog
+\def\cfrog{\includegraphics[width=0.8cm]{/Users/mqwilber/Repos/completed_projects/empirical_taylor_law/docs/presentation/images/frog_sw}}
+
+\def\cfrognew{\includegraphics[width=.15\textwidth]{/Users/mqwilber/Repos/completed_projects/density_dependent_ipm/docs/presentation/images/cfrog}}
+\def\cinfrognew{\includegraphics[width=.15\textwidth]{/Users/mqwilber/Repos/completed_projects/density_dependent_ipm/docs/presentation/images/infected_cfrog}}
+
+\def\border{draw, ultra thick, inner sep=.8}
+
+\newcommand{\numfrog}[1]
+{   \begin{tikzpicture}
+      \node[opacity=0.5] at (0, 0) (frog) {\includegraphics[width=1.4cm]{/Users/mqwilber/Repos/completed_projects/empirical_taylor_law/docs/presentation/images/frog_sw}};
+      \node[inner sep=0.8, draw, fill=white] at (0, 0) {\textcolor{black}{#1}};
+    \end{tikzpicture}
+}
+
+% Footnote without a marker
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+\mode<presentation> {
+
+% The Beamer class comes with a number of default slide themes
+% which change the colors and layouts of slides. Below this is a list
+% of all the themes, uncomment each in turn to see what they look like.
+
+\usetheme{default}
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+%\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{Dresden}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+%\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+%\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+% As well as themes, the Beamer class has a number of color themes
+% for any slide theme. Uncomment each of these in turn to see how it
+% changes the colors of your current slide theme.
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+%\usecolortheme{orchid}
+%\usecolortheme{rose}
+%\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+
+\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+}
+
+
+% Centers the frametitles of each slide
+% \setbeameroption{show notes}
+\setbeamertemplate{frametitle}[default][center]
+
+% Adding
+
+\title[Exit seminar]{Spatial scale and resource selection in feral swine} % The
+% short
+% title appears at the bottom
+% of every
+% slide, the full title is only on the title page
+
+\author{Lab Meeting}
+\institute[UCSB]
+{
+\smallskip
+
+}
+\date{March 4, 2018} % Date, can be changed to a custom date
+
+%\titlegraphic{\includegraphics[scale=0.25]{example_tpl.png}}
+
+\begin{document}
+
+% Remember pictures
+\tikzstyle{every picture}+=[remember picture]
+\tikzstyle{na} = [baseline=-.5ex]
+
+% \begin{frame}
+% \titlepage % Print the title page as the first slide
+% \end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[t]
+\frametitle{\underline{How do we account for spatial-scale in resource selection?}}
+  
+  \only<1>{
+    \centering
+    \ig{0.8}{images/Northrup.png}
+    \blfootnote{\hfill \tiny Northrup et al. 2016, \emph{Eco. App.}}
+  }
+
+  \only<2-3>{
+    \centering
+
+    \begin{tikzpicture}
+    
+      \node<2-3> at (0, 0) {\ig{0.7}{/Users/mqwilber/Repos/rsf_swine/code/other_scripts/hooten.png}};
+      \node<3>[align=left, font=\scriptsize, fill=white] at (0, 1) {1. Location-based covariation \\ 2. \textbf{Gradient-based covariate}};
+
+    \end{tikzpicture}
+  }
+
+\end{frame}
+
+%%------------------------------------------------
+
+\begin{frame}[t]
+\frametitle{\underline{Example: A pig from Tejon Ranch}}
+  
+  \only<1-2>{
+    \centering 
+    \only<1>{\ig{0.7}{images/tejon_ras.pdf}}
+    \only<2>{\ig{0.7}{images/tejon_ras_w_pig.pdf}}
+
+    \only<1>{Fruit and nut fields in the proximity of Tejon ranch pigs}
+    \only<2>{How is pig movement affected by resource when not in the resource?}
+  }
+
+\end{frame}
+
+%%------------------------------------------------
+
+\begin{frame}[t]
+\frametitle{\underline{Some options for accounting for spatial scale}}
+
+  \only<1-3>{
+  \begin{enumerate}
+    \item<1-3> Sum of global distance-to-resource pixel vectors
+    \item<1> Distance-to-nearest resource
+    \item<1> Some combination of the two?
+  \end{enumerate}}
+
+  \only<2>{\centering \ig{0.6}{images/tejon_ras_w_pig.pdf}}
+
+  \only<3>{
+    \centering
+    \ig{1}{images/tejon_vect.pdf}
+  }
+
+  \only<4>{
+    \begin{itemize}
+      \item Accounts for patch size and distance
+      \item Can easily explore functional form of distance decay
+        \begin{itemize}
+          \item e.g. $\exp(-\gamma D_{ij}^2)$ vs. $\exp(-\gamma D_{ij})$
+          \item How does $\gamma$ vary w/ resources? Individuals? Populations?
+        \end{itemize}
+      \item Computationally infeasible for abundant resources pixels
+        \begin{itemize}
+          \item Randomly sub-sample resource pixels?
+        \end{itemize}
+    \end{itemize}
+  }
+
+  \only<5>{\centering \ig{1}{images/tejon_samp_ras.png}}
+  
+
+\end{frame}
+
+
+%%------------------------------------------------
+
+\begin{frame}[t]
+\frametitle{\underline{Distance-to-nearest resource}}
+    
+    \only<1>{
+    \centering
+    \ig{0.8}{images/tejon_shapefile.pdf}}
+
+    \only<2>{
+    \centering
+    \ig{0.8}{images/tejon_distance.pdf}}
+
+    \only<3>{
+      \begin{itemize}
+        \item Computationally more feasible
+        \item Distance-to-nearest ``X'' is commonly used
+        \item Ignores simultaneous influence of multiple patches
+        \item Compromise: Distance to all patches weighted by patch area? 
+      \end{itemize}
+    }
+
+\end{frame}
+
+%%------------------------------------------------
+
+\end{document}
+

@@ -397,6 +397,24 @@ effects.
 	- For some reason, 2 Tejon pigs are in oats that show up in crops, but not in cereals.
 2. Pig-specific movement covariates. 
 
+## April 23
 
+Notes from lab meeting
+
+1. Move forward with crop season as a cropping variable 
+	- Do it by county and get planting date and harvest date for each crop. 
+2. Break time of day into a more meaningful grouping
+	- Sunset/twilight civil twilight. Groupings will shift by time of year.
+	- Use and R package suncalc to break into four time periods depending on day of year and lat lon.
+		a. dusk - nadir
+		b. nadir - dawn
+		c. dawn - solar noon
+		d. solar noon - dusk
+	- Need to be careful with timezones now
+		- TODO: For some reason, subtracting 5 hours of of fl_raoul is causing things to break. Try substracting 1 hour and see if it still breaks. [DONE]
+		- Looks like I was being sloppy with time conversion! Fixed it. Always use strptime! 
+3. Potentially revisit basis functions to summarize inflections in movement
+4. Masting loc and tree density are likely highly correlated...deal with this!
+5. CHECK TIMEZONES FOR ALL PIGS. Particularly the movement study! Need to determine whether they are UTC or something else.
 
 

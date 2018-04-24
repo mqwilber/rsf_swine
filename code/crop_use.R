@@ -57,7 +57,7 @@ library(ggplot2)
 ggplot(mused) + geom_bar(aes(x=study, y=log10(hours_used + 1), fill=croptype), 
 													position = "dodge", stat="identity") + ylab("log10(total pig hours used + 1)") +
 								theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8))
-ggsave("~/Repos/rsf_swine/results/crop_use_by_study.pdf", width=8, height=7)
+ggsave("~/Repos/rsf_swine/results/crop_use_by_study.pdf", width=5, height=4)
 
 ggplot(mused) + geom_bar(aes(x=croptype, y=log10(hours_used + 1)), 
 													position = "dodge", stat="identity") + ylab("log10(total pig hours used + 1)") +

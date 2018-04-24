@@ -121,7 +121,7 @@ clean_fl_raoul = function(plotit=FALSE){
 	if(plotit) tplot;
 
 	# Look at fix time distribution...looks reasonable
-	fl$datetime = as.POSIXct(fl$datetime)
+	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
 	fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
 
 	# There are 12 of 18 pigs that meet the criteria
@@ -142,7 +142,7 @@ clean_tx_tyler_w2 = function(plotit=FALSE){
 	if(plotit) tplot;
 
 	# Look at fix time distribution...looks reasonable
-	fl$datetime = as.POSIXct(fl$datetime)
+	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
 	fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
 
 	# There are 12 of 18 pigs that meet the criteria

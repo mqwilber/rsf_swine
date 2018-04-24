@@ -40,6 +40,7 @@ studynames = sapply(strsplit(basename(allstudies), ".", fixed=T), function(x) x[
 
 seasons = c("winter", "spring", "summer", "fall")
 
+
 model1params = list()
 allnongam = list()
 model2params = list()
@@ -51,18 +52,23 @@ allseasonbb = list()
 alltpffects = list()
 
 # Loop through analysis for each study
-for(studynm in "florida"){
+for(studynm in "tx_tyler_w2"){
 
   cat("Beginning analysis of", studynm, "\n")
   dat = fread(paste0("~/Repos/rsf_swine/results/glmdata_by_study/", studynm, ".csv"))
   dat[ , datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
+  dat[, date:=as.Date(datetime)]
   dat[ , hourofday:=hour(datetime)]
   dat[ , monthofyear:=month(datetime)]
+
+  # Group datetimes into date, location specific time of days
+  # sdat = dat[ , list(date=date, lat=y.current, lon=x.current)]
 
   # Extract the crop-using pigs
   allpigs = unique(dat$pigID)
   incroppigs = dat[z == 1][, list(incrop=any(crop_loc == 1)), by=pigID][incrop == TRUE, pigID]
   croppigs = dat[pigID %in% incroppigs]
+  #allpigs = "tejonM302"
 
   timeincrops = croppigs[(z == 1) & (crop_loc == 1), list(tottime = sum(tau)), by=pigID]
 
@@ -120,7 +126,7 @@ for(studynm in "florida"){
   flippatternbase = c("water_grad", cropdistgrad, "developed_grad")
 
   # Append at the end of each file
-  saveappend = "crop_day_factor"
+  saveappend = "crop_day_factor_temp"
 
   ###################################################### 
   ### Step 1: Fit model with no time-varying effects ###
@@ -580,29 +586,29 @@ for(studynm in "florida"){
 ### Save all of the estimated coefficients for post-hoc analysis ###
 ####################################################################
 
-append = TRUE # Append to previous results
+# append = FALSE # Append to previous results
 
-allresults = list(model1maineffects = allnongam, 
-                  model1allparams = model1params,
-                  model2dailyeffects = alldailyeffects,
-                  model2maineffects = alldailyloceffects,
-                  model2allparams = model2params,
-                  model3seasonaleffects = allseasoneffects,
-                  model3maineffects = allseasonbb,
-                  model3allparams = model3params)
+# allresults = list(model1maineffects = allnongam, 
+#                   model1allparams = model1params,
+#                   model2dailyeffects = alldailyeffects,
+#                   model2maineffects = alldailyloceffects,
+#                   model2allparams = model2params,
+#                   model3seasonaleffects = allseasoneffects,
+#                   model3maineffects = allseasonbb,
+#                   model3allparams = model3params)
 
-for(res in names(allresults)){
+# for(res in names(allresults)){
 
-  fulldt = as.data.table(do.call(rbind, allresults[[res]]))
+#   fulldt = as.data.table(do.call(rbind, allresults[[res]]))
 
-  if(append){
-    tempdt = fread(file.path("../results/effect_size_data",
-                 paste0(res, ".csv")))
-    fulldt = rbind(tempdt, fulldt)
-  }
+#   if(append){
+#     tempdt = fread(file.path("../results/effect_size_data",
+#                  paste0(res, ".csv")))
+#     fulldt = rbind(tempdt, fulldt)
+#   }
 
-  fwrite(fulldt, file.path("../results/effect_size_data",
-                 paste0(res, ".csv")), row.names = FALSE)
-}
+#   fwrite(fulldt, file.path("../results/effect_size_data",
+#                  paste0(res, ".csv")), row.names = FALSE)
+# }
 
 

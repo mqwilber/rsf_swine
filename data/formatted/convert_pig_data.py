@@ -5,6 +5,7 @@ import os
 import sys
 import string
 from sklearn.cluster import KMeans
+import pytz 
 
 """
 Description
@@ -39,6 +40,45 @@ NOTE
 Must be run with Python 2.7
 
 """
+
+# Time-zone information of the raw data
+
+# tzs = {'cali0': "America/Los_Angeles", # Check
+#  'cali1': "America/Los_Angeles", # Check
+#  'cali2': "America/Los_Angeles", # Check
+#  'cali3': "America/Los_Angeles",  # Check
+#  'cali4': "America/Los_Angeles", # Check
+#  'canada': "America/Regina", # Don't know...need to ask Ryan
+#  'fl_raoul': "America/New_York", # Seems to be UTC time
+#  'florida': "America/New_York", 
+#  'ga_bill': "America/New_York",
+#  'ga_steve': "America/New_York",
+#  'judas_pig': "LMT", # Check
+#  'la_hartley': "America/Chicago",
+#  'la_steve': "America/Chicago", 
+#  'michigan': "America/New_York", # Check
+#  'mo_kurt0': "America/Chicago",  
+#  'mo_kurt1': "America/Chicago",
+#  'mo_kurt2' : "America/Chicago",
+#  'mo_kurt3' : "America/Chicago", 
+#  'mo_kurt4' : "America/Chicago",
+#  'mo_kurt5': "America/Chicago", 
+#  'mo_kurt6': "America/Chicago", 
+#  'mo_kurt7': "America/Chicago",
+#  'mo_kurt8': "America/Chicago", 
+#  'sc_jim2': "America/New_York", 
+#  'scjim1' : "America/New_York", 
+#  'srel_contact': "America/New_York", # Check
+#  'srel_vacuum': "America/New_York", # Looks like LMT time...
+#  'srs_kilgo': "America/New_York", # Check
+#  'tejon': "America/Los_Angeles", # Check
+#  'tx_christy_14r': "America/Chicago", 
+#  'tx_christy_15r': "America/Chicago",
+#  'tx_susan': "America/Chicago", 
+#  'tx_tyler_k1': "America/Chicago", 
+#  'tx_tyler_w1': "America/Chicago", 
+#  'tx_tyler_w2': "America/Chicago", 
+#  'txcamp': "America/Chicago" #check}
 
 ##############################################################
 ### Look at the Tejon and California datasets specifically ###
@@ -216,7 +256,16 @@ move.columns = [u'collarID', u'date', u'time', u'study', u'latitude', u'longitud
 
 move.loc[:, "study"] = move.study.str.lower()
 move.loc[:, "collarID"] = move.collarID.str.lower()
+
+# It is not clear which studies are UTC datetime, though fl raoul is definitely UTC
 move.loc[:, "datetime"] = pd.to_datetime(move.date + " " + move.time, format="%m/%d/%y %H:%M:%S")
+
+# Convert tx_tyler to LMT
+central = pytz.timezone("America/Chicago")
+baserl = move[move.study == 'tx_tyler_w2'].datetime
+updts = pd.Index(baserl).tz_localize(pytz.utc).tz_convert(central).tz_localize(None)
+move.loc[move.study == "tx_tyler_w2", "datetime"] = pd.Series(updts).values
+
 move.loc[:, "fixtype"] = np.nan
 move.loc[move.study == "sc_jim", "study"] = "scjim1"
 
@@ -266,7 +315,13 @@ contact.columns = [u'collarID', u'LocNum', u'Acquisition Time', u'Acquisition St
        u'GPS Satellite Bitmap', u'GPS Satellite Count', u'GPS Navigation Time',
        u'Activity Count', u'Temperature', u'Predeployment Data', u'Error']
 
+# This is in UTC time, convert to Local eastern time
 contact.loc[:, "datetime"] = pd.to_datetime(contact['GPS Fix Time'], format="%Y.%m.%d %H:%M:%S")
+east = pytz.timezone("America/New_York")
+localdatetime = pd.Index(contact.datetime).tz_localize(pytz.utc).tz_convert(east).tz_localize(None)
+contact.loc[:, "datetime"] = pd.Series(localdatetime)
+
+
 contact.loc[:, "study"] = "srel_contact"
 contact.loc[:, "pigID"] = contact.study + "P" + contact.collarID.str.strip("M").str.strip("F")
 
@@ -465,6 +520,48 @@ study_sum = comb_dat.groupby("study").agg({'latitude' : {'min': np.min, 'max': n
                                              'maxdate': np.max}})
 
 study_sum.columns = ['_'.join(col).strip() for col in study_sum.columns.values]
+
+# TODO: Update as necessary. Add time zone information for each study
+tzs = {'cali0': "America/Los_Angeles", 
+ 'cali1': "America/Los_Angeles", 
+ 'cali2': "America/Los_Angeles", 
+ 'cali3': "America/Los_Angeles", 
+ 'cali4': "America/Los_Angeles", 
+ 'canada': "America/Regina", 
+ 'fl_raoul': "America/New_York",
+ 'florida': "America/New_York", 
+ 'ga_bill': "America/New_York",
+ 'ga_steve': "America/New_York",
+ 'judas_pig': "UTC",
+ 'la_hartley': "America/Chicago",
+ 'la_steve': "America/Chicago", 
+ 'michigan': "America/New_York", 
+ 'mo_kurt0': "America/Chicago",  
+ 'mo_kurt1': "America/Chicago",
+ 'mo_kurt2' : "America/Chicago",
+ 'mo_kurt3' : "America/Chicago", 
+ 'mo_kurt4' : "America/Chicago",
+ 'mo_kurt5': "America/Chicago", 
+ 'mo_kurt6': "America/Chicago", 
+ 'mo_kurt7': "America/Chicago",
+ 'mo_kurt8': "America/Chicago", 
+ 'sc_jim2': "America/New_York", 
+ 'scjim1' : "America/New_York", 
+ 'srel_contact': "America/New_York", 
+ 'srel_vacuum': "America/New_York",
+ 'srs_kilgo': "America/New_York",
+ 'tejon': "America/Los_Angeles", 
+ 'tx_christy_14r': "America/Chicago", 
+ 'tx_christy_15r': "America/Chicago",
+ 'tx_susan': "America/Chicago", 
+ 'tx_tyler_k1': "America/Chicago", 
+ 'tx_tyler_w1': "America/Chicago", 
+ 'tx_tyler_w2': "America/Chicago", 
+ 'txcamp': "America/Chicago"}
+
+tzsdt = pd.DataFrame([(s, t) for s, t in tzs.items()])
+tzsdt.columns = ['study', 'tz']
+study_sum = study_sum.join(tzsdt.set_index("study"))
 
 study_sum.to_csv("study_summary.csv")
 

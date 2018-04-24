@@ -42,10 +42,10 @@ source('pigfxns.R')
 source('clean_studies.R')
 anal_params = yaml.load_file("analysis_parameters.yml")
 sink("log_ctmc.txt") # log file
-preprocessed = FALSE
+preprocessed = FALSE # If TRUE all that needs to be computed is the pig-specific variables
 
 
-for(studynm in c("tx_tyler_k1")) {
+for(studynm in c("tx_tyler_w2")) {
 
   #studynm = "tejon"
   cat("Beginning analysis for", studynm, "\n")
@@ -122,6 +122,7 @@ for(studynm in c("tx_tyler_k1")) {
     allpaths = mclapply(unqpigs, parallel_pigpaths, newdat, anal_params, 
     																								mc.cores=anal_params$cores)
     names(allpaths) = unqpigs
+    #unqpigs = "fl_raoul25"
 
     ###########################################################
     ## Step 4: For each pig, get the raster data and use CTMC to get data.frame

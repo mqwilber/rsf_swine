@@ -2,7 +2,7 @@
 
 
 list.of.packages <- c("ctmcmove", "geosphere", "raster", "lubridate", "fda", 
-                        "parallel", "glmnet", "splines", "fda", "mgcv")
+                        "parallel", "glmnet", "splines", "fda", "mgcv", "suncalc")
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -1534,6 +1534,33 @@ diffunits = function(x){
   units(dt) = "mins"
   return(dt)
 }
+
+
+get_timeofday_groupings = function(sundata, tz){
+  # Using 
+  #
+  # Parameters
+  # ----------
+  # data : data.table with columns date, lat, lon
+
+  dropdata = sundata[!duplicated(sundata$date)]
+  suntimes = as.data.table(getSunlightTimes(data=as.data.frame(dropdata), tz=tz))
+  suntimes = suntimes[, list(date, lat, lon, dusk, nadir, dawn, solarNoon)]
+  suntimes[, date:=as.Date(date)]
+
+  # Just merge on date as all pigs are in a similar geographical area.
+  # mergeddat = merge(sundata, suntimes, by=c("date"))
+
+
+  return(suntimes)
+
+}
+
+check_dayrange = function(timevect){
+
+}
+
+
 
 
 

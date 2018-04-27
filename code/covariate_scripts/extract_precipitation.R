@@ -71,7 +71,7 @@ if(!file.exists(file.path(base, rasfolder))){
 ### Format precip for each study ###
 ####################################
 
-for(studynm in unique(study_sum$study)){
+for(studynm in paste0("mo_kurt", 1:8)) {#unique(study_sum$study)){
 	#studynm = "ga_steve"
 
 	print(paste("Extracting precipitation data for", studynm))

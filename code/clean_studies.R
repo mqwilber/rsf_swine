@@ -4,19 +4,130 @@
 
 library(data.table)
 library(ggplot2)
+library(yaml)
 source("pigfxns.R")
 
+anal_params = yaml.load_file("analysis_parameters.yml")
+maxtime = anal_params$maxtime
+minlength = anal_params$minlength
 
-
-clean_tejon = function(plotit=FALSE){
+clean_pigs = function(studynm, plotit=FALSE){
+	# Clean the pig movement data for a particular study
+	#
+	# Parameters
+	# ----------
+	# studynm : str
+	# 	Name of study to be cleaned
+	#
+	# Notes
+	# -----
+	# All cleaning proceeds with the following steps
+	# 1. Visualize the study data
+	# 2. Perform study-specific cleaning
+	# 3. Remove all points where pigs move faster than 40 km per hour (Mayer et al. book)
 
 	dat = fread("../data/formatted/full_pig_data.csv")
-	tcdat = dat[study == "tejon"]
-	rm(dat) # Free up some space
 
-	tplot = ggplot(tcdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
+	fl = dat[study == studynm]
+	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
 
+	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
 	if(plotit) tplot;
+
+	################################
+	### Study specific cleaning ####
+	################################
+
+	if(studynm == 'tejon'){
+
+		trimdat = clean_tejon(fl)
+
+	} else if(studynm == 'txcamp'){
+
+		trimdat = clean_txcamp(fl)
+
+	} else if(studynm == "fl_raoul"){
+
+		trimdat = clean_fl_raoul(fl)
+
+	} else if(studynm == "tx_tyler_w2"){
+
+		trimdat = clean_tx_tyler_w2(fl)
+
+	} else if(studynm == "srel_contact"){
+
+		trimdat = clean_srel_contact(fl)
+
+	} else if(studynm == "tx_tyler_w1"){
+
+		trimdat = clean_tx_tyler_w1(fl)
+
+	} else if(studynm == "florida"){
+
+		trimdat = clean_florida(fl)
+
+	} else if(studynm == 'cali0'){
+
+		trimdat = clean_cali0(fl)
+
+	}  else if(studynm == 'cali1'){
+
+		trimdat = clean_cali1(fl)
+
+	} else if(studynm == 'cali2'){
+
+		trimdat = clean_cali2(fl)
+
+	} else if(studynm == 'cali3'){
+
+		trimdat = clean_cali3(fl)
+
+	} else if(studynm == 'cali4'){
+
+		trimdat = clean_cali4(fl)
+
+	} else if(studynm %like% 'mo_kurt'){
+
+		trimdat = clean_mo_kurt0(fl)
+
+	} else if(studynm == "tx_susan"){
+
+		trimdat = clean_tx_susan(fl)
+
+	} else if(studynm == "tx_tyler_k1"){
+
+		trimdat = clean_tx_tyler_k1(fl)
+
+	} else if(studynm == "michigan"){
+
+		trimdat = clean_michigan(fl)	
+	} else{
+		trimdat = fl
+	}
+
+	################################
+	### General cleaning 				####
+	################################
+
+	# Remove pigs that are moving too fast
+	cat("Removing unrealistic pigs speeds", "\n")
+	trimdat = trim_speed(trimdat, maxspeed=40)
+
+	# Examine how many pigs will actually be useful in the analysis
+	goodpigs = trimdat[, list(goodpig=runs(datetime, 
+																				ctime=maxtime, 
+																				clength=minlength)), by=pigID]
+
+	return(trimdat)
+
+}
+
+#############################################
+##### Study specific cleaning functions #####
+#############################################
+
+clean_tejon = function(fl){
+	# Cleaning for tejon data
 
 	# There are a few pigs where we seem to have errant movements
 	badpigs = c("tejonF02_F12", "tejonM314")
@@ -27,7 +138,7 @@ clean_tejon = function(plotit=FALSE){
 	for(i in 1:length(badpigs)){
 	  
 	  bp = badpigs[i]
-	  bpdat = tcdat[pigID == bp, list(longitude, latitude)]
+	  bpdat = fl[pigID == bp, list(longitude, latitude)]
 	  kmeans.result = kmeans(bpdat, 1)
 	  centers = kmeans.result$centers[kmeans.result$cluster, ]
 	  distances <- sqrt(rowSums((bpdat - centers)^2))
@@ -36,9 +147,9 @@ clean_tejon = function(plotit=FALSE){
 
 	  # print(outliers) 
 	  badout[i] = outliers[1]
-	  fullind[[i]] = sapply(1:length(outliers), function(j) which((tcdat$pigID == bp)
-	  												 & (tcdat$longitude == bpdat$longitude[outliers[j]]) & 
-	  												 (tcdat$latitude == bpdat$latitude[outliers[j]])))
+	  fullind[[i]] = sapply(1:length(outliers), function(j) which((fl$pigID == bp)
+	  												 & (fl$longitude == bpdat$longitude[outliers[j]]) & 
+	  												 (fl$latitude == bpdat$latitude[outliers[j]])))
 	  
 	  if(plotit){
 		  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1)
@@ -51,7 +162,11 @@ clean_tejon = function(plotit=FALSE){
 	# Remove 6 outliers for "tejonF02_F12" and 1 outlier for "tejonM314"
 	rminds = c(fullind[[1]], fullind[[2]][1])
 
-	trimdat = tcdat[-rminds, ]
+	trimdat = fl[-rminds, ]
+
+	return(trimdat )
+
+	trimdat = trim_speed(trimdat, maxspeed=40)
 	tp = ggplot(trimdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
 
 	if(plotit) tp;
@@ -61,16 +176,7 @@ clean_tejon = function(plotit=FALSE){
 }
 
 
-clean_txcamp = function(plotit=FALSE){
-
-	# For each pig, remove unrealistic observations
-	dat = fread("../data/formatted/full_pig_data.csv")
-	tcdat = dat[study == "txcamp"]
-	rm(dat) # Free up some space
-
-	# At least three pigs have some errant movements
-	tplot = ggplot(tcdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
+clean_txcamp = function(fl){
 
 	# There are a few pigs where we seem to have errant movements: txcamp20141, txcamp20150, txcamp20169.  
 	# For these pigs, let's identify potential outliers in movement
@@ -83,7 +189,7 @@ clean_txcamp = function(plotit=FALSE){
 	for(i in 1:length(badpigs)){
 	  
 	  bp = badpigs[i]
-	  bpdat = tcdat[pigID == bp, list(longitude, latitude)]
+	  bpdat = fl[pigID == bp, list(longitude, latitude)]
 	  kmeans.result = kmeans(bpdat, 1)
 	  centers = kmeans.result$centers[kmeans.result$cluster, ]
 	  distances <- sqrt(rowSums((bpdat - centers)^2))
@@ -92,7 +198,7 @@ clean_txcamp = function(plotit=FALSE){
 
 	  # print(outliers) 
 	  badout[i] = outliers[1]
-	  fullind[i] = which((tcdat$pigID == bp) & (tcdat$longitude == bpdat$longitude[outliers[1]]) & (tcdat$latitude == bpdat$latitude[outliers[1]]))
+	  fullind[i] = which((fl$pigID == bp) & (fl$longitude == bpdat$longitude[outliers[1]]) & (fl$latitude == bpdat$latitude[outliers[1]]))
 	  
 	  if(plotit){
 		  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1)
@@ -103,144 +209,45 @@ clean_txcamp = function(plotit=FALSE){
 	}
 
 	# Remove the substantial outliers.
-	trimdat = tcdat[-fullind, ]
-	tp = ggplot(trimdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tp;
+	trimdat = fl[-fullind, ]
 	return(trimdat)
 
 }
 
-clean_fl_raoul = function(plotit=FALSE){
-
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "fl_raoul"]
-	rm(dat) # Free up some space
-
-	# None of the pigs visually look to have errant points
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# Look at fix time distribution...looks reasonable
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-	fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	# There are 12 of 18 pigs that meet the criteria
-	trimdat = fl
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=200)), by=pigID]
-
-	return(trimdat)
+clean_fl_raoul = function(fl){
+	return(fl)
 }
 
 
-clean_tx_tyler_w2 = function(plotit=FALSE){
-
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "tx_tyler_w2"]
-	rm(dat) # Free up some space
-
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# Look at fix time distribution...looks reasonable
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-	fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	# There are 12 of 18 pigs that meet the criteria
-	trimdat = fl
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=200)), by=pigID]
-
-	return(trimdat)
+clean_tx_tyler_w2 = function(fl){
+	return(fl)
 }
 
 
-clean_srel_contact = function(plotit=FALSE){
-
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "srel_contact"]
-	rm(dat) # Free up some space
-
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# # There are a few pigs where we seem to have errant movements
-	# badpigs = c("srel_contactP702", "srel_contactP705", "srel_contactP708")
-
-	# badout = array(NA, dim=2)
-	# fullind = list()
-
-	# for(i in 1:length(badpigs)){
-	  
-	#   bp = badpigs[i]
-	#   bpdat = fl[pigID == bp, list(longitude, latitude)]
-	#   kmeans.result = kmeans(bpdat, 1)
-	#   centers = kmeans.result$centers[kmeans.result$cluster, ]
-	#   distances <- sqrt(rowSums((bpdat - centers)^2))
-	  
-	#   outliers <- order(distances, decreasing=T)[1:8]
-
-	#   # print(outliers) 
-	#   badout[i] = outliers[1]
-	#   fullind[[i]] = sapply(1:length(outliers), function(j) which((fl$pigID == bp)
-	#   												 & (fl$longitude == bpdat$longitude[outliers[j]]) & 
-	#   												 (fl$latitude == bpdat$latitude[outliers[j]])))
-	  
-	#   if(plotit){
-	#   	dev.new()
-	# 	  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1, main=bp)
-	# 	  points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
-	# 	  points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
-	# 	}
-	  
-	# }
-
-	# Look at fix time distribution...looks reasonable
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-	fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	# There are 12 of 18 pigs that meet the criteria
-	trimdat = fl
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=200)), by=pigID]
-
-	return(trimdat)
+clean_srel_contact = function(fl){
+	return(fl)
 }
 
-clean_tx_tyler_w1 = function(plotit=FALSE){
+clean_tx_tyler_w1 = function(fl){
 
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "tx_tyler_w1"]
-	rm(dat) # Free up some space
 	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
 
 	# Trim the final 23 fixes as many are post-capture fixes.
 	numtrim = 23
 	fldrop = fl[order(pigID, datetime)][, lapply(.SD, function(x) x[-((length(longitude) - numtrim):(length(longitude)))]), by=pigID]
-
-	tplot = ggplot(fldrop) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
 
 	# Look at fix time distribution...looks reasonable
 	fixtimes = fldrop[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	trimdat = fldrop
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
-
-	return(trimdat)
+	return(fldrop)
 }
 
-clean_florida = function(plotit=FALSE){
+clean_florida = function(fl){
 
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "florida"]
-	rm(dat) # Free up some space
 	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
 
 	# Trim the final 23 fixes as many are post-capture fixes.
 	numtrim = 23
 	fldrop = fl[order(pigID, datetime)][, lapply(.SD, function(x) x[-((length(longitude) - numtrim):(length(longitude)))]), by=pigID]
-
-	tplot = ggplot(fldrop) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
 
 	# There are a few pigs where we seem to have errant movements
 	badpigs = c("florida11_06", "florida33_326", "florida44_319")
@@ -276,171 +283,53 @@ clean_florida = function(plotit=FALSE){
 	rminds = c(fullind[[1]][1], fullind[[2]][1], fullind[[3]][c(1, 6)])
 	trimdat = fldrop[-rminds, ]
 
-	tplot = ggplot(trimdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# Look at fix time distribution...looks reasonable
-	fixtimes = trimdat[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
-
 	return(trimdat)
 }
 
-
-clean_cali2 = function(plotit=FALSE){
-
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "cali2"]
-	rm(dat) # Free up some space
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# Look at fix time distribution...looks reasonable
-	trimdat = fl
-	fixtimes = trimdat[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
-
-	return(trimdat)
+clean_cali0 = function(fl){
+	return(fl)
 }
 
-clean_cali0 = function(plotit=FALSE){
-
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "cali0"]
-	rm(dat) # Free up some space
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# Look at fix time distribution...looks reasonable
-	trimdat = fl
-	fixtimes = trimdat[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
-
-	return(trimdat)
-}
-
-clean_mo_kurt0 = function(plotit=FALSE){
-
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "mo_kurt0"]
-	rm(dat) # Free up some space
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# Look at fix time distribution...looks reasonable
-	trimdat = fl
-	fixtimes = trimdat[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
-
-	return(trimdat)
+clean_cali1 = function(fl){
+	return(fl)
 }
 
 
-clean_tx_susan = function(plotit=FALSE){
+clean_cali2 = function(fl){
+	return(fl)
+}
 
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "tx_susan"]
-	rm(dat) # Free up some space
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
+clean_cali3 = function(fl){
 
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
+	# Only include pig that has 3 months of data
+	fldrop = fl[pigID == "caliCC1a"]
+	return(fldrop)
+}
+
+clean_cali4 = function(fl){
+	return(fl)
+}
+
+clean_mo_kurt0 = function(fl){
+	return(fl)
+}
+
+clean_tx_susan = function(fl){
 
 	# Trim the first 10 and last 10 fixes as they include errant movements
 	numtrim = 10
 	fldrop = fl[order(pigID, datetime)][, lapply(.SD, function(x) x[-c((1:10), ((length(longitude) - numtrim):(length(longitude))))]), by=pigID]
-	ggplot(fldrop) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
 
-	# 	# There are a few pigs where we seem to have errant movements
-	# badpigs = c("florida11_06", "florida33_326", "florida44_319")
-
-	# badout = array(NA, dim=2)
-	# fullind = list()
-
-	# for(i in 1:length(badpigs)){
-	  
-	#   bp = badpigs[i]
-	#   bpdat = fldrop[pigID == bp, list(longitude, latitude)]
-	#   kmeans.result = kmeans(bpdat, 1)
-	#   centers = kmeans.result$centers[kmeans.result$cluster, ]
-	#   distances <- sqrt(rowSums((bpdat - centers)^2))
-	  
-	#   outliers <- order(distances, decreasing=T)[1:6]
-
-	#   # print(outliers) 
-	#   badout[i] = outliers[1]
-	#   fullind[[i]] = sapply(1:length(outliers), function(j) which((fldrop$pigID == bp)
-	#   												 & (fldrop$longitude == bpdat$longitude[outliers[j]]) & 
-	#   												 (fldrop$latitude == bpdat$latitude[outliers[j]])))
-	  
-	#   if(plotit){
-	#   	dev.new()
-	# 	  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1, main=bp)
-	# 	  points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
-	# 	  points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
-	# 	}
-	  
-	# }
-
-
-	# Look at fix time distribution...looks reasonable
-	trimdat = fldrop
-
-
-
-	fixtimes = trimdat[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
-
-
-
-	return(trimdat)
+	return(fldrop)
 }
 
-clean_tx_tyler_k1 = function(plotit=FALSE){
-
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "tx_tyler_k1"]
-	rm(dat) # Free up some space
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# Look at fix time distribution...looks reasonable
-	trimdat = fl
-
-	fixtimes = trimdat[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
-
-	return(trimdat)
+clean_tx_tyler_k1 = function(fl){
+	return(fl)
 }
 
+clean_michigan = function(fl){
 
-clean_michigan = function(plotit=FALSE){
-
-	dat = fread("../data/formatted/full_pig_data.csv")
-	fl = dat[study == "michigan"]
-	rm(dat) # Free up some space
-	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-
-	tplot = ggplot(fl) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
-	if(plotit) tplot;
-
-	# 
 	fldrop = fl[latitude > 43.75] #fl[order(pigID, datetime)][, lapply(.SD, function(x) x[-c((1:10), ((length(longitude) - numtrim):(length(longitude))))]), by=pigID]
-	ggplot(fldrop) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
 
 		# There are a few pigs where we seem to have errant movements
 	badpigs = c("michigan36635", "michigan38313")
@@ -473,54 +362,7 @@ clean_michigan = function(plotit=FALSE){
 	  
 	}
 
-
-	# Look at fix time distribution...looks reasonable
-	trimdat = fldrop
-
-	fixtimes = trimdat[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=150)), by=pigID]
-
-
-
-	return(trimdat)
+	return(fldrop)
 }
-
-	
-	# dat = fread("../data/formatted/full_pig_data.csv")
-	# dat$datetime = as.POSIXct(strptime(dat$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-
-	# # For each study, look at the distributions of speeds
-	# get_speed = function(lon, lat, datetime){
-
-	# 	mindiffs = as.numeric(diffunits(datetime)) / 60 # to hours
-	# 	dists = as.vector(get_distance_vect(as.data.table(data.frame(longitude=lon, latitude=lat)))) / 1000 # to miles
-
-	# 	return(dists / mindiffs)
-	# }
-
-	# temp = dat[pigID %in% c("florida11_06", "florida33_326", "florida44_319")]
-	# speed = temp[order(datetime, pigID), list(speed=get_speed(longitude, latitude, datetime), 
-	# 																					dists=as.vector(get_distance_vect(as.data.table(data.frame(longitude=longitude, latitude=latitude)))) / 1000), by=pigID]
-
-
-	# for(studynm in unique(dat$study)){
-	# 	fl = dat[study == studynm]
-
-	# 	# Look at fix time distribution...looks reasonable
-	# 	fl$datetime = as.POSIXct(strptime(fl$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
-	# 	fixtimes = fl[, list(diffs=median(diffunits(datetime))), by=pigID]
-
-	# 	# There are 12 of 18 pigs that meet the criteria
-	# 	trimdat = fl
-	# 	goodpigs = trimdat[, list(goodpig=runs(datetime, ctime=130, clength=100)), by=pigID]
-
-	# 	print(studynm)
-	# 	print(sum(goodpigs$goodpig))
-	# 	print(nrow(goodpigs))
-	# }
-
-
-
 
 

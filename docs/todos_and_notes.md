@@ -416,5 +416,6 @@ Notes from lab meeting
 3. Potentially revisit basis functions to summarize inflections in movement
 4. Masting loc and tree density are likely highly correlated...deal with this!
 5. CHECK TIMEZONES FOR ALL PIGS. Particularly the movement study! Need to determine whether they are UTC or something else.
+6. tx_tyler_w2 converted from UTC to central time.
 
 

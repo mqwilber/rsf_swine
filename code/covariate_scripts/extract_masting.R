@@ -22,7 +22,7 @@ densproj = projectRaster(dens, crs="+proj=longlat +datum=WGS84 +ellps=WGS84")
 # sppproj = projectRaster(spp, crs="+proj=longlat +datum=WGS84 +ellps=WGS84")
 
 # Loop through studies
-for(studynm in study_sum$study){
+for(studynm in paste0("mo_kurt", 1:8)){#study_sum$study){
 
 	cat("Working on", studynm, "\n")
 	ind = study_sum$study == studynm

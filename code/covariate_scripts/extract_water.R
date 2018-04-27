@@ -37,7 +37,15 @@ nwi_shpfiles = list("tejon"=file.path(base, "downloaded/CA_Wetlands_South.shp"),
 										"cali0"=file.path(base, "downloaded/CA_Wetlands_NorthCentral.shp"),
 										"mo_kurt0"=file.path(base, "downloaded/MO_Wetlands.shp"),
 										"tx_susan"=file.path(base, "downloaded/TX_Wetlands_West.shp"),
-										"tx_tyler_k1"=file.path(base, "downloaded/TX_Wetlands_Central.shp"))
+										"tx_tyler_k1"=file.path(base, "downloaded/TX_Wetlands_Central.shp"),
+										"cali1"=file.path(base, "downloaded/CA_Wetlands_South.shp"),
+										"cali3"=file.path(base, "downloaded/CA_Wetlands_NorthCentral.shp"),
+										"cali4"=file.path(base, "downloaded/CA_Wetlands_NorthCentral.shp"),
+										"mo_kurt1"=file.path(base, "downloaded/MO_Wetlands.shp"),
+										"mo_kurt2"=file.path(base, "downloaded/MO_Wetlands.shp"),
+										"mo_kurt3"=file.path(base, "downloaded/MO_Wetlands.shp"),
+										"mo_kurt4"=file.path(base, "downloaded/MO_Wetlands.shp"),
+										"mo_kurt7"=file.path(base, "downloaded/MO_Wetlands.shp"))
 
 for(studynm in summarydat$study){
 

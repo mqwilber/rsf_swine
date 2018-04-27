@@ -19,7 +19,7 @@ study_sum$datetime_mindate = as.POSIXct(study_sum$datetime_mindate)
 study_sum$datetime_maxdate = as.POSIXct(study_sum$datetime_maxdate)
 
 
-for(studynm in unique(study_sum$study)) {
+for(studynm in paste0("mo_kurt", 1:8)){ #unique(study_sum$study)) {
 
 	if(studynm != "canada"){
 	#studynm = "ga_steve"

@@ -941,7 +941,7 @@ get_distance_vect = function(longlat){
   #
   # Returns
   # -------
-  # : vector of distances
+  # : vector of distances in meters
   
   longs = longlat$longitude
   lats = longlat$latitude
@@ -1556,8 +1556,44 @@ get_timeofday_groupings = function(sundata, tz){
 
 }
 
-check_dayrange = function(timevect){
 
+get_speed = function(lon, lat, datetime){
+  # Get the average speed (km / h) for every transition. 
+  #
+  # Parameters
+  # ----------
+  # lon : longitude
+  # lat : latitude
+  # datetime : POISXct
+  #
+  # Returns
+  # -------
+  # : vector
+  #   Average speed for each transition
+
+
+  mindiffs = as.numeric(diffunits(datetime)) / 60 # to hours
+  dists = as.vector(get_distance_vect(as.data.table(data.frame(longitude=lon, 
+                        latitude=lat)))) / 1000 # to kilometers
+
+  # Including NA ensures the same length
+  return(c(NA, dists / mindiffs))
+}
+
+trim_speed = function(data, maxspeed=40){
+  # Remove observations that are too fast
+
+  speed = data[order(datetime, pigID), list(speed=get_speed(longitude, latitude, datetime), 
+                    dists=c(NA, as.vector(get_distance_vect(
+                                            as.data.table(
+                                              data.frame(longitude=longitude, 
+                                                         latitude=latitude)
+                                                          ))) / 1000)), by=pigID]
+  fastpig = (speed$speed > maxspeed)
+  fastpig[is.na(fastpig)] = FALSE
+
+  # Look at fix time distribution...looks reasonable
+  return(data[!fastpig])
 }
 
 

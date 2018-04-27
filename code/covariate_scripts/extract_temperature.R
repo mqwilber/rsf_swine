@@ -27,7 +27,7 @@ enddate = as.POSIXct("2017-12-01 GMT", tz="GMT")
 nmdates = seq(startdate, enddate, by="months")
 
 
-for(studynm in unique(study_sum$study)){
+for(studynm in paste0("mo_kurt", 1:8)){#unique(study_sum$study)){
 	#studynm = "ga_steve"
 
 	print(paste("Extracting temperature data for", studynm))

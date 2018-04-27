@@ -45,9 +45,8 @@ sink("log_ctmc.txt") # log file
 preprocessed = FALSE # If TRUE all that needs to be computed is the pig-specific variables
 
 
-for(studynm in c("tx_tyler_w2")) {
+for(studynm in paste0("mo_kurt", 7)) {
 
-  #studynm = "tejon"
   cat("Beginning analysis for", studynm, "\n")
 
   if(!preprocessed) {
@@ -55,8 +54,8 @@ for(studynm in c("tx_tyler_w2")) {
     ## Step 1: Clean individual studies for outliers
     ###########################################################
 
-    trimdat = eval(parse(text=paste("clean_", studynm, "(plotit=FALSE)", sep=""))) 
-    trimdat$datetime = as.POSIXct(trimdat$datetime, tz="GMT")
+    trimdat = clean_pigs(studynm, plotit=FALSE) #eval(parse(text=paste("clean_", studynm, "(plotit=FALSE)", sep=""))) 
+    trimdat$datetime = as.POSIXct(strptime(trimdat$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
 
     ###########################################################
     ## Step 2: Identify the runs in the study that are of sufficient length

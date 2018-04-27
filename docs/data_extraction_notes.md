@@ -65,13 +65,8 @@ For each study 1 arc second (~ 30m by 30m) resolution raster where each raster c
 	- Crop road shp file to the extent of each study
 		- Given the size of these files, using features of GDAL could really speed this up.
 	- Compute distance to nearest road point for each cell in raster.
-		- I have already built a distance to nearest polygon function.  It needs a few tweaks (see below).
+		- I have already built a distance to nearest polygon function.
 2. Generate the distance to nearest road rasters for all studies.
-
-### Update "distance to nearest" metric: Second priority
-
-Currently, this metric is being computed as distance to a centroid of a polygon. The function is in `code/covariate_scripts/covariate_fxns.R` and is named `dist_nearest_neighbor`. This really should be being computed as distance to the nearest perimeter point.  Because there are many more points than polygons, this could be quite slow for some of the data.  Would be useful if we could think about ways to speed up this calculation.  
-
 
 ## 3. Covariates that need extracting: Third priority
 
@@ -85,7 +80,7 @@ The following covariates need to be extracted and formatted for each study.
 6. Elevation
 7. Distance to roads
 
-There are currently 5 studies for which these have been extracted (excluding distance to roads): txcamp, fl_raoul, srel_contact, tx_tyler_w2, and tejon. The file `covariate_table.xlsx` contains a description of how to extract each of these covariates under the column "Extraction Methodology".
+There are currently 12 studies for which these have been extracted (excluding distance to roads and evi): txcamp, fl_raoul, srel_contact, tx_tyler_w2, and tejon. The file `covariate_table.xlsx` contains a description of how to extract each of these covariates under the column "Extraction Methodology".
 
 ### Extraction overview
 
@@ -96,56 +91,32 @@ There are currently 5 studies for which these have been extracted (excluding dis
 
 *Running an `extract_*.R` script for a study*
 
+**Update**: Study names can now be passed in via the command line. For example,
+
+> Rscript extract_*.R txcamp
+
 1. Open the `extract_*.R` script
 2. Look for a line similar to `if(studynm %in% c('srel_contact'))`.
 3. Replace the `srel_contact`, in this example, with the study name you are considering (e.g. `tejon`, `txcamp`, etc.).  
 4. Covariates will be formatted for all studies that are named and this can take a long time for some studies.  So I have been just running one, or a few, at a time.
 
-### Studies for which no covariates have been extracted as of March 21, 2018
+### Studies for which no covariates have been extracted as of April 25, 2018
 
-1. cali0, ..., cali4
-2. canada
-3. florida
-4. ga_bill
-5. ga_steve
-6. judas_pig
+1. cali3, cali4 (these are individual pigs)
+2. canada 
+4. ga_bill(break into separate pigs)
+5. ga_steve (break into separate pigs)
+6. judas_pig (Break into separate pigs)
 	- Ignore until we figure out the capturing times
 7. la_hartley
 8. la_steve
 9. michigan
-10. mo_kurt0, ..., mo_kurt8
+10. mo_kurt1, ..., mo_kurt8 (these are separate pigs, for the most part).
 11. sc_jim2
 12. scjim1
 13. srel_vacuum
 14. srs_kilgo
 15. tx_christy_14r
 16. tx_chirsty_15r
-17. tx_susan
-18. tx_tyler_k1
-19. tx_tyler_w1
-	- Need NDVI for this study still. Site currently down.
-
-**Priorities for extraction**
-
-1. cali0, ..., cali4
-1. florida
-1. michigan
-1. mo_kurt0, ..., mo_kurt9
-1. tx_tyler_w1
-1. tx_tyler_k1
-1. tx_susan
-1. ga_bill
-1. ga_steve
-1. la_hartley
-1. scjim1
-1. sc_jim2
-1. canada
-	- This is one could be tricky as a lot of the crop data isn't consistent into Canada. We might have to exclude this one...
-1. srs_kilgo
-1. tx_christy_14r
-1. tx_chirsty_15r
-1. Others
-
-
 
 

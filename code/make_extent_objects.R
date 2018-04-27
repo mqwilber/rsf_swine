@@ -11,7 +11,7 @@ base = "../data/covariate_data/ndvi/downloaded"
 
 studysum = fread("../data/formatted/study_summary.csv")
 
-for(studynm in "michigan"){#studysum$study){
+for(studynm in paste0('mo_kurt', 1)){#studysum$study){
 
 	# Make extent object
 	tstud = studysum[study == studynm]
@@ -26,5 +26,10 @@ for(studynm in "michigan"){#studysum$study){
 	fp = file.path(base, studynm)
 	dir.create(fp)
 	shapefile(sp, file.path(fp, paste(studynm, "_extent.shp", sep="")), overwrite=TRUE)
+
+	# Zip the shape file
+	#system(paste("rm", file.path(fp, paste(studynm, "_extent.zip", sep=""))))
+	# system(paste("zip -r", file.path(fp, paste(studynm, "_extent.zip", sep="")),
+	# 												 file.path(fp, paste(studynm, "_extent.*", sep=""))))
 
 }

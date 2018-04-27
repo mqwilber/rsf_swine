@@ -126,8 +126,38 @@ kobj = KMeans(n_clusters=5)
 X = cali_red[['longitude', 'latitude']].values
 kfit = kobj.fit(X)
 labels = kfit.labels_
+
 cali_red.loc[:, "study"] = np.array("cali" + pd.Series(labels).astype(np.str))
 
+# Relabel studies to be consistent upon regeneration of data
+# Because I already created rasters for some of these files, 
+# can't do a systematic reordering.
+cali_latlon = cali_red.groupby('study').agg({'longitude':np.mean, 
+                                             'latitude': np.mean})
+
+cali0ind = (cali_latlon.latitude.round(6) == 37.888436) & \
+        (cali_latlon.longitude.round(6) == -121.865549)
+
+cali1ind = (cali_latlon.latitude.round(6) == 34.986554) & \
+        (cali_latlon.longitude.round(6) == -118.690084)
+
+cali2ind = (cali_latlon.latitude.round(6) == 38.928151) & \
+        (cali_latlon.longitude.round(6) == -123.315835)
+
+cali3ind = (cali_latlon.latitude.round(6) == 38.357676) & \
+        (cali_latlon.longitude.round(6) == -122.105563)
+
+cali4ind = (cali_latlon.latitude.round(6) == 37.455387) & \
+        (cali_latlon.longitude.round(6) == -121.806334)
+
+
+nms = ["cali" + str(i) for i in range(5)]
+nminds = [i[i].index[0] for i in  [cali0ind, cali1ind, cali2ind, cali3ind, cali4ind]]
+repdict = {key : val for key, val in zip(nms, nminds)}
+revalue = cali_red.study.map(repdict)
+cali_red = cali_red.assign(study=revalue)
+
+# Relabel the cali data for consistency
 print("Done")
 
 
@@ -295,6 +325,25 @@ X = mo_kurt[['longitude', 'latitude']].values
 kfit = kobj.fit(X)
 labels = kfit.labels_
 move.loc[move.study == "mo_kurt", "study"] = np.array("mo_kurt" + pd.Series(labels).astype(np.str))
+
+mo_kurt = move[move.study.str.find("mo_kurt") != -1]
+mo_kurtll = mo_kurt.groupby('study').agg({k : np.mean for k in ['latitude', 'longitude']})
+
+# Fix mo_kurt0
+mokurt0ind = (mo_kurtll.latitude.round(6) == 37.583448) & \
+             (mo_kurtll.longitude.round(6) == -90.897654)
+
+# Label in a consistent order
+othermk = mo_kurtll[~mokurt0ind].sort_values(['longitude', 'latitude'])
+othermk.loc[:, 'newstudy'] = ["mo_kurt" + str(i) for i in range(1, 9)]
+
+repdict = {mokurt0ind[mokurt0ind].index[0] : 'mo_kurt0'}
+repdict.update({key : val for key, val in zip(othermk.index, othermk.newstudy)})
+
+revalue = mo_kurt.study.map(repdict)
+
+# Rename mo_kurt studies consistently
+move.loc[mo_kurt.index, "study"] = revalue
 
 print("Done")
 

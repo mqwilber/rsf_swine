@@ -403,9 +403,10 @@ Notes from lab meeting
 
 1. Move forward with crop season as a cropping variable 
 	- Do it by county and get planting date and harvest date for each crop. 
+	- Sarah is working on this
 2. Break time of day into a more meaningful grouping
 	- Sunset/twilight civil twilight. Groupings will shift by time of year.
-	- Use and R package suncalc to break into four time periods depending on day of year and lat lon.
+	- Use the R package suncalc to break into four time periods depending on day of year and lat lon.
 		a. dusk - nadir
 		b. nadir - dawn
 		c. dawn - solar noon
@@ -418,4 +419,22 @@ Notes from lab meeting
 5. CHECK TIMEZONES FOR ALL PIGS. Particularly the movement study! Need to determine whether they are UTC or something else.
 6. tx_tyler_w2 converted from UTC to central time.
 
+## May 4
+
+1. Extract all mo_kurt data [DONE]
+2. Determine what other data needs to be split
+	- la_steve (9 pigs) [Done]
+	- Michigan (8 pigs)
+	- srel_vaccuum (2 pigs)
+3. Break time of day into more meaningful groups [Done]
+4. Re-run model ctmc model on all data to clean up errant movements [Done]
+
+TODO
+
+1. Re-run convert_pig_data.py to ensure that LMT updates are working
+	- Changed how I was converting from LMT to UTC. Need to check
+2. Make sure all converted data is in LMT not UTC.  For some studys, will need to check this by running the model and seeing at what time pigs are slowing down. This can be indicative of the tz when that data wasn't given.
+3. Re-run parameter an analyses on all ctmc data!
+	- Re-run cluster analyses as well.
+4. Still need to convert srel-vacuum.
 

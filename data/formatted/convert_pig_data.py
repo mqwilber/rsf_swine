@@ -5,6 +5,7 @@ import os
 import sys
 import string
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 import pytz 
 
 """
@@ -43,20 +44,20 @@ Must be run with Python 2.7
 
 # Time-zone information of the raw data
 
-# tzs = {'cali0': "America/Los_Angeles", # Check
-#  'cali1': "America/Los_Angeles", # Check
-#  'cali2': "America/Los_Angeles", # Check
-#  'cali3': "America/Los_Angeles",  # Check
-#  'cali4': "America/Los_Angeles", # Check
-#  'canada': "America/Regina", # Don't know...need to ask Ryan
+# tzs = {'cali0': "America/Los_Angeles", # Local Mean Time -8 from GMT
+#  'cali1': "America/Los_Angeles", # Local Mean Time -8 from GMT
+#  'cali2': "America/Los_Angeles", # Local Mean Time -8 from GMT
+#  'cali3': "America/Los_Angeles",  # Local Mean Time -8 from GMT
+#  'cali4': "America/Los_Angeles", # Local Mean Time -8 from GMT
+#  'canada': "America/Regina", # Don't know...need to ask Ryan. Probably UTC
 #  'fl_raoul': "America/New_York", # Seems to be UTC time
-#  'florida': "America/New_York", 
+#  'florida': "America/New_York", # Local Mean Time -5 from GMT
 #  'ga_bill': "America/New_York",
 #  'ga_steve': "America/New_York",
 #  'judas_pig': "LMT", # Check
 #  'la_hartley': "America/Chicago",
-#  'la_steve': "America/Chicago", 
-#  'michigan': "America/New_York", # Check
+#  'la_steve': "America/Chicago", # Not sure yet
+#  'michigan': "America/New_York", # Local Mean Time -5 from GMT
 #  'mo_kurt0': "America/Chicago",  
 #  'mo_kurt1': "America/Chicago",
 #  'mo_kurt2' : "America/Chicago",
@@ -68,17 +69,17 @@ Must be run with Python 2.7
 #  'mo_kurt8': "America/Chicago", 
 #  'sc_jim2': "America/New_York", 
 #  'scjim1' : "America/New_York", 
-#  'srel_contact': "America/New_York", # Check
-#  'srel_vacuum': "America/New_York", # Looks like LMT time...
-#  'srs_kilgo': "America/New_York", # Check
-#  'tejon': "America/Los_Angeles", # Check
+#  'srel_contact': "America/New_York", # data provided in UTC, converted to LMT -5 
+#  'srel_vacuum': "America/New_York", # Local Mean Time -5 from GMT
+#  'srs_kilgo': "America/New_York", # Local Mean Time -5 from GMT
+#  'tejon': "America/Los_Angeles", # Local Mean Time -8 from GMT
 #  'tx_christy_14r': "America/Chicago", 
 #  'tx_christy_15r': "America/Chicago",
 #  'tx_susan': "America/Chicago", 
 #  'tx_tyler_k1': "America/Chicago", 
 #  'tx_tyler_w1': "America/Chicago", 
-#  'tx_tyler_w2': "America/Chicago", 
-#  'txcamp': "America/Chicago" #check}
+#  'tx_tyler_w2': "America/Chicago", # Data provided at UTC, converted to LMT - 6
+#  'txcamp': "America/Chicago" # Local Mean Time}
 
 ##############################################################
 ### Look at the Tejon and California datasets specifically ###
@@ -287,14 +288,14 @@ move.columns = [u'collarID', u'date', u'time', u'study', u'latitude', u'longitud
 move.loc[:, "study"] = move.study.str.lower()
 move.loc[:, "collarID"] = move.collarID.str.lower()
 
-# It is not clear which studies are UTC datetime, though fl raoul is definitely UTC
+# It is not clear which studies are UTC datetime,
 move.loc[:, "datetime"] = pd.to_datetime(move.date + " " + move.time, format="%m/%d/%y %H:%M:%S")
 
 # Convert tx_tyler to LMT
 central = pytz.timezone("America/Chicago")
 baserl = move[move.study == 'tx_tyler_w2'].datetime
-updts = pd.Index(baserl).tz_localize(pytz.utc).tz_convert(central).tz_localize(None)
-move.loc[move.study == "tx_tyler_w2", "datetime"] = pd.Series(updts).values
+updts = baserl - pd.Timedelta(value=6, unit="h")  # Convert from UTC to LMT central time
+move.loc[move.study == "tx_tyler_w2", "datetime"] = updts.values
 
 move.loc[:, "fixtype"] = np.nan
 move.loc[move.study == "sc_jim", "study"] = "scjim1"
@@ -318,7 +319,8 @@ move.loc[:, "collarID"] = move.collarID.str.replace(r"([0-9]+)_([a-d])", r"\1\2"
 move.loc[:, "collarID"] = [val.split("_")[-1] for val in move.collarID]
 move.loc[:, "pigID"] = move.study + move.collarID
 
-# Break mo_kurt into multiple spatially proximate studies
+### Break mo_kurt into multiple spatially proximate studies ###
+
 mo_kurt = move[move.study == "mo_kurt"]
 kobj = KMeans(n_clusters=9)
 X = mo_kurt[['longitude', 'latitude']].values
@@ -345,6 +347,27 @@ revalue = mo_kurt.study.map(repdict)
 # Rename mo_kurt studies consistently
 move.loc[mo_kurt.index, "study"] = revalue
 
+## Break ls_steve into multiple spatially proximate studies ##
+
+la_steve = move[move.study == "la_steve"]
+kobj = KMeans(n_clusters=6, n_init=60)
+X = StandardScaler().fit_transform(la_steve[['longitude', 'latitude']].values)
+kfit = kobj.fit(X)
+labels = kfit.labels_
+move.loc[move.study == "la_steve", "study"] = np.array("la_steve" + pd.Series(labels).astype(np.str))
+
+# Sort cluster ids by longitude and and latitude for consistent labeling
+la_steve = move[move.study.str.find("la_steve") != -1]
+la_stevell = (la_steve.groupby('study')
+                      .agg({k : np.mean for k in ['latitude', 'longitude']})
+                      .sort_values(['longitude', 'latitude']))
+la_stevell.loc[:, 'newstudy'] = ["la_steve" + str(i) for i in range(6)]
+repdict = {key : val for key, val in zip(la_stevell.index, la_stevell.newstudy)}
+revalue = la_steve.study.map(repdict)
+
+# Rename la_steve studies consistently
+move.loc[la_steve.index, "study"] = revalue
+
 print("Done")
 
 
@@ -367,8 +390,8 @@ contact.columns = [u'collarID', u'LocNum', u'Acquisition Time', u'Acquisition St
 # This is in UTC time, convert to Local eastern time
 contact.loc[:, "datetime"] = pd.to_datetime(contact['GPS Fix Time'], format="%Y.%m.%d %H:%M:%S")
 east = pytz.timezone("America/New_York")
-localdatetime = pd.Index(contact.datetime).tz_localize(pytz.utc).tz_convert(east).tz_localize(None)
-contact.loc[:, "datetime"] = pd.Series(localdatetime)
+localdatetime = contact.datetime - pd.Timedelta(value=5, unit="h")
+contact.loc[:, "datetime"] = localdatetime.values
 
 
 contact.loc[:, "study"] = "srel_contact"
@@ -583,7 +606,12 @@ tzs = {'cali0': "America/Los_Angeles",
  'ga_steve': "America/New_York",
  'judas_pig': "UTC",
  'la_hartley': "America/Chicago",
- 'la_steve': "America/Chicago", 
+ 'la_steve0': "America/Chicago", 
+ 'la_steve1': "America/Chicago", 
+ 'la_steve2': "America/Chicago", 
+ 'la_steve3': "America/Chicago", 
+ 'la_steve4': "America/Chicago", 
+ 'la_steve5': "America/Chicago", 
  'michigan': "America/New_York", 
  'mo_kurt0': "America/Chicago",  
  'mo_kurt1': "America/Chicago",

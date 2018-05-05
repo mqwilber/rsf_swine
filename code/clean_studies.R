@@ -151,11 +151,11 @@ clean_tejon = function(fl){
 	  												 & (fl$longitude == bpdat$longitude[outliers[j]]) & 
 	  												 (fl$latitude == bpdat$latitude[outliers[j]])))
 	  
-	  if(plotit){
-		  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1)
-		  points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
-		  points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
-		}
+	 #  if(plotit){
+		#   plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1)
+		#   points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
+		#   points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
+		# }
 	  
 	}
 
@@ -169,7 +169,7 @@ clean_tejon = function(fl){
 	trimdat = trim_speed(trimdat, maxspeed=40)
 	tp = ggplot(trimdat) + geom_path(aes(x=longitude, y=latitude)) + facet_wrap(~pigID)
 
-	if(plotit) tp;
+	#if(plotit) tp;
 
 	return(trimdat)
 
@@ -200,11 +200,11 @@ clean_txcamp = function(fl){
 	  badout[i] = outliers[1]
 	  fullind[i] = which((fl$pigID == bp) & (fl$longitude == bpdat$longitude[outliers[1]]) & (fl$latitude == bpdat$latitude[outliers[1]]))
 	  
-	  if(plotit){
-		  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1)
-		  points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
-		  points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
-		}
+	 #  if(plotit){
+		#   plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1)
+		#   points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
+		#   points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
+		# }
 	  
 	}
 
@@ -271,12 +271,12 @@ clean_florida = function(fl){
 	  												 & (fldrop$longitude == bpdat$longitude[outliers[j]]) & 
 	  												 (fldrop$latitude == bpdat$latitude[outliers[j]])))
 	  
-	  if(plotit){
-	  	dev.new()
-		  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1, main=bp)
-		  points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
-		  points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
-		}
+	 #  if(plotit){
+	 #  	dev.new()
+		#   plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1, main=bp)
+		#   points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
+		#   points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
+		# }
 	  
 	}
 
@@ -353,12 +353,12 @@ clean_michigan = function(fl){
 	  												 & (fldrop$longitude == bpdat$longitude[outliers[j]]) & 
 	  												 (fldrop$latitude == bpdat$latitude[outliers[j]])))
 	  
-	  if(plotit){
-	  	dev.new()
-		  plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1, main=bp)
-		  points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
-		  points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
-		}
+	 #  if(plotit){
+	 #  	dev.new()
+		#   plot(bpdat[,list(longitude, latitude)], pch=19, col=kmeans.result$cluster, cex=1, main=bp)
+		#   points(kmeans.result$centers[, c("longitude", "latitude")], col=1:3, pch=15, cex=2)
+		#   points(bpdat[outliers, c("longitude", "latitude")], pch="+", col=4, cex=3)
+		# }
 	  
 	}
 

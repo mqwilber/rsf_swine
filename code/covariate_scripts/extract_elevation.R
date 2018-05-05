@@ -87,6 +87,14 @@ for(studynm in unique(study_sum$study)){
 																		origin(x) = origin(ras_list[[1]])
 																		return(x)})
 			fullras = merge(ras_list[[1]], ras_list[[2]])
+
+			# Special case of 4 rasters
+			if(length(ras_list) == 4){
+
+				fullras2 = merge(ras_list[[3]], ras_list[[4]])
+				fullras = merge(fullras, fullras2)
+
+			}
 		} else{
 			fullras = ras_list[[1]]
 		}

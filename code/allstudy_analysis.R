@@ -40,7 +40,6 @@ studynames = sapply(strsplit(basename(allstudies), ".", fixed=T), function(x) x[
 
 seasons = c("winter", "spring", "summer", "fall")
 
-
 model1params = list()
 allnongam = list()
 model2params = list()
@@ -55,9 +54,10 @@ alltpffects = list()
 for(studynm in "tx_tyler_w2"){
 
   cat("Beginning analysis of", studynm, "\n")
+
   dat = fread(paste0("~/Repos/rsf_swine/results/glmdata_by_study/", studynm, ".csv"))
   dat[ , datetime:=as.POSIXct(t, origin = '1970-01-01', tz = 'GMT')]
-  dat[, date:=as.Date(datetime)]
+  dat[ , date:=as.Date(datetime)]
   dat[ , hourofday:=hour(datetime)]
   dat[ , monthofyear:=month(datetime)]
 

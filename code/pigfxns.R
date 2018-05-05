@@ -1536,21 +1536,21 @@ diffunits = function(x){
 }
 
 
-get_timeofday_groupings = function(sundata, tz){
+get_timeofday_groupings = function(sundata){
   # Using 
   #
   # Parameters
   # ----------
-  # data : data.table with columns date, lat, lon
+  # sundata : data.table with columns date, lat, lon
 
   dropdata = sundata[!duplicated(sundata$date)]
-  suntimes = as.data.table(getSunlightTimes(data=as.data.frame(dropdata), tz=tz))
-  suntimes = suntimes[, list(date, lat, lon, dusk, nadir, dawn, solarNoon)]
-  suntimes[, date:=as.Date(date)]
+  suntimes = as.data.table(getSunlightTimes(data=as.data.frame(dropdata), tz="GMT"))
+  suntimes = suntimes[, list(date, dusk, nadir, dawn, solarNoon)]
+
+  suntimes$date = as.Date(suntimes$date)
 
   # Just merge on date as all pigs are in a similar geographical area.
   # mergeddat = merge(sundata, suntimes, by=c("date"))
-
 
   return(suntimes)
 

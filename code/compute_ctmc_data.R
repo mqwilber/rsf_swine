@@ -45,7 +45,8 @@ sink("log_ctmc.txt") # log file
 preprocessed = FALSE # If TRUE all that needs to be computed is the pig-specific variables
 
 
-for(studynm in paste0("mo_kurt", 7)) {
+for(studynm in c("tejon", "tx_susan", "tx_tyler_k1", "tx_tyler_w1",
+              "tx_tyler_w2", "txcamp", "florida")) {
 
   cat("Beginning analysis for", studynm, "\n")
 
@@ -54,8 +55,9 @@ for(studynm in paste0("mo_kurt", 7)) {
     ## Step 1: Clean individual studies for outliers
     ###########################################################
 
-    trimdat = clean_pigs(studynm, plotit=FALSE) #eval(parse(text=paste("clean_", studynm, "(plotit=FALSE)", sep=""))) 
-    trimdat$datetime = as.POSIXct(strptime(trimdat$datetime, format="%Y-%m-%d %H:%M:%S", tz="GMT"))
+    trimdat = clean_pigs(studynm, plotit=FALSE) 
+    trimdat$datetime = as.POSIXct(strptime(trimdat$datetime, 
+                                        format="%Y-%m-%d %H:%M:%S", tz="GMT"))
 
     ###########################################################
     ## Step 2: Identify the runs in the study that are of sufficient length
@@ -75,7 +77,8 @@ for(studynm in paste0("mo_kurt", 7)) {
       tdat = trimdat[pigID == pignm]
 
       # Only perform split if pig meets criteria
-      if(runs(tdat$datetime, ctime=anal_params$maxtime, clength=anal_params$minlength)){
+      if(runs(tdat$datetime, ctime=anal_params$maxtime, 
+                             clength=anal_params$minlength)){
 
         tdat$run_number = 0 
         runinds = split_runs(tdat$datetime, ctime=maxtime, clength=minlength)
@@ -101,6 +104,8 @@ for(studynm in paste0("mo_kurt", 7)) {
     ###########################################################
 
     unqpigs = unique(newdat$pigID)
+
+    if(length(unqpigs) == 0) next # Skip any study without any goodpigs
 
     # Loop through and fit a continuous time movement model for each pig on each run
     parallel_pigpaths = function(pignm, newdat, anal_params){

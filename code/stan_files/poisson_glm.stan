@@ -7,7 +7,8 @@ data {
 
 } parameters {
 
-	vector[p] beta;
+	vector[p] beta; // Design matrix without an intercept
+	real b0; // Intercept
 
 } model{
 

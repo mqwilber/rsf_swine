@@ -1275,7 +1275,7 @@ build_daily_design_matrix = function(dat, stdcols, nonstdcols, splinecols,
   # Parameters 
   # ----------
   # dat : data.table
-  #   The dataset. Must have a column named hourofday
+  #   The dataset. Must have a column named hourofday and dayperiod if df_hour=0
   # stdcols : vector of column names as strings
   #   Columns that should be standardized
   # nonstdcols : vector of column names as strings
@@ -1283,6 +1283,9 @@ build_daily_design_matrix = function(dat, stdcols, nonstdcols, splinecols,
   # splinecols : vector of column names as string
   #   Must be a subset of stdcols and contains the columns that will be
   #   converted into daily basis functions.
+  # df_hour : int
+  #  Number of basis vectors in cyclic basis function (df_hour - 1). 
+  # If df_hour = 0, discrete time groupings are used.
   #
   # Returns
   # -------
@@ -1298,18 +1301,17 @@ build_daily_design_matrix = function(dat, stdcols, nonstdcols, splinecols,
   if(df_hour == 0){
 
     # Build discrete day covariates
-    timeofday = list("morning"=c(1:8), "midday"=c(9:16), "evening"= c(17:23, 0))
+    timeofday = c("solarNoon-dusk", "dusk-nadir", "nadir-dawn", "dawn-solarNoon")
 
     hours_dummies = list()
 
-    for(tod in names(timeofday)){
-      hours = timeofday[[tod]]
-      hours_dummies[[tod]] = as.numeric(dat$hourofday %in% hours)
+    for(tod in timeofday){
+      hours_dummies[[tod]] = as.numeric(dat$dayperiod == tod)
     }
 
     hourmat = do.call(cbind, hours_dummies)
     Xtod = hourmat
-    todnames = names(timeofday)
+    todnames = timeofday
 
   } else{
 
@@ -1386,7 +1388,7 @@ build_seasonal_design_matrix = function(dat, stdcols, nonstdcols,
   Xseason = cbind(Xtod_full, seasonmat)
 
   if(df_hour == 0)
-    tod = c("morning", "midday", "evening")
+    tod = c("solarNoon-dusk", "dusk-nadir", "nadir-dawn", "dawn-solarNoon")
   else
     tod = 1:(df_hour - 1)
 
@@ -1592,7 +1594,6 @@ trim_speed = function(data, maxspeed=40){
   fastpig = (speed$speed > maxspeed)
   fastpig[is.na(fastpig)] = FALSE
 
-  # Look at fix time distribution...looks reasonable
   return(data[!fastpig])
 }
 

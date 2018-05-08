@@ -13,13 +13,14 @@
 ##    by an interactive effect of temperature and precipitation.
 ##    Note that for this model, collaring needs to longer than 1 month for the
 ##    the temperature and precipitation variable to make sense 
-##    (i.e. you need variation in these variables)
+##    (i.e. you need variation in these variables).  Moreover, this model is
+##    having some identifiability issues.
 ##
 ## TODOS:  
 ## 1. A few of the effects of crop locations are huge as there are not enough
 ## crop locations to estimate.  Need to limit the crop effect analysis to pigs that
 ## have spent only a certain amount of time in crop fields.  I would have thought 
-## regularizing would have accounted for this...
+## regularizing would have accounted for this, but apparently not really.
 ##
 ## 2. Clean up this script to make it easier to understand
 ## 3. Save all of the movement results. 
@@ -39,6 +40,10 @@ allstudies = Sys.glob("~/Repos/rsf_swine/results/glmdata_by_study/*.csv")
 studynames = sapply(strsplit(basename(allstudies), ".", fixed=T), function(x) x[1])
 
 seasons = c("winter", "spring", "summer", "fall")
+timeofday = c("nadir-dawn", "dawn-solarNoon", "solarNoon-dusk", "dusk-nadir")
+
+onlycrop = TRUE # If TRUE, only use the generic crop covariate
+bayesian = FALSE # If TRUE, fit the models using Stan.
 
 model1params = list()
 allnongam = list()
@@ -51,7 +56,7 @@ allseasonbb = list()
 alltpffects = list()
 
 # Loop through analysis for each study
-for(studynm in "tx_tyler_w2"){
+for(studynm in 'tejon'){ #studynames) {
 
   cat("Beginning analysis of", studynm, "\n")
 
@@ -68,7 +73,7 @@ for(studynm in "tx_tyler_w2"){
   allpigs = unique(dat$pigID)
   incroppigs = dat[z == 1][, list(incrop=any(crop_loc == 1)), by=pigID][incrop == TRUE, pigID]
   croppigs = dat[pigID %in% incroppigs]
-  #allpigs = "tejonM302"
+  allpigs = "tejonM302"
 
   timeincrops = croppigs[(z == 1) & (crop_loc == 1), list(tottime = sum(tau)), by=pigID]
 
@@ -80,17 +85,26 @@ for(studynm in "tx_tyler_w2"){
   croptypes = croppigs[z == 1, lapply(.SD, function(x) any(x == 1)),
                           .SDcols=paste0(ctypes, "_loc")]
 
-  if(nrow(croptypes) != 0){
+  if(onlycrop){
 
-    cropsused = colnames(croptypes)[(croptypes[1, ] == TRUE) & 
-                                        (colnames(croptypes) != "crop_loc")]
+      # Use a generic crop variable
+      cropsused = "crop_loc"
+      cropdistgrad = "cropdists_grad"
+  }
+  else{ # Use a specific crop-variable
 
-    cropdistgrad = sapply(strsplit(cropsused, "_loc"), function(x) paste0(x[1], "dists_grad"))
-  } else{
+    if(nrow(croptypes) != 0){
 
-    # If no crops are used just set as a dummy variable
-    cropsused = "fruit_and_nuts_loc"
-    cropdistgrad = "fruit_and_nutsdists_grad"
+      cropsused = colnames(croptypes)[(croptypes[1, ] == TRUE) & 
+                                          (colnames(croptypes) != "crop_loc")]
+
+      cropdistgrad = sapply(strsplit(cropsused, "_loc"), function(x) paste0(x[1], "dists_grad"))
+    } else {
+
+      # If no crops are used just set as a dummy variable
+      cropsused = "fruit_and_nuts_loc"
+      cropdistgrad = "fruit_and_nutsdists_grad"
+    }
   }
 
   # Define columns for analysis below
@@ -126,7 +140,8 @@ for(studynm in "tx_tyler_w2"){
   flippatternbase = c("water_grad", cropdistgrad, "developed_grad")
 
   # Append at the end of each file
-  saveappend = "crop_day_factor_temp"
+  saveappend = ifelse(onlycrop, "crop_day_factor_onlycrop", 
+                                "crop_day_factor_temp")
 
   ###################################################### 
   ### Step 1: Fit model with no time-varying effects ###
@@ -160,7 +175,8 @@ for(studynm in "tx_tyler_w2"){
     registerDoMC(cores=4)
     tfit = cv.glmnet(Xfull, y=tdat$z, offset=log(tdat$tau), 
                          family="poisson", 
-                         alpha=1, nlambda=20, nfolds=5, parallel=TRUE)
+                         alpha=1, nlambda=20, nfolds=5, 
+                         parallel=TRUE, standardize=FALSE)
     
     nongam[[pig]] = tfit$glmnet.fit$beta[, which(tfit$lambda == tfit$lambda.min), drop=T]
 
@@ -223,7 +239,8 @@ for(studynm in "tx_tyler_w2"){
     
     registerDoMC(cores=4)
     fitgam = cv.glmnet(Xgam, y=tdat$z, offset=log(tdat$tau), family="poisson", 
-                       alpha=1, nlambda=20, nfolds=5, parallel=TRUE)
+                       alpha=1, nlambda=20, nfolds=5, parallel=TRUE, 
+                       standardize=FALSE)
     
     # Save the best fit betas
     bestbetas = fitgam$glmnet.fit$beta[, which(fitgam$lambda == fitgam$lambda.min),
@@ -241,7 +258,7 @@ for(studynm in "tx_tyler_w2"){
         eff = flip * bestbetas[grep(pattern, names(bestbetas))]
         ind = order(names(eff))
 
-        tod = c("evening", "midday", "morning")
+        tod = sort(timeofday)
         effdt = data.frame(hour=tod, beta=eff[ind], coef=pattern)
         dailyres[[pattern]] = effdt
       }
@@ -260,7 +277,7 @@ for(studynm in "tx_tyler_w2"){
 
 
   dailyeffects_dt$hour = factor(dailyeffects_dt$hour, 
-                        levels=c("morning", "midday", "evening"))
+                   				levels=timeofday)
 
   dailyeffects_dt$study = studynm
   dailyeffects_dt$cropuser = dailyeffects_dt$pigID %in% longcroppigs
@@ -269,13 +286,18 @@ for(studynm in "tx_tyler_w2"){
   meandailyeffects_dt = dailyeffects_dt[, list(meanbeta=mean(beta)), by=list(coef, hour)]
   tplot = ggplot(data=NULL) + geom_boxplot(data=dailyeffects_dt, 
                                   aes(x=hour, y=beta), alpha=0.3) +  
-                             geom_point(data=dailyeffects_dt, 
-                                  aes(x=hour, y=beta, color=pigID)) + 
+                      geom_point(data=dailyeffects_dt, 
+                                  aes(x=hour, y=beta, color=pigID, group=pigID),
+                                  stat='summary', fun.y=sum) +
+                      stat_summary(data=dailyeffects_dt, aes(x=hour, y=beta, color=pigID, group=pigID),
+                      										alpha=0.4, fun.y=sum, geom="line") +
                       geom_point(data=meandailyeffects_dt, aes(x=hour, y=meanbeta), 
                                   size=1, color="red") +
                       xlab("Time of day") + 
                       ylab("Effect on daily movement rate") + 
-                      theme_bw() + facet_wrap(~coef, scales="free")
+                      theme_bw() + facet_wrap(~coef, scales="free") +
+                      theme(axis.text.x = element_text(angle = 45, hjust = 1, size=6))
+
 
   ggsave(file.path("../results/effect_plots", 
                 paste0("model2dailyeffects_", studynm, saveappend, ".pdf")), 
@@ -344,7 +366,7 @@ for(studynm in "tx_tyler_w2"){
     registerDoMC(cores=4)
     fitseason = cv.glmnet(Xseason, y=tdat$z, offset=log(tdat$tau), 
                           family="poisson", alpha=1, nlambda=20, nfolds=5, 
-                          parallel=TRUE)
+                          parallel=TRUE, standardize=FALSE)
     
     # Save the best fit betas
     bestbetas = fitseason$glmnet.fit$beta[, 
@@ -369,7 +391,7 @@ for(studynm in "tx_tyler_w2"){
           eff = flip*seasbetas[grep(season, names(seasbetas))]
 
           ind = order(names(eff))
-          tod = c("evening", "midday", "morning")
+          tod = sort(timeofday)
 
           effdt = data.frame(hour=tod, beta=eff[ind], coef=pattern)
           effdt$season = season
@@ -391,7 +413,7 @@ for(studynm in "tx_tyler_w2"){
   seasoneffects_dt$season = factor(seasoneffects_dt$season, 
                                     levels=c("winter", "spring", "summer", "fall"))
   seasoneffects_dt$hour = factor(seasoneffects_dt$hour, 
-                                        levels=c("morning", "midday", "evening"))
+                                        levels=timeofday)
 
   seasoneffects_dt$study = studynm
   seasoneffects_dt$cropuser = seasoneffects_dt$pigID %in% longcroppigs
@@ -402,14 +424,17 @@ for(studynm in "tx_tyler_w2"){
   seasonmeanpigs$season = factor(seasonmeanpigs$season, 
                               levels=c("winter", "spring", "summer", "fall"))
   seasonmeanpigs$hour = factor(seasonmeanpigs$hour, 
-                                      levels=c("morning", "midday", "evening"))
+                                      levels=timeofday)
 
 
   numseason = length(unique(seasonmeanpigs$season))
   tplot = ggplot(data=NULL) + geom_boxplot(data=seasoneffects_dt, 
                                   aes(x=hour, y=beta), alpha=0.3) +
                               geom_point(data=seasoneffects_dt, 
-                                  aes(x=hour, y=beta, color=pigID)) +
+                                  aes(x=hour, y=beta, color=pigID, group=pigID),
+                                  stat='summary', fun.y=sum) +
+                      				stat_summary(data=seasoneffects_dt, aes(x=hour, y=beta, color=pigID, group=pigID),
+                      										alpha=0.4, fun.y=sum, geom="line") +
                               geom_point(data=seasonmeanpigs, aes(x=hour, y=meanbeta), 
                                         size=2, color="red") + 
                               xlab("Time of day") + 
@@ -417,7 +442,9 @@ for(studynm in "tx_tyler_w2"){
                               theme_bw() + 
                               facet_wrap(~coef + season, scales="free", 
                                             nrow=length(plistseas), 
-                                            ncol=numseason)
+                                            ncol=numseason) + 
+                              theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 
   ggsave(file.path("../results/effect_plots", 
                 paste0("model3seasondailyeffects_", studynm, 
@@ -429,8 +456,7 @@ for(studynm in "tx_tyler_w2"){
                                                       t = melt(seasonalbestbetas[[x]])
                                                       t$coef = rownames(t)
                                                       t$pigID = x
-                                                      return(t)}
-                                                                  ))
+                                                      return(t)}))
   sbb_dt = as.data.table(sbb_dt)
   sbb_dt$study = studynm
   model3params[[studynm]] = sbb_dt
@@ -461,11 +487,16 @@ for(studynm in "tx_tyler_w2"){
   tplot = ggplot(seasonalbb_dt) + geom_boxplot(aes(x=season, y=value)) + 
                           geom_point(aes(x=season, y=value, color=pigID)) + 
                           facet_wrap(~coef1, scales="free") + theme_bw() + 
-                          theme(axis.text.x = element_text(angle = 90, hjust = 1))
+                          theme(axis.text.x = element_text(angle = 45, hjust = 1, size=6))
 
   ggsave(file.path("../results/effect_plots", 
                 paste0("model3seasoneffects_", studynm, saveappend, ".pdf")), 
                 tplot, width=10, height=7)
+
+  ###################################################### 
+  ### Step 4: Fit model     ###
+  ######################################################
+
 
   ###################################################### 
   ### Step 4: Fit model with temp/precip effects     ###
@@ -586,29 +617,29 @@ for(studynm in "tx_tyler_w2"){
 ### Save all of the estimated coefficients for post-hoc analysis ###
 ####################################################################
 
-# append = FALSE # Append to previous results
+append = FALSE # Append to previous results
 
-# allresults = list(model1maineffects = allnongam, 
-#                   model1allparams = model1params,
-#                   model2dailyeffects = alldailyeffects,
-#                   model2maineffects = alldailyloceffects,
-#                   model2allparams = model2params,
-#                   model3seasonaleffects = allseasoneffects,
-#                   model3maineffects = allseasonbb,
-#                   model3allparams = model3params)
+allresults = list(model1maineffects = allnongam, 
+                  model1allparams = model1params,
+                  model2dailyeffects = alldailyeffects,
+                  model2maineffects = alldailyloceffects,
+                  model2allparams = model2params,
+                  model3seasonaleffects = allseasoneffects,
+                  model3maineffects = allseasonbb,
+                  model3allparams = model3params)
 
-# for(res in names(allresults)){
+for(res in names(allresults)){
 
-#   fulldt = as.data.table(do.call(rbind, allresults[[res]]))
+  fulldt = as.data.table(do.call(rbind, allresults[[res]]))
 
-#   if(append){
-#     tempdt = fread(file.path("../results/effect_size_data",
-#                  paste0(res, ".csv")))
-#     fulldt = rbind(tempdt, fulldt)
-#   }
+  if(append){
+    tempdt = fread(file.path("../results/effect_size_data",
+                 paste0(res, "_", saveappend, ".csv")))
+    fulldt = rbind(tempdt, fulldt)
+  }
 
-#   fwrite(fulldt, file.path("../results/effect_size_data",
-#                  paste0(res, ".csv")), row.names = FALSE)
-# }
+  fwrite(fulldt, file.path("../results/effect_size_data",
+                 paste0(res, "_", saveappend, ".csv")), row.names = FALSE)
+}
 
 

@@ -49,24 +49,24 @@ Must be run with Python 2.7
 #  'cali2': "America/Los_Angeles", # Local Mean Time -8 from GMT
 #  'cali3': "America/Los_Angeles",  # Local Mean Time -8 from GMT
 #  'cali4': "America/Los_Angeles", # Local Mean Time -8 from GMT
-#  'canada': "America/Regina", # Don't know...need to ask Ryan. Probably UTC
-#  'fl_raoul': "America/New_York", # Seems to be UTC time
+#  'canada': "America/Regina",
+#  'fl_raoul': "America/New_York", # Local Mean Time -5 from GMT
 #  'florida': "America/New_York", # Local Mean Time -5 from GMT
 #  'ga_bill': "America/New_York",
 #  'ga_steve': "America/New_York",
-#  'judas_pig': "LMT", # Check
+#  'judas_pig': "LMT", # All judas times are LMT
 #  'la_hartley': "America/Chicago",
-#  'la_steve': "America/Chicago", # Not sure yet
-#  'michigan': "America/New_York", # Local Mean Time -5 from GMT
-#  'mo_kurt0': "America/Chicago",  
-#  'mo_kurt1': "America/Chicago",
-#  'mo_kurt2' : "America/Chicago",
-#  'mo_kurt3' : "America/Chicago", 
-#  'mo_kurt4' : "America/Chicago",
-#  'mo_kurt5': "America/Chicago", 
-#  'mo_kurt6': "America/Chicago", 
-#  'mo_kurt7': "America/Chicago",
-#  'mo_kurt8': "America/Chicago", 
+#  'la_steve': "America/Chicago", # Not sure...seems to be LMT
+#  'michigan': "America/New_York", # Local Mean Time -6 from GMT
+#  'mo_kurt0': "America/Chicago", # Local Mean Time -6 from GMT
+#  'mo_kurt1': "America/Chicago", # Local Mean Time -6 from GMT
+#  'mo_kurt2' : "America/Chicago", # Local Mean Time -6 from GMT
+#  'mo_kurt3' : "America/Chicago", # Local Mean Time -6 from GMT 
+#  'mo_kurt4' : "America/Chicago", # Local Mean Time -6 from GMT
+#  'mo_kurt5': "America/Chicago", # Local Mean Time -6 from GMT
+#  'mo_kurt6': "America/Chicago", # Local Mean Time -6 from GMT
+#  'mo_kurt7': "America/Chicago", # Local Mean Time -6 from GMT
+#  'mo_kurt8': "America/Chicago", # Local Mean Time -6 from GMT
 #  'sc_jim2': "America/New_York", 
 #  'scjim1' : "America/New_York", 
 #  'srel_contact': "America/New_York", # data provided in UTC, converted to LMT -5 
@@ -75,10 +75,10 @@ Must be run with Python 2.7
 #  'tejon': "America/Los_Angeles", # Local Mean Time -8 from GMT
 #  'tx_christy_14r': "America/Chicago", 
 #  'tx_christy_15r': "America/Chicago",
-#  'tx_susan': "America/Chicago", 
-#  'tx_tyler_k1': "America/Chicago", 
-#  'tx_tyler_w1': "America/Chicago", 
-#  'tx_tyler_w2': "America/Chicago", # Data provided at UTC, converted to LMT - 6
+#  'tx_susan': "America/Chicago", # Local Mean Time -6 from GMT
+#  'tx_tyler_k1': "America/Chicago", # Local Mean Time -6 from GMT
+#  'tx_tyler_w1': "America/Chicago", # Local Mean Time -6 from GMT
+#  'tx_tyler_w2': "America/Chicago", # Local Mean Time -6 from GMT
 #  'txcamp': "America/Chicago" # Local Mean Time}
 
 ##############################################################
@@ -291,11 +291,14 @@ move.loc[:, "collarID"] = move.collarID.str.lower()
 # It is not clear which studies are UTC datetime,
 move.loc[:, "datetime"] = pd.to_datetime(move.date + " " + move.time, format="%m/%d/%y %H:%M:%S")
 
-# Convert tx_tyler to LMT
+# Convert studies to LMT
 central = pytz.timezone("America/Chicago")
-baserl = move[move.study == 'tx_tyler_w2'].datetime
-updts = baserl - pd.Timedelta(value=6, unit="h")  # Convert from UTC to LMT central time
-move.loc[move.study == "tx_tyler_w2", "datetime"] = updts.values
+
+for snm in []:#['tx_tyler_w2']:
+
+  baserl = move[move.study == snm].datetime
+  updts = baserl - pd.Timedelta(value=6, unit="h")  # Convert from UTC to LMT central time
+  move.loc[move.study == snm, "datetime"] = updts.values
 
 move.loc[:, "fixtype"] = np.nan
 move.loc[move.study == "sc_jim", "study"] = "scjim1"

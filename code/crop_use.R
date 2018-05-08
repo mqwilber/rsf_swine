@@ -1,10 +1,13 @@
-# Look at which pigs overlap with crops
+##  Summarize which pigs overlap with crops
 
 library(data.table)
 library(yaml)
+library(ggplot)
+library(lubridate)
 
 files = Sys.glob("~/Repos/rsf_swine/results/glmdata_by_study/*.csv")
 anal_params = yaml.load_file("~/Repos/rsf_swine/code/analysis_parameters.yml")
+studysum = fread("~/Repos/rsf_swine/data/formatted/study_summary.csv")
 
 datasets  = list()
 for(fl in files){
@@ -14,6 +17,27 @@ for(fl in files){
 	datasets[[studynm]] = dat
 }
 
+
+for(studynm in names(datasets)){
+	datasets[[studynm]][, month:=month(date)]
+	datasets[[studynm]][, ecoregion:=studysum[study == studynm, l2ecoregion]]
+}
+
+
+unqmonths = do.call(rbind, lapply(datasets, function(dt) dt[, list(unqmonth=unique(month)), 
+																								by=list(pigID, ecoregion)]))
+
+for(eco in unique(unqmonths$ecoregion)){
+	print(eco)
+	unqmonths = 
+	tplot = ggplot(unqmonths) + 
+											geom_point(aes(x=unqmonth, y=pigID, color=pigID)) + 
+											facet_wrap(~ecoregion, scale="free")
+	ggsave(paste0("~/Desktop/", eco, ".pdf"), tplot)
+
+}
+
+# Total pigs
 totpigs = sum(sapply(datasets, function(x) length(unique(x$pigID))))
 
 # How many pigs are ever in crops?
@@ -55,8 +79,8 @@ mused = mused[croptype != "crop_loc"]
 
 library(ggplot2)
 ggplot(mused) + geom_bar(aes(x=study, y=log10(hours_used + 1), fill=croptype), 
-													position = "dodge", stat="identity") + ylab("log10(total pig hours used + 1)") +
-								theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8))
+													stat="identity") + ylab("log10(total pig hours used + 1)") +
+								theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, size=4))
 ggsave("~/Repos/rsf_swine/results/crop_use_by_study.pdf", width=5, height=4)
 
 ggplot(mused) + geom_bar(aes(x=croptype, y=log10(hours_used + 1)), 

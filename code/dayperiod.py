@@ -75,11 +75,17 @@ def get_timeperiod(data, tz):
     return(dayperiod)
 
 if __name__ == '__main__':
+
+    """
+    This script must be run after compute_ctmc_data.R is run, but before
+    allstudy_analysis.R.  This script adds a day period column that allows
+    the time of day to be comparable across populations.
+    """
     
     basedir = "/Users/mqwilber/Repos/rsf_swine/results/glmdata_by_study/"
     studysum = pd.read_csv("../data/formatted/study_summary.csv")
 
-    for studynm in studysum.study:
+    for studynm in ["tx_tyler_w2"]: #studysum.study:
 
         filepath = os.path.join(basedir, studynm + ".csv")
 

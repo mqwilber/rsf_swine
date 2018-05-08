@@ -45,8 +45,7 @@ sink("log_ctmc.txt") # log file
 preprocessed = FALSE # If TRUE all that needs to be computed is the pig-specific variables
 
 
-for(studynm in c("tejon", "tx_susan", "tx_tyler_k1", "tx_tyler_w1",
-              "tx_tyler_w2", "txcamp", "florida")) {
+for(studynm in "tx_tyler_w2") {
 
   cat("Beginning analysis for", studynm, "\n")
 
@@ -105,7 +104,7 @@ for(studynm in c("tejon", "tx_susan", "tx_tyler_k1", "tx_tyler_w1",
 
     unqpigs = unique(newdat$pigID)
 
-    if(length(unqpigs) == 0) next # Skip any study without any goodpigs
+    if(length(unqpigs) == 0) next # Skip any study without goodpigs
 
     # Loop through and fit a continuous time movement model for each pig on each run
     parallel_pigpaths = function(pignm, newdat, anal_params){

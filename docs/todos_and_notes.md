@@ -429,7 +429,7 @@ Notes from lab meeting
 3. Break time of day into more meaningful groups [Done]
 4. Re-run model ctmc model on all data to clean up errant movements [Done]
 
-TODO
+**TODO**
 
 1. Re-run convert_pig_data.py to ensure that LMT updates are working
 	- Changed how I was converting from LMT to UTC. Need to check
@@ -437,4 +437,11 @@ TODO
 3. Re-run parameter an analyses on all ctmc data!
 	- Re-run cluster analyses as well.
 4. Still need to convert srel-vacuum.
+
+
+## May 5
+
+1. la_steve:  Different pigs are showing very different temporal patterns in movement, which does lend itself to a clear understanding of which time scale the collars recorded on.
+	- Going with LMT
+2. 
 

@@ -8,6 +8,7 @@ library(lubridate)
 files = Sys.glob("~/Repos/rsf_swine/results/glmdata_by_study/*.csv")
 anal_params = yaml.load_file("~/Repos/rsf_swine/code/analysis_parameters.yml")
 studysum = fread("~/Repos/rsf_swine/data/formatted/study_summary.csv")
+pigattrib = fread("~/Repos/rsf_swine/data/formatted/pig_attributes.csv")
 
 datasets  = list()
 for(fl in files){
@@ -17,25 +18,31 @@ for(fl in files){
 	datasets[[studynm]] = dat
 }
 
+############### Time-overlap analysis ###################
 
+# Bind ecoregion to each study
 for(studynm in names(datasets)){
 	datasets[[studynm]][, month:=month(date)]
 	datasets[[studynm]][, ecoregion:=studysum[study == studynm, l2ecoregion]]
 }
 
-
+# Calculate the months of each study
 unqmonths = do.call(rbind, lapply(datasets, function(dt) dt[, list(unqmonth=unique(month)), 
 																								by=list(pigID, ecoregion)]))
 
+# Plot the time span in which pigs were collared across ecoregion
+dir.create("../results/time_span_plots")
 for(eco in unique(unqmonths$ecoregion)){
 	print(eco)
-	unqmonths = 
-	tplot = ggplot(unqmonths) + 
+	tmonths = unqmonths[ecoregion == eco]
+	tplot = ggplot(tmonths) + 
 											geom_point(aes(x=unqmonth, y=pigID, color=pigID)) + 
 											facet_wrap(~ecoregion, scale="free")
-	ggsave(paste0("~/Desktop/", eco, ".pdf"), tplot)
+	ggsave(paste0("../results/time_span_plots/", gsub("/", "-", eco), ".pdf"), tplot)
 
 }
+
+################# Crop-use analysis ####################
 
 # Total pigs
 totpigs = sum(sapply(datasets, function(x) length(unique(x$pigID))))
@@ -51,10 +58,12 @@ for(studynm in names(datasets)){
 	incroppigs = tdat[z == 1][, list(incrop=any(crop_loc == 1)), by=pigID][incrop == TRUE, pigID]
 	pinc[[studynm]] = tdat[pigID %in% incroppigs]
 
-
 }
 
 allpigs = do.call(rbind, pinc)
+allpigs_sex = merge(allpigs, pigattrib[, list(sex, pigID)], by="pigID", all.x=T)
+allpigs_sex[z == 1 & crop_loc == 1][, list(length(unique(pigID))), by=sex]
+# 89 males and 62 females using crops
 
 cropusers = allpigs[, list(totpigs=length(unique(pigID))), by=study]
 cropusers[, list(sum(totpigs))]

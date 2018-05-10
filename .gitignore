@@ -20,6 +20,7 @@ docs/manuscript/*.xdv
 temp_data/
 data.zip
 code/log_ctmc.txt
+code/temp.log
 code/.ipynb_checkpoints/advi_movement_models-checkpoint.ipynb
 code/analyze_pig_movements.nb.html
 code/other_scripts/.ipynb_checkpoints/
@@ -27,3 +28,4 @@ code/tejon_analysis.nb.html
 code/analyze_pig_movements_by_pig.nb.html
 code/analysis_summary_3-18-2018.html
 code/.ipynb_checkpoints/Cluster_analysis-checkpoint.ipynb
+code/.ipynb_checkpoints/plots_for_manuscript-checkpoint.ipynb

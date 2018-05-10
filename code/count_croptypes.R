@@ -174,23 +174,22 @@ for(studynm in studysum$study){
   glmlist = mclapply(unqpigs, parallel_pigctmc, anal_params, newdat, allpaths, 
                         studynm, mc.cores=anal_params$cores)
 
-
   fullglm = do.call(rbind, glmlist)
   incell = fullglm[z == 1]
 
-  rastab = table(incell$crop_loc)
-	rastab = data.table(rastab)
-	colnames(rastab) = c("value", "count")
-	rastab[, value:=as.integer(value)]
+  # Time spent in crop types by pig
+  timeincell = incell[, list(hours=sum(tau) / (60*60)), by=list(pigID, crop_loc)]
+  cropvals = croptypes[group_name != "nothing", value]
+  timeincrops = timeincell[crop_loc %in% cropvals]
+  colnames(timeincrops)[2] = "value"
+  timeincrops = merge(timeincrops, croptypes, by="value", all.x=TRUE)
+  timeincrops$study = studynm
 
-	crops_present = merge(croptypes, rastab, by="value")
-	crops_present$study = studynm
-	allcrops[[studynm]] = crops_present
-	print(crops_present)
+	allcrops[[studynm]] = timeincrops
 
 }
 
 # Save the crops that are being used for each study
 allcrops_dt = do.call(rbind, allcrops)
-fwrite(allcrops_dt, "../results/usedcrops.csv")
+fwrite(allcrops_dt, "../results/usedcrops_time.csv")
 sink()
